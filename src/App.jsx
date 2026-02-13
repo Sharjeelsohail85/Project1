@@ -14,80 +14,9 @@ import './styles/design-system.css'
 const STORAGE_DAILY_VISIBLE = 'dailyVisible'
 const STORAGE_CURRENT_PAGE = 'currentPage'
 
-// Custom inline styles from the original HTML.
-// NOTE: Browser navigation and content layout are now handled by the React
-// layout + CSS in `css/style.css` and `styles/global.css`, so the old
-// responsive rules for `.browser-nav-item` / `.browser-content-page` have
-// been removed to avoid mobile layout bugs (full‑width stacked pills,
-// large blank gaps above the grid, etc).
+// Keep runtime-injected styles minimal.
+// Responsive layout behavior is centralized in css/style.css.
 const inlineStyles = `
-  .signup-close button-float active {
-    position: absolute;
-    right: 20px;
-  }
-  @media only screen and (min-width: 430px) {
-    .signup-page-3 {
-      width: 100%;
-    }
-    .signup-page-3 .signup-page-container {
-      width: 90%;
-      max-width: 500px;
-    }
-  }
-  @media only screen and (max-width: 430px) {
-    .signup-color-picker {
-      width: 310px;
-    }
-    .signup-page-3 {
-      width: 100%;
-    }
-    .signup-page-3 .signup-page-container {
-      width: 90%;
-      max-width: 350px;
-    }
-    .titlebar {
-      height: 100px;
-    }
-    #navBox {
-      top: 40px;
-    }
-    .signup-close, .signup-next, .upload-next, .login-next {
-      top: 40px;
-    }
-    .signup-title {
-      top: 70px;
-    }
-    .slideout {
-      top: 100px;
-    }
-    .slideout-bottom {
-      bottom: 108px;
-    }
-  }
-  @media only screen and (max-width: 370px) {
-    .color-height {
-      padding-top: 110px;
-    }
-    .signup-color-picker {
-      width: 240px;
-    }
-    .signup-page-3 {
-      width: 100%;
-    }
-    .signup-page-3 .signup-page-container {
-      width: 90%;
-      max-width: 320px;
-    }
-    .slideout {
-      top: 100px;
-    }
-    .top-wrap {
-      height: 70px;
-    }
-    .daily, .promoverlay, .signup, .login, .upload {
-      height: 430px;
-    }
-  }
   .browser-nav {
     height: auto;
   }

@@ -21,9 +21,10 @@ const BrowserNav = memo(function BrowserNav({ activePage, onSwitchPage }) {
             role="tab"
             aria-selected={activePage === id}
             aria-controls={id}
+            aria-label={label}
           >
             <i className="material-icons" aria-hidden="true">{icon}</i>
-            {label}
+            <span className="browser-nav-label">{label}</span>
           </button>
         ))}
       </div>

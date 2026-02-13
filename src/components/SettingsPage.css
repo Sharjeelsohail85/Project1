@@ -893,6 +893,169 @@ html, body {
 	overflow-y: auto;
 }
 
+/* ============================================
+   SETTINGS PAGE RESPONSIVE LAYOUT
+   ============================================ */
+
+@media (max-width: 1024px) {
+	.slideout {
+		width: min(86vw, 340px);
+	}
+
+	.column-left {
+		width: 260px;
+	}
+
+	.content-main {
+		left: 260px;
+	}
+
+	.section-wrap {
+		width: calc(100% - 32px);
+		margin: 24px 16px;
+	}
+}
+
+@media (max-width: 820px) {
+	.titlebar {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		padding: 0 10px;
+	}
+
+	.titlebar-box {
+		position: static;
+		height: auto;
+		margin: 0;
+		padding: 0;
+	}
+
+	.titlebar-left,
+	.titlebar-right {
+		display: flex;
+		align-items: center;
+	}
+
+	.titlebar-right {
+		gap: 8px;
+	}
+
+	.titlebar-profile {
+		display: none;
+	}
+
+	.content {
+		display: block;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.column-left {
+		position: relative;
+		top: 0;
+		left: 0;
+		bottom: auto;
+		width: 100%;
+		height: auto;
+		max-height: none;
+		box-shadow: none;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		padding: 8px 12px 12px;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: 8px;
+		overflow: visible;
+	}
+
+	.column-left-item {
+		margin: 0;
+		height: 44px;
+		padding: 0 12px;
+	}
+
+	.column-left-item:hover,
+	.column-left-item:active,
+	.column-left-item.active,
+	.column-left-item.active:hover {
+		transform: none;
+	}
+
+	.column-left-search {
+		grid-column: 1 / -1;
+		width: 100%;
+		margin: 0;
+	}
+
+	.content-main {
+		position: relative;
+		top: auto;
+		left: auto;
+		right: auto;
+		bottom: auto;
+		min-height: auto;
+		padding: 12px 0 24px;
+	}
+
+	.section-wrap {
+		max-width: none;
+		width: calc(100% - 24px);
+		margin: 16px 12px;
+	}
+
+	.section {
+		border-radius: 12px;
+	}
+}
+
+@media (max-width: 520px) {
+	.slideout {
+		width: 100%;
+	}
+
+	.titlebar {
+		padding: 0 8px;
+	}
+
+	.titlebar-logo {
+		display: none;
+	}
+
+	.titlebar-subs {
+		display: none;
+	}
+
+	.column-left {
+		grid-template-columns: 1fr;
+		padding: 8px;
+	}
+
+	.column-left-item {
+		height: 42px;
+		font-size: 13px;
+	}
+
+	.section-title {
+		font-size: 18px;
+		margin-bottom: 10px;
+	}
+
+	.section-item {
+		padding: 10px 14px;
+		min-height: 52px;
+	}
+
+	.section-item-label {
+		font-size: 13px;
+		line-height: 1.4;
+		padding-right: 10px;
+	}
+
+	.section-item-option {
+		margin-left: 8px;
+	}
+}
+
 
 
 
