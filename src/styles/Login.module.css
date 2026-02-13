@@ -1,0 +1,544 @@
+/* ============================================
+   LOGIN MODAL STYLES - Portal-Based Modal
+   ============================================ */
+
+/* ============================================
+   BACKDROP - Full Viewport Overlay
+   ============================================ */
+.loginBackdrop {
+	/* MANDATORY: Fixed positioning covering entire viewport */
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	
+	/* MANDATORY: High z-index to be above all content */
+	z-index: 9999;
+	
+	/* MANDATORY: Flexbox for centering */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	
+	/* Backdrop styling */
+	background: rgba(96, 125, 139, 0.9);
+	backdrop-filter: blur(8px);
+	
+	/* No overflow - backdrop should not scroll */
+	overflow: hidden;
+	
+	/* Prevent pointer events from passing through */
+	pointer-events: auto;
+	
+	/* Create new stacking context */
+	isolation: isolate;
+	
+	/* Override any transforms/filters from parent containers */
+	transform: none !important;
+	filter: none !important;
+	perspective: none !important;
+	
+	/* Smooth appearance */
+	animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Disable pointer events on underlying content when modal is open */
+/* Note: Using class-based approach instead of :has() for better browser support */
+body.modal-open #content,
+body.modal-open .titlebar,
+body.modal-open .browser-nav {
+	pointer-events: none;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* ============================================
+   MODAL CONTENT - Centered Card
+   ============================================ */
+.loginModalContent {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	width: 100%;
+	max-width: 500px;
+	padding: 48px 40px 40px;
+	box-sizing: border-box;
+	gap: 32px;
+	position: relative;
+	
+	/* Card styling */
+	background: var(--theme-color);
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+	
+	/* MANDATORY: Internal scrolling when content exceeds viewport */
+	max-height: 90vh;
+	overflow-y: auto;
+	overflow-x: hidden;
+	
+	/* Prevent content from being cut off */
+	flex-shrink: 0;
+	
+	/* Smooth scrolling */
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+	
+	/* Prevent text overflow */
+	overflow-wrap: break-word;
+	word-wrap: break-word;
+}
+
+/* Custom scrollbar for webkit browsers */
+.loginModalContent::-webkit-scrollbar {
+	width: 8px;
+}
+
+.loginModalContent::-webkit-scrollbar-track {
+	background: transparent;
+	border-radius: 4px;
+}
+
+.loginModalContent::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.3);
+	border-radius: 4px;
+}
+
+.loginModalContent::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   HEADER SECTION
+   ============================================ */
+.loginHeader {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	text-align: center;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.loginTitle {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	font-size: 38px;
+	font-weight: 500;
+	line-height: 1.2;
+	letter-spacing: -0.5px;
+	color: #ffffff;
+	text-align: center;
+	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.loginSubtitle {
+	width: 100%;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	letter-spacing: 0.15px;
+	color: rgba(255, 255, 255, 0.95);
+	text-align: center;
+	padding: 0;
+	margin: 0;
+}
+
+.errorMessage {
+	width: 100%;
+	padding: 12px 16px;
+	margin-top: 8px;
+	background: rgba(244, 67, 54, 0.2);
+	border: 1px solid rgba(244, 67, 54, 0.4);
+	border-radius: 8px;
+	color: #ffcdd2;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.4;
+	text-align: center;
+	animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* ============================================
+   PASSWORD INPUT CONTAINER
+   ============================================ */
+.passwordInputContainer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	height: 0;
+	overflow: hidden;
+	transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+	            height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.passwordInputContainer.active {
+	opacity: 1;
+	height: auto;
+	overflow: visible;
+}
+
+.backButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	min-width: 48px;
+	border-radius: 50%;
+	background: transparent;
+	border: none;
+	color: #fafafa;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+	flex-shrink: 0;
+}
+
+.backButton:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+.backButton:active {
+	background-color: rgba(255, 255, 255, 0.2);
+}
+
+.inputWrapper {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	background: #fafafa;
+	border-radius: 8px;
+	box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+	overflow: hidden;
+	min-height: 56px;
+	padding: 0 16px;
+	gap: 12px;
+	transition: box-shadow 0.2s ease;
+}
+
+.inputWrapper:focus-within {
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.inputIcon {
+	font-size: 24px;
+	color: rgba(33, 33, 33, 0.54);
+	flex-shrink: 0;
+}
+
+.passwordInput {
+	flex: 1;
+	border: none;
+	background: transparent;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	color: rgba(33, 33, 33, 0.87);
+	padding: 16px 0;
+	outline: none;
+}
+
+.passwordInput::placeholder {
+	color: rgba(33, 33, 33, 0.38);
+}
+
+.submitButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	min-width: 40px;
+	border-radius: 50%;
+	background: var(--theme-color);
+	color: #fafafa;
+	border: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease, box-shadow 0.2s ease;
+	flex-shrink: 0;
+	box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.submitButton:hover {
+	background-color: #455A64;
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.submitButton:active {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+/* ============================================
+   LOGIN METHODS - Grid Layout
+   ============================================ */
+.loginMethods {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 12px;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	align-items: stretch;
+	justify-items: stretch;
+	flex-shrink: 0;
+}
+
+.authButton {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 110px;
+	width: 100%;
+	padding: 16px 12px;
+	border-radius: 12px;
+	border: none;
+	background: rgba(255, 255, 255, 0.12);
+	color: #fafafa;
+	cursor: pointer;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	overflow: hidden;
+}
+
+.authButton:hover {
+	background: rgba(255, 255, 255, 0.18);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	transform: translateY(-2px);
+}
+
+.authButton:active {
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+	transform: translateY(0);
+}
+
+.authButton:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.authButton:disabled:hover {
+	background: rgba(255, 255, 255, 0.12);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	transform: none;
+}
+
+.authButton .material-icons,
+.authButton .zmdi {
+	font-size: 40px;
+	line-height: 1;
+	margin: 0;
+	transition: transform 0.2s ease;
+}
+
+.authButton:hover .material-icons,
+.authButton:hover .zmdi {
+	transform: scale(1.1);
+}
+
+.authButtonLabel {
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.33;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	color: rgba(250, 250, 250, 0.9);
+	margin-top: 4px;
+}
+
+.authButton.hidden {
+	display: none;
+}
+
+/* ============================================
+   CLOSE BUTTON
+   ============================================ */
+.loginCloseButton {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 10000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.3);
+	color: #fafafa;
+	border: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease, box-shadow 0.2s ease;
+	box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.loginCloseButton:hover {
+	background: rgba(0, 0, 0, 0.4);
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.loginCloseButton:active {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media only screen and (max-width: 600px) {
+	.loginBackdrop {
+		padding: 16px;
+	}
+
+	.loginModalContent {
+		padding: 40px 28px 32px;
+		gap: 28px;
+		max-width: 100%;
+		border-radius: 16px;
+		max-height: calc(100vh - 32px);
+	}
+
+	.loginTitle {
+		font-size: 32px;
+	}
+
+	.loginSubtitle {
+		font-size: 15px;
+	}
+
+	.loginMethods {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 12px;
+	}
+
+	.authButton {
+		min-height: 100px;
+		padding: 14px 10px;
+	}
+
+	.authButton .material-icons,
+	.authButton .zmdi {
+		font-size: 36px;
+	}
+
+	.authButtonLabel {
+		font-size: 11px;
+	}
+
+	.inputWrapper {
+		min-height: 52px;
+		padding: 0 12px;
+	}
+
+	.passwordInput {
+		font-size: 15px;
+		padding: 14px 0;
+	}
+
+	.loginCloseButton {
+		top: 16px;
+		right: 16px;
+		width: 40px;
+		height: 40px;
+	}
+}
+
+@media only screen and (max-width: 430px) {
+	.loginBackdrop {
+		padding: 12px;
+	}
+
+	.loginModalContent {
+		padding: 36px 24px 28px;
+		gap: 24px;
+		border-radius: 16px;
+		max-height: calc(100vh - 24px);
+	}
+
+	.loginTitle {
+		font-size: 28px;
+	}
+
+	.loginSubtitle {
+		font-size: 14px;
+	}
+
+	.loginMethods {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+	}
+
+	.authButton {
+		min-height: 92px;
+		padding: 12px 8px;
+	}
+
+	.authButton .material-icons,
+	.authButton .zmdi {
+		font-size: 32px;
+	}
+
+	.authButtonLabel {
+		font-size: 10px;
+		margin-top: 4px;
+	}
+
+	.inputWrapper {
+		min-height: 48px;
+		padding: 0 12px;
+		gap: 8px;
+	}
+
+	.passwordInput {
+		font-size: 14px;
+		padding: 12px 0;
+	}
+
+	.backButton {
+		width: 40px;
+		height: 40px;
+		min-width: 40px;
+	}
+
+	.submitButton {
+		width: 36px;
+		height: 36px;
+		min-width: 36px;
+	}
+
+	.loginCloseButton {
+		top: 12px;
+		right: 12px;
+		width: 40px;
+		height: 40px;
+	}
+}

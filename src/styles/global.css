@@ -1,0 +1,370 @@
+/* ============================================
+   GLOBAL STYLES
+   Keep these styles global - they affect base elements
+   ============================================ */
+
+* {
+	box-sizing: border-box;
+	outline-style: none;
+	text-decoration: none;
+	transition: all 0.15s ease-in-out;
+	font-family: 'Roboto', Roboto, sans-serif;
+}
+
+/* Ensure app fills the viewport; the fixed titlebar will sit on top */
+#root {
+	min-height: 100vh;
+	background: #fafafa;
+}
+
+#content {
+	position: relative;
+	z-index: 1;
+	overflow-y: auto;
+	min-height: 100vh;
+	margin-top: 0;
+}
+
+/* Main content layout under the yellow browser nav */
+.content {
+	background: #fafafa;
+	/* Remove extra top padding so the yellow nav
+	   sits snugly under the fixed red titlebar */
+	padding: 0 0 40px;
+}
+
+/* Material-style secondary nav (Editors' Picks / Popular / etc.) */
+.browser-nav {
+	position: sticky;
+	top: 60px; /* sits just under the titlebar */
+	z-index: 50;
+	background: var(--theme-color, #673AB7);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.browser-nav-fuck {
+	/* Keep nav items full-width to avoid white gutters
+	   on the sides of the yellow bar. */
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+.browser-nav-item {
+	border-radius: 999px;
+	padding: 12px 28px;
+	margin: 10px 14px;
+	border: 1px solid transparent;
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.browser-nav-item.active {
+	background: rgba(255, 255, 255, 0.18);
+	border-color: rgba(0, 0, 0, 0.12);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.browser-nav-item:hover {
+	border-bottom: solid 3px var(--theme-on-color-muted);
+	border-color: var(--theme-on-color-muted);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Card grid container – wrapper for tab panels */
+.browser-content {
+	max-width: 1200px;
+	margin: 24px auto 0;
+	padding: 0 24px 40px;
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0;
+}
+
+/* Each tab panel is a grid of cards */
+.browser-content-page {
+	margin-top: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	grid-auto-rows: auto;
+	gap: 20px;
+}
+
+.browser-content-page.hidden {
+	display: none !important;
+}
+#modal-root {
+	position: fixed;
+	inset: 0;
+	z-index: 500;
+	pointer-events: none;
+}
+
+#modal-root > * {
+	pointer-events: all;
+}
+
+/* Accessibility: Proper focus states */
+*:focus-visible {
+	outline: 2px solid var(--theme-color, #673AB7);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+*:focus:not(:focus-visible) {
+	outline: none;
+}
+
+a {
+	color: inherit;
+}
+
+html,
+body {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	color: #212121;
+}
+
+/* ============================================
+   GLOBAL KEYFRAMES
+   ============================================ */
+
+@keyframes pop {
+	0% {
+		opacity: 0;
+		-webkit-transform: scale(0.8);
+		transform: scale(0.8);
+	}
+	100% {
+		opacity: 1;
+		-webkit-transform: scale(1);
+		transform: scale(1);
+	}
+}
+
+@keyframes playerAlt {
+	0% {
+		opacity: 0;
+		transform: scale(1.1);
+	}
+}
+
+@keyframes controlsAlt {
+	0% {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slide {
+	0% {
+		opacity: 0;
+		-webkit-transform: translateX(5%);
+		transform: translateX(5%);
+	}
+	100% {
+		opacity: 1;
+		-webkit-transform: translateX(0);
+		transform: translateX(0);
+	}
+}
+
+@keyframes slideAlternate {
+	0% {
+		opacity: 0;
+		-webkit-transform: translateX(-10%);
+		transform: translateX(-10%);
+	}
+	100% {
+		opacity: 1;
+		-webkit-transform: translateX(0);
+		transform: translateX(0);
+	}
+}
+
+@keyframes notice {
+	40% {
+		background: #673AB7;
+		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.14);
+	}
+	60% {
+		background: transparent;
+		box-shadow: 0 3px 5px transparent;
+	}
+	80% {
+		background: #673AB7;
+		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.14);
+	}
+	100% {
+		background: transparent;
+		box-shadow: 0 3px 5px rgba(0, 0, 0, 0.0);
+	}
+}
+
+@keyframes popAlt {
+	0% {
+		-webkit-transform: translate(-20px, -10px);
+		transform: translate(-20px, -10px);
+		opacity: 0;
+	}
+	92% {
+		-webkit-transform: translate(-20px, -20px);
+		transform: translate(-20px, -20px);
+	}
+	95% {
+		opacity: 1;
+	}
+	100% {
+		-webkit-transform: translate(-20px, -21px) scale(0.4);
+		transform: translate(-20px, -21px) scale(0.4);
+		opacity: 0;
+	}
+}
+
+@keyframes scroll {
+	0% {
+		background-position: 0vw;
+	}
+	100% {
+		background-position: -100vw;
+	}
+}
+
+@keyframes rotate {
+	0% {
+		-webkit-transform: translate(-50%, -50%) rotate(180deg);
+		transform: translate(-50%, -50%) rotate(180deg);
+	}
+	100% {
+		-webkit-transform: translate(-50%, -50%) rotate(300deg);
+		transform: translate(-50%, -50%) rotate(300deg);
+	}
+}
+
+@keyframes spin1 {
+	10% {
+		-webkit-transform: rotate(360deg);
+		transform: rotate(360deg);
+	}
+	100% {
+		-webkit-transform: rotate(360deg);
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes spin2 {
+	0% {
+		-webkit-transform: rotate(1080deg);
+		transform: rotate(1080deg);
+	}
+	100% {
+		-webkit-transform: rotate(1420deg);
+		transform: rotate(1420deg);
+	}
+}
+
+@keyframes playerPending {
+	0% {
+		-webkit-transform: scale(0.6) translate(-50%, -50%);
+		transform: scale(0.6) translate(-50%, -50%);
+		opacity: 0;
+	}
+	100% {
+		-webkit-transform: scale(1) translate(-50%, -50%);
+		transform: scale(1) translate(-50%, -50%);
+	}
+}
+
+@keyframes fly {
+	0% {
+		opacity: 0;
+		-webkit-transform: scale(0.8);
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		-webkit-transform: scale(1.4);
+		transform: scale(1.4);
+	}
+}
+
+@keyframes dailyInfoAlt {
+	0% {
+		opacity: 0;
+		width: 100%;
+		left: 45px;
+		top: 500px;
+		-webkit-transform: translate(0, -20px);
+		transform: translate(0, -20px);
+	}
+	100% {
+		opacity: 1;
+		width: 100%;
+		left: 45px;
+		top: 500px;
+		-webkit-transform: translate(0, 0);
+		transform: translate(0, 0);
+	}
+}
+
+@keyframes fade {
+	0% {
+		opacity: 0;
+		-webkit-transform: translateY(10px);
+		transform: translateY(10px);
+	}
+	100% {
+		opacity: 1;
+		-webkit-transform: translateY(0);
+		transform: translateY(0);
+	}
+}
+
+@keyframes ghost {
+	100% {
+		width: 0;
+		margin: 0;
+		padding: 0;
+	}
+}
+
+@keyframes scale {
+	0% {
+		-webkit-transform: scale(0.9);
+		transform: scale(0.9);
+	}
+	100% {
+		-webkit-transform: scale(1);
+		transform: scale(1);
+	}
+}
+
+/* ============================================
+   GLOBAL UTILITY CLASSES
+   ============================================ */
+
+.visible {
+	opacity: 1 !important;
+}
+
+.emphasis {
+	display: block;
+	margin-top: 16px;
+}

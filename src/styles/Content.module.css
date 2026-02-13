@@ -1,0 +1,36 @@
+/* ============================================
+   CONTENT CONTAINER STYLES
+   ============================================ */
+
+.content {
+	position: absolute;
+	display: block;
+	top: 60px;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	color: #212121;
+	background: #607D8B;
+	overflow: auto;
+	padding-top: 400px;
+}
+
+.content.alternate {
+	padding-top: 0;
+}
+
+.topWrap {
+	display: block;
+	top: 60px;
+	left: 0;
+	width: 100%;
+	transition: none;
+	overflow: hidden;
+}
+
+@media only screen and (max-width: 370px) {
+	.topWrap {
+		height: 70px;
+	}
+}
