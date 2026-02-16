@@ -1,17 +1,105 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
+import Alert from '@mui/material/Alert'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import LinearProgress from '@mui/material/LinearProgress'
+import MenuItem from '@mui/material/MenuItem'
+import Snackbar from '@mui/material/Snackbar'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import useVideoUploadForm from '../hooks/useVideoUploadForm'
+import {
+  formatBytes,
+  MAX_THUMBNAIL_SIZE_BYTES,
+  MAX_VIDEO_SIZE_BYTES,
+  THUMBNAIL_INPUT_ACCEPT,
+  VIDEO_INPUT_ACCEPT,
+} from '../config/upload.config'
+
+const SOURCE_OPTIONS = [
+  { id: 'uploadLink', icon: 'link', label: 'Paste a Link' },
+  { id: 'uploadYoutube', icon: 'smart_display', label: 'YouTube' },
+  { id: 'uploadFacebook', icon: 'facebook', label: 'Facebook' },
+]
+
+const PRIVACY_OPTIONS = [
+  { value: 'public', label: 'Public' },
+  { value: 'private', label: 'Private' },
+  { value: 'unlisted', label: 'Unlisted' },
+]
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value))
+}
 
 const Upload = memo(function Upload({
   active,
-  step,
+  step = 1,
+  minStep = 1,
+  maxStep = 3,
   onHideUpload,
   onNextUpload,
-  onPrevUpload
+  onPrevUpload,
 }) {
-  const [showLinkInput, setShowLinkInput] = useState(false)
-  const [showYoutubeInput, setShowYoutubeInput] = useState(false)
-  const [showFacebookInput, setShowFacebookInput] = useState(false)
+  const {
+    formValues,
+    selectedFiles,
+    thumbnailPreviewUrl,
+    uploadProgress,
+    isUploading,
+    isVideoDragActive,
+    fieldErrors,
+    snackbar,
+    handleChange,
+    handleThumbnailInput,
+    handleVideoInput,
+    handleVideoDragEnter,
+    handleVideoDragOver,
+    handleVideoDragLeave,
+    handleVideoDrop,
+    closeSnackbar,
+    submitUpload,
+  } = useVideoUploadForm({
+    onUnauthorized: () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+      }
+    },
+  })
 
-  const progressWidth = `${((step - 1) / 2) * 100}%`
+  const boundedStep = clamp(step, minStep, maxStep)
+  const canGoPrev = boundedStep > minStep
+  const canGoNext = boundedStep < maxStep
+
+  const progressWidth = useMemo(() => {
+    const span = Math.max(1, maxStep - minStep)
+    return `${((boundedStep - minStep) / span) * 100}%`
+  }, [boundedStep, minStep, maxStep])
+
+  const [selectedSource, setSelectedSource] = useState('')
+  const [sourceInputValue, setSourceInputValue] = useState('')
+
+  const sourcePlaceholder = useMemo(() => {
+    if (selectedSource === 'uploadYoutube') return 'Paste YouTube URL'
+    if (selectedSource === 'uploadFacebook') return 'Paste Facebook URL'
+    return 'Paste video URL'
+  }, [selectedSource])
+
+  const handleNext = async () => {
+    if (!canGoNext || isUploading) return
+
+    if (boundedStep === 2) {
+      const result = await submitUpload()
+      if (!result) return
+    }
+
+    onNextUpload?.()
+  }
+
+  const handlePrev = () => {
+    if (!canGoPrev || isUploading) return
+    onPrevUpload?.()
+  }
 
   return (
     <section
@@ -20,199 +108,292 @@ const Upload = memo(function Upload({
       aria-label="Upload video"
       aria-hidden={!active}
     >
-      {/* Progress Bar */}
-      <div id="uploadProgressContainer" className="signup-progress" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3}>
-        <div id="uploadProgressBar" className="signup-progress-bar" style={{ width: progressWidth }} />
-        <div id="uploadProgessLabel1" className={`signup-progress-label signup-progress-label-1 ${step >= 1 ? 'active' : ''}`}>
-          <i className="material-icons" aria-hidden="true">account_circle</i>Create an Account
-        </div>
-        <div id="uploadProgessLabel2" className={`signup-progress-label signup-progress-label-2 ${step >= 2 ? 'active' : ''}`}>
-          <i className="material-icons" aria-hidden="true">format_paint</i>Personalize
-        </div>
-        <div id="uploadProgessLabel3" className={`signup-progress-label signup-progress-label-3 ${step >= 3 ? 'active' : ''}`}>
-          <i className="material-icons" aria-hidden="true">check_circle</i>Finish
-        </div>
-      </div>
-
-      {/* Navigation Buttons */}
-      <button
+      <Button
         id="uploadClose"
         className="upload-close button-float active"
         onClick={() => onHideUpload?.()}
         aria-label="Close upload"
+        type="button"
+        variant="text"
+        color="inherit"
+        disableElevation
+        disableRipple
+        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
       >
         <i className="material-icons" aria-hidden="true">close</i>
-      </button>
-      <button
+      </Button>
+
+      <Button
         id="uploadNext"
-        className="upload-next button-float active"
-        onClick={() => onNextUpload?.()}
-        aria-label="Next step"
+        className={`upload-next button-float ${canGoNext ? 'active' : ''}`}
+        onClick={() => {
+          void handleNext()
+        }}
+        aria-label="Next upload step"
+        type="button"
+        variant="text"
+        color="inherit"
+        disableElevation
+        disableRipple
+        disabled={!canGoNext || isUploading}
+        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
       >
         <i className="material-icons" aria-hidden="true">navigate_next</i>
-      </button>
-      <button
+      </Button>
+
+      <Button
         id="uploadPrev"
-        className={`upload-prev button-float ${step > 1 ? 'active' : ''}`}
-        onClick={() => onPrevUpload?.()}
-        aria-label="Previous step"
+        className={`upload-prev button-float ${canGoPrev ? 'active' : ''}`}
+        onClick={handlePrev}
+        aria-label="Previous upload step"
+        type="button"
+        variant="text"
+        color="inherit"
+        disableElevation
+        disableRipple
+        disabled={!canGoPrev || isUploading}
+        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
       >
         <i className="material-icons" aria-hidden="true">navigate_before</i>
-      </button>
+      </Button>
 
-      {/* Step 1: Select Source */}
-      <div className={`upload-page ${step === 1 ? 'active' : ''}`} id="upload1">
+      <div className="signup-progress upload-progress" aria-hidden="true">
+        <div id="uploadProgressBar" className="signup-progress-bar" style={{ width: progressWidth }} />
+      </div>
+
+      <div id="upload1" className={`upload-page ${boundedStep === 1 ? 'active' : ''}`}>
         <h2 className="upload-title">Post a Video</h2>
-        <p className="upload-desc">
-          [SiteName] doesn't host videos directly. You can link to a video, or pick one from a cloud hosting service.
-        </p>
+        <p className="upload-desc">Choose how you want to share your content.</p>
 
-        {/* Link Input */}
-        <div id="uploadLinkBox" className={`upload-link ${showLinkInput ? 'active' : ''}`}>
-          <button
-            className="material-icons upload-link-back"
-            onClick={() => setShowLinkInput(false)}
-            aria-label="Go back"
+        {SOURCE_OPTIONS.map((source) => (
+          <Button
+            key={source.id}
+            id={source.id}
+            className="upload-item-select"
+            onClick={() => {
+              setSelectedSource(source.id)
+              setSourceInputValue('')
+            }}
+            aria-label={source.label}
+            type="button"
+            variant="text"
+            color="inherit"
+            disableElevation
+            disableRipple
+            sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
           >
-            arrow_back
-          </button>
+            <i className="material-icons" aria-hidden="true">{source.icon}</i>
+          </Button>
+        ))}
+
+        <div id="uploadLinkBox" className={`upload-link ${selectedSource ? 'active' : ''}`}>
+          <Button
+            className="upload-link-back"
+            onClick={() => {
+              setSelectedSource('')
+              setSourceInputValue('')
+            }}
+            aria-label="Back to source options"
+            type="button"
+            variant="text"
+            color="inherit"
+            disableElevation
+            disableRipple
+            sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+          >
+            <i className="material-icons" aria-hidden="true">arrow_back</i>
+          </Button>
+
           <div className="upload-link-wrap">
             <i className="material-icons upload-label" aria-hidden="true">link</i>
             <input
               id="uploadLinkInput"
               className="upload-link-input input"
-              placeholder="Link to a Video"
-              type="url"
-              aria-label="Video URL"
+              placeholder={sourcePlaceholder}
+              value={sourceInputValue}
+              onChange={(event) => setSourceInputValue(event.target.value)}
+              aria-label="Source URL"
             />
-            <button className="material-icons upload-go" aria-label="Submit link">
-              arrow_forward
-            </button>
+            <Button
+              className={`upload-go ${sourceInputValue.trim() ? 'active' : ''}`}
+              aria-label="Use source"
+              type="button"
+              variant="text"
+              color="inherit"
+              disableElevation
+              disableRipple
+              sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+            >
+              <i className="material-icons" aria-hidden="true">arrow_forward</i>
+            </Button>
           </div>
         </div>
-
-        {/* YouTube Input */}
-        <div id="uploadYoutubeBox" className={`upload-link ${showYoutubeInput ? 'active' : ''}`}>
-          <button
-            className="material-icons upload-link-back"
-            onClick={() => setShowYoutubeInput(false)}
-            aria-label="Go back"
-          >
-            arrow_back
-          </button>
-          <div className="upload-link-wrap">
-            <i className="material-icons upload-label" aria-hidden="true">link</i>
-            <input
-              id="uploadYoutubeInput"
-              className="upload-link-input input"
-              placeholder="Link to a YouTube Video"
-              type="url"
-              aria-label="YouTube URL"
-            />
-            <button className="material-icons upload-go" aria-label="Submit YouTube link">
-              arrow_forward
-            </button>
-          </div>
-        </div>
-
-        {/* Facebook Input */}
-        <div id="uploadFacebookBox" className={`upload-link ${showFacebookInput ? 'active' : ''}`}>
-          <button
-            className="material-icons upload-link-back"
-            onClick={() => setShowFacebookInput(false)}
-            aria-label="Go back"
-          >
-            arrow_back
-          </button>
-          <div className="upload-link-wrap">
-            <i className="material-icons upload-label" aria-hidden="true">link</i>
-            <input
-              id="uploadFacebookInput"
-              className="upload-link-input input"
-              placeholder="Link to a Facebook Post"
-              type="url"
-              aria-label="Facebook URL"
-            />
-            <button className="material-icons upload-go" aria-label="Submit Facebook link">
-              arrow_forward
-            </button>
-          </div>
-        </div>
-
-        {/* Source Selection Buttons */}
-        <button
-          className={`upload-item-select ${showLinkInput ? 'hidden' : ''}`}
-          id="uploadLink"
-          onClick={() => setShowLinkInput(true)}
-          aria-label="Paste a link"
-        >
-          <i className="material-icons" aria-hidden="true">link</i>
-        </button>
-        <span className={`upload-link-divide ${showLinkInput || showYoutubeInput || showFacebookInput ? 'hidden' : ''}`} />
-        <button
-          className={`upload-item-select ${showYoutubeInput ? 'hidden' : ''}`}
-          id="uploadYoutube"
-          onClick={() => setShowYoutubeInput(true)}
-          aria-label="Upload from YouTube"
-        >
-          <i className="zmdi zmdi-youtube" aria-hidden="true" />
-        </button>
-        <button
-          className={`upload-item-select ${showFacebookInput ? 'hidden' : ''}`}
-          id="uploadFacebook"
-          onClick={() => setShowFacebookInput(true)}
-          aria-label="Upload from Facebook"
-        >
-          <i className="zmdi zmdi-facebook" aria-hidden="true" />
-        </button>
-        <button className="upload-item-select" id="uploadDrive" aria-label="Upload from Google Drive">
-          <i className="zmdi zmdi-google-drive" aria-hidden="true" />
-        </button>
-        <button className="upload-item-select" id="uploadDropbox" aria-label="Upload from Dropbox">
-          <i className="zmdi zmdi-dropbox" aria-hidden="true" />
-        </button>
       </div>
 
-      {/* Step 2: Video Information */}
-      <div className={`upload-page ${step === 2 ? 'active' : ''}`} id="upload2">
+      <div id="upload2" className={`upload-page ${boundedStep === 2 ? 'active' : ''}`}>
+        <h2 id="uploadInformationTitle" className="upload-title">Video Information</h2>
+
         <div className="upload-inputs" id="upload2Inputs">
-          <p className="upload-desc" />
-          <div id="uploadFrame" className="upload-frame">
-            <i className="material-icons" aria-hidden="true">file_upload</i>
-          </div>
           <div id="uploadInputTitle" className="upload-input upload-input-title">
-            <input type="text" className="input" placeholder="Title" aria-label="Video title" />
+            <TextField
+              fullWidth
+              value={formValues.title}
+              onChange={handleChange('title')}
+              placeholder="Title"
+              error={Boolean(fieldErrors.title)}
+              helperText={fieldErrors.title || 'Required'}
+              variant="filled"
+              InputProps={{ disableUnderline: true }}
+              inputProps={{ className: 'input', 'aria-label': 'Video title' }}
+            />
           </div>
-          <div className="dropdown upload-visibility">
-            <p className="selected pre">
-              <span>
-                <i className="material-icons dropdown-label" aria-hidden="true">visibility</i>
-                Privacy
-              </span>
-              <i className="material-icons dropdown-chevron" aria-hidden="true">keyboard_arrow_down</i>
-            </p>
-            <ul className="dropdown-list" role="listbox" aria-label="Privacy options">
-              <li role="option"><i className="material-icons dropdown-label" aria-hidden="true">notifications_active</i>Public</li>
-              <li role="option"><i className="material-icons dropdown-label" aria-hidden="true">notifications_off</i>Unannounced</li>
-              <li role="option"><i className="material-icons dropdown-label" aria-hidden="true">link</i>Unlisted</li>
-              <li role="option"><i className="material-icons dropdown-label" aria-hidden="true">visibility_off</i>Private</li>
-            </ul>
+
+          <div className="upload-input upload-visibility">
+            <TextField
+              select
+              fullWidth
+              value={formValues.privacy}
+              onChange={handleChange('privacy')}
+              error={Boolean(fieldErrors.privacy)}
+              helperText={fieldErrors.privacy || 'Privacy'}
+              variant="filled"
+              InputProps={{ disableUnderline: true }}
+              inputProps={{ className: 'input', 'aria-label': 'Video privacy' }}
+            >
+              {PRIVACY_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </TextField>
           </div>
-          <br />
+
           <div id="uploadInputChat" className="upload-input upload-input-desc">
-            <input type="text" className="input" placeholder="Link to a Discussion Page (i.e. reddit)" aria-label="Discussion link" />
+            <TextField
+              fullWidth
+              value={formValues.discussion_link}
+              onChange={handleChange('discussion_link')}
+              placeholder="Link to a Discussion Page (i.e. reddit)"
+              error={Boolean(fieldErrors.discussion_link)}
+              helperText={fieldErrors.discussion_link || 'Optional'}
+              variant="filled"
+              InputProps={{ disableUnderline: true }}
+              inputProps={{ className: 'input', 'aria-label': 'Discussion link' }}
+            />
           </div>
+
           <div id="uploadInputDesc" className="upload-input upload-input-desc">
-            <textarea className="input" placeholder="Description" aria-label="Video description" />
+            <TextField
+              fullWidth
+              multiline
+              minRows={4}
+              value={formValues.description}
+              onChange={handleChange('description')}
+              placeholder="Description"
+              error={Boolean(fieldErrors.description)}
+              helperText={fieldErrors.description || 'Optional'}
+              variant="filled"
+              InputProps={{ disableUnderline: true }}
+              inputProps={{ className: 'input', 'aria-label': 'Video description' }}
+            />
           </div>
         </div>
+
+        <Box className="upload-toggles" sx={{ width: '100%', maxWidth: 690, mt: 1 }}>
+          <Box
+            id="uploadVideoDropZone"
+            className={`upload-frame ${isVideoDragActive ? 'active' : ''}`}
+            onDragEnter={handleVideoDragEnter}
+            onDragOver={handleVideoDragOver}
+            onDragLeave={handleVideoDragLeave}
+            onDrop={handleVideoDrop}
+            sx={{
+              width: '100%',
+              minHeight: 120,
+              border: '2px dashed rgba(255,255,255,0.45)',
+              borderRadius: 1,
+              p: 2,
+              mb: 1.5,
+              cursor: 'pointer',
+              backgroundColor: isVideoDragActive ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+            }}
+            onClick={() => document.getElementById('uploadVideoFileInput')?.click()}
+          >
+            <Typography variant="body2" sx={{ color: '#fff' }}>
+              {selectedFiles.video ? `Video: ${selectedFiles.video.name}` : 'Drop video here or click to select'}
+            </Typography>
+            <input
+              id="uploadVideoFileInput"
+              type="file"
+              accept={VIDEO_INPUT_ACCEPT}
+              onChange={handleVideoInput}
+              aria-label="Select video file"
+              style={{ display: 'none' }}
+            />
+          </Box>
+
+          <Box
+            id="uploadThumbnailPicker"
+            sx={{
+              width: '100%',
+              minHeight: 120,
+              border: '2px dashed rgba(255,255,255,0.35)',
+              borderRadius: 1,
+              p: 2,
+              mb: 1,
+              cursor: 'pointer',
+              backgroundColor: 'rgba(0,0,0,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={() => document.getElementById('uploadThumbnailFileInput')?.click()}
+          >
+            {thumbnailPreviewUrl ? (
+              <img src={thumbnailPreviewUrl} alt="Thumbnail preview" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 4 }} />
+            ) : (
+              <Typography variant="body2" sx={{ color: '#fff' }}>
+                {selectedFiles.thumbnail ? `Thumbnail: ${selectedFiles.thumbnail.name}` : 'Choose thumbnail (optional)'}
+              </Typography>
+            )}
+            <input
+              id="uploadThumbnailFileInput"
+              type="file"
+              accept={THUMBNAIL_INPUT_ACCEPT}
+              onChange={handleThumbnailInput}
+              aria-label="Select thumbnail file"
+              style={{ display: 'none' }}
+            />
+          </Box>
+
+          {fieldErrors.video ? <Typography className="field-error-text" sx={{ color: '#ffdddd', mb: 0.5 }}>{fieldErrors.video}</Typography> : null}
+          {fieldErrors.thumbnail ? <Typography className="field-error-text" sx={{ color: '#ffdddd', mb: 0.5 }}>{fieldErrors.thumbnail}</Typography> : null}
+
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+            Max video size: {formatBytes(MAX_VIDEO_SIZE_BYTES)} · Max thumbnail size: {formatBytes(MAX_THUMBNAIL_SIZE_BYTES)}
+          </Typography>
+
+          {isUploading ? (
+            <Box sx={{ mt: 1.5 }}>
+              <LinearProgress variant="determinate" value={uploadProgress} />
+            </Box>
+          ) : null}
+        </Box>
       </div>
 
-      {/* Step 3: Settings */}
-      <div className={`upload-page ${step === 3 ? 'active' : ''}`} id="upload3">
-        <h2 className="upload-title">Video Settings</h2>
-        <p className="upload-desc" />
+      <div id="upload3" className={`upload-page ${boundedStep === 3 ? 'active' : ''}`}>
+        <h2 className="upload-title">Upload Complete</h2>
+        <p className="upload-desc">Your video has been submitted and is being processed.</p>
       </div>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={closeSnackbar} severity={snackbar.severity} variant="filled">
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </section>
   )
 })

@@ -5,7 +5,6 @@ import Slideout from './components/Slideout'
 import Shadow from './components/Shadow'
 import Content from './components/Content'
 import SettingsPage from './components/SettingsPage'
-import PostPage from './components/PostPage'
 import { isAuthenticated as checkAuth } from './services/auth.service'
 import './styles/global.css'
 import './styles/design-system.css'
@@ -44,7 +43,13 @@ function App() {
   // If authenticated, show daily player based on preference
   const [dailyActive, setDailyActive] = useState(() => {
     // If not authenticated, don't show daily player on first load
-    const auth = checkAuth()
+    let auth = false
+    try {
+      auth = checkAuth()
+    } catch {
+      auth = false
+    }
+
     if (!auth) {
       return false
     }
@@ -63,7 +68,13 @@ function App() {
   // Show promo hero by default when not authenticated so the
   // white space under the titlebar is always filled with either
   // promo, signup, login, or the daily player.
-  const [promoActive, setPromoActive] = useState(() => !checkAuth())
+  const [promoActive, setPromoActive] = useState(() => {
+    try {
+      return !checkAuth()
+    } catch {
+      return true
+    }
+  })
   const [signupActive, setSignupActive] = useState(false)
   
   const [loginActive, setLoginActive] = useState(false)
@@ -222,11 +233,25 @@ function App() {
 
   // Show/hide signup
   const showSignup = useCallback(() => {
+    navigate('/')
     setPromoActive(false)
     setSignupActive(true)
     setSignupStep(1)
     setLoginActive(false)
-  }, [])
+    setUploadActive(false)
+    setDailyActive(false)
+  }, [navigate])
+
+  const openPostPage = useCallback(() => {
+    setPromoActive(false)
+    setSignupActive(false)
+    setLoginActive(false)
+    setUploadActive(false)
+    setDailyActive(false)
+    setSignupStep(1)
+    setUploadStep(1)
+    navigate('/post')
+  }, [navigate])
 
   const hideSignup = useCallback(() => {
     setSignupActive(false)
@@ -236,8 +261,13 @@ function App() {
 
   // Navigate signup steps
   const nextSignup = useCallback(() => {
+    if (signupStep >= 4) {
+      openPostPage()
+      return
+    }
+
     setSignupStep(prev => Math.min(prev + 1, 4))
-  }, [])
+  }, [openPostPage, signupStep])
 
   const prevSignup = useCallback(() => {
     setSignupStep(prev => Math.max(prev - 1, 1))
@@ -264,6 +294,34 @@ function App() {
     setDailyActive(false)
     setPromoActive(false)
   }, [])
+
+  const handleUnauthorized = useCallback(() => {
+    setIsAuthenticated(false)
+    setSignupActive(false)
+    setUploadActive(false)
+    setDailyActive(false)
+    setPromoActive(false)
+    setLoginActive(true)
+    navigate('/')
+  }, [navigate])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const onUnauthorized = () => {
+      handleUnauthorized()
+    }
+
+    window.addEventListener('auth:unauthorized', onUnauthorized)
+    window.addEventListener('auth:logout', onUnauthorized)
+
+    return () => {
+      window.removeEventListener('auth:unauthorized', onUnauthorized)
+      window.removeEventListener('auth:logout', onUnauthorized)
+    }
+  }, [handleUnauthorized])
 
   // Show/hide upload
   const showUpload = useCallback(() => {
@@ -320,7 +378,13 @@ function App() {
   
   // Check authentication status on mount and route changes
   useEffect(() => {
-    const auth = checkAuth()
+    let auth = false
+    try {
+      auth = checkAuth()
+    } catch {
+      auth = false
+    }
+
     setIsAuthenticated(auth)
     
     // If authenticated and on home page, show daily player if preferred.
@@ -339,18 +403,6 @@ function App() {
       }
     }
   }, [location.pathname])
-  
-  // Debug: Log state on mount
-  useEffect(() => {
-    console.log('App State:', {
-      isAuthenticated,
-      promoActive,
-      signupActive,
-      loginActive,
-      dailyActive,
-      location: location.pathname
-    })
-  }, [isAuthenticated, promoActive, signupActive, loginActive, dailyActive, location.pathname])
 
   // Switch browser page
   const switchPage = useCallback((pageId) => {
@@ -390,15 +442,6 @@ function App() {
     setDailyActive(true)
   }, [])
 
-  const handleOpenPostPage = useCallback(() => {
-    setPromoActive(false)
-    setSignupActive(false)
-    setLoginActive(false)
-    setUploadActive(false)
-    setDailyActive(false)
-    navigate('/post')
-  }, [navigate])
-
   const handleCloseCenterPage = useCallback(() => {
     setPromoActive(false)
     setSignupActive(false)
@@ -437,7 +480,7 @@ function App() {
         onToggleSlideout={toggleSlideout}
         onToggleSearch={toggleSearch}
         onToggleDaily={toggleDaily}
-        onShowUpload={handleOpenPostPage}
+        onShowUpload={openPostPage}
         onLogoHome={handleLogoHome}
         searchVisible={searchVisible}
         dailyActive={dailyActive}
