@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { videoAPI } from '../services/api';
+import { getApiErrorMessage, videoAPI } from '../services/api';
 
 const Videos = () => {
   const navigate = useNavigate();
@@ -19,24 +19,36 @@ const Videos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadVideos();
+  const loadVideos = useCallback(async (isMounted) => {
+    try {
+      if (!isMounted.current) return;
+      setLoading(true);
+      setError('');
+
+      const response = await videoAPI.getAll();
+      const items = Array.isArray(response?.data) ? response.data : [];
+
+      if (!isMounted.current) return;
+      setVideos(items);
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load videos'));
+      setVideos([]);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
   }, []);
 
-  const loadVideos = async () => {
-    try {
-      setLoading(true);
-      const response = await videoAPI.getAll();
-      if (response.data) {
-        setVideos(Array.isArray(response.data) ? response.data : []);
-      }
-    } catch (err) {
-      setError('Failed to load videos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const isMounted = { current: true };
+    loadVideos(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadVideos]);
 
   const handleVideoClick = (videoId) => {
     navigate(`/videos/${videoId}`);

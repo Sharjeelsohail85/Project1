@@ -3,6 +3,25 @@
 
 import { API_CONFIG, getAuthTokens, saveAuthTokens, clearAuthTokens, buildAuthUrl } from '../config/api.config'
 
+function canUseWindow() {
+  return typeof window !== 'undefined'
+}
+
+function setStorageItemSafe(key, value) {
+  if (!canUseWindow()) return
+
+  try {
+    window.localStorage.setItem(key, value)
+  } catch {
+    // no-op in restricted environments
+  }
+}
+
+function emitAuthLogout() {
+  if (!canUseWindow()) return
+  window.dispatchEvent(new CustomEvent('auth:logout'))
+}
+
 /**
  * Main API request function
  * @param {string} endpoint - API endpoint (e.g., '/auth/login')
@@ -11,7 +30,6 @@ import { API_CONFIG, getAuthTokens, saveAuthTokens, clearAuthTokens, buildAuthUr
  */
 export async function apiRequest(endpoint, options = {}) {
   const { token, client_id } = getAuthTokens()
-  const url = `${API_CONFIG.baseURL}${endpoint}`
   
   // Build URL with auth params if tokens exist
   const authUrl = token && client_id ? buildAuthUrl(endpoint) : endpoint
@@ -52,7 +70,7 @@ export async function apiRequest(endpoint, options = {}) {
     if (data.status === 401 || data.error === 401) {
       clearAuthTokens()
       // You can dispatch an event or redirect to login here
-      window.dispatchEvent(new CustomEvent('auth:logout'))
+      emitAuthLogout()
     }
     
     // Handle other errors
@@ -69,11 +87,10 @@ export async function apiRequest(endpoint, options = {}) {
       throw new Error('Request timeout. Please try again.')
     }
     
-    if (error.message) {
+    if (error?.message) {
       throw error
     }
-    
-    console.error('API Request Error:', error)
+
     throw new Error('Network error. Please check your connection.')
   }
 }
@@ -104,7 +121,7 @@ export const authAPI = {
       
       // Also store user info if available
       if (response.data.user) {
-        localStorage.setItem('user_info', JSON.stringify(response.data.user))
+        setStorageItemSafe('user_info', JSON.stringify(response.data.user))
       }
     }
     
@@ -150,8 +167,8 @@ export const authAPI = {
       saveAuthTokens(response.data.token, response.data.client_id)
       
       if (response.data.user) {
-        localStorage.setItem('user_info', JSON.stringify(response.data.user))
-        localStorage.setItem('auth_provider', provider)
+        setStorageItemSafe('user_info', JSON.stringify(response.data.user))
+        setStorageItemSafe('auth_provider', provider)
       }
     }
     
@@ -171,7 +188,58 @@ export const authAPI = {
    */
   logout() {
     clearAuthTokens()
-    window.dispatchEvent(new CustomEvent('auth:logout'))
+    emitAuthLogout()
+  },
+}
+
+/**
+ * User API methods
+ */
+export const userAPI = {
+  me() {
+    return apiRequest(API_CONFIG.endpoints.user.me)
+  },
+
+  update(userData) {
+    return apiRequest(API_CONFIG.endpoints.user.update, {
+      method: 'PUT',
+      body: JSON.stringify({ data: userData }),
+    })
+  },
+}
+
+/**
+ * Tag API methods
+ */
+export const tagAPI = {
+  popular() {
+    return apiRequest(API_CONFIG.endpoints.tag.popular)
+  },
+
+  userTags() {
+    return apiRequest(API_CONFIG.endpoints.tag.user)
+  },
+
+  addUserTag(tagId) {
+    return apiRequest(API_CONFIG.endpoints.tag.user, {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          tag_id: tagId,
+        },
+      }),
+    })
+  },
+
+  addCustomTag(name) {
+    const query = new URLSearchParams({ 'data[name]': name }).toString()
+    return apiRequest(`${API_CONFIG.endpoints.tag.custom}?${query}`)
+  },
+
+  removeUserTag(tagId) {
+    return apiRequest(`${API_CONFIG.endpoints.tag.user}/${encodeURIComponent(tagId)}`, {
+      method: 'DELETE',
+    })
   },
 }
 
@@ -306,6 +374,8 @@ export const commentAPI = {
 export default {
   request: apiRequest,
   auth: authAPI,
+  user: userAPI,
+  tag: tagAPI,
   video: videoAPI,
   channel: channelAPI,
   comment: commentAPI,

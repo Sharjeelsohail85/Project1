@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { authAPI } from '../services/api';
+import { authAPI, getApiErrorMessage } from '../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -53,14 +53,10 @@ const Register = () => {
       if (response.data) {
         navigate('/login');
       } else {
-        setError(response.error_description?.[0] || 'Registration failed. Please try again.');
+        setError(response?.error_description?.[0] || 'Registration failed. Please try again.');
       }
     } catch (err) {
-      setError(
-        err.response?.data?.error_description?.[0] ||
-        err.message ||
-        'An error occurred during registration.'
-      );
+      setError(getApiErrorMessage(err, 'An error occurred during registration.'));
     } finally {
       setLoading(false);
     }

@@ -601,6 +601,88 @@ body {
 }
 
 @media (max-width: 768px) {
+	#signup.signup.signup-step-1-view .signup-step1-reference.active {
+		padding: 68px 14px 22px;
+		gap: 12px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference.password-active {
+		padding-top: 56px;
+		gap: 8px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-title {
+		font-size: clamp(1.9rem, 7.3vw, 2.4rem);
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-desc {
+		max-width: 92%;
+		font-size: 15px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputEmail,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupPasswordBox {
+		width: min(450px, 100%) !important;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName .upload-link-input,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputEmail .upload-link-input,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupPasswordBox .upload-link-input {
+		font-size: 22px;
+		min-height: 54px;
+		padding: 15px 12px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName .upload-label,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputEmail .upload-label,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupPasswordBox .upload-label {
+		font-size: 22px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row {
+		margin-top: 16px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference.password-active .signup-auth-row {
+		display: none;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select {
+		width: 52px;
+		height: 52px;
+		margin: 0 7px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select .zmdi,
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select .material-icons {
+		font-size: 38px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row #signupFacebook .zmdi {
+		font-size: 42px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-link-divide {
+		height: 46px;
+		margin: 0 10px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-close {
+		top: 12px;
+		right: 12px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-next {
+		top: 12px;
+		right: 52px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-close .material-icons,
+	#signup.signup.signup-step-1-view .signup-next .material-icons {
+		font-size: 30px !important;
+	}
+
 	.titlebar-item.button,
 	.titlebar-item .button {
 		min-width: 44px;
@@ -904,6 +986,78 @@ body {
 }
 
 @media (max-width: 520px) {
+	#signup.signup.signup-step-1-view .signup-step1-reference.active {
+		padding: 64px 10px 18px;
+		gap: 10px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference.password-active {
+		padding-top: 52px;
+		gap: 6px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-title {
+		font-size: clamp(1.7rem, 8.6vw, 2.1rem);
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-desc {
+		font-size: 14px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName .upload-link-input,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputEmail .upload-link-input,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupPasswordBox .upload-link-input {
+		font-size: 19px;
+		min-height: 50px;
+		margin-left: 42px;
+		width: calc(100% - 52px);
+		padding: 13px 10px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName .upload-label,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputEmail .upload-label,
+	#signup.signup.signup-step-1-view .signup-step1-reference #signupPasswordBox .upload-label {
+		left: 12px;
+		font-size: 20px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row {
+		margin-top: 12px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference.password-active .signup-auth-row {
+		display: none;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select {
+		width: 46px;
+		height: 46px;
+		margin: 0 5px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select .zmdi,
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-item-select .material-icons {
+		font-size: 32px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row #signupFacebook .zmdi {
+		font-size: 35px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-step1-reference .signup-auth-row .upload-link-divide {
+		height: 40px;
+		margin: 0 8px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-next {
+		right: 46px;
+	}
+
+	#signup.signup.signup-step-1-view .signup-close .material-icons,
+	#signup.signup.signup-step-1-view .signup-next .material-icons {
+		font-size: 28px !important;
+	}
+
 	.slideout {
 		width: 100%;
 	}

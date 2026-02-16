@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ColorPicker from './ColorPicker'
 import './SettingsPage.css'
@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
   const settingsSearchRef = useRef(null)
+  const toggleInputRefs = useRef({})
 
   const [slideoutVisible, setSlideoutVisible] = useState(false)
   const [shadowDisplay, setShadowDisplay] = useState('none')
@@ -235,6 +236,22 @@ export default function SettingsPage() {
     // production bundle clean while preserving all visible UI behavior.
   }
 
+  const registerToggleRef = useCallback((id) => (element) => {
+    if (element) {
+      toggleInputRefs.current[id] = element
+      return
+    }
+
+    delete toggleInputRefs.current[id]
+  }, [])
+
+  const triggerToggleById = useCallback((id) => {
+    const input = toggleInputRefs.current[id]
+    if (input) {
+      input.click()
+    }
+  }, [])
+
   return (
     <>
       <div id="titlebar" className={`titlebar ${titlebarActive ? 'active' : ''}`}>
@@ -258,16 +275,20 @@ export default function SettingsPage() {
             className="titlebar-item titlebar-left-item titlebar-logo"
             onClick={() => navigate('/')}
             role="button"
+            aria-label="Go to home"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') navigate('/')
             }}
             style={{ cursor: 'pointer' }}
           >
-            <i className="material-icons" aria-hidden="true">
-              play_circle_filled
-            </i>
-            Logo
+            <img
+              className="titlebar-logo-image"
+              src="resources/logo-octopus.jpg"
+              alt=""
+              aria-hidden="true"
+            />
+            <span className="titlebar-logo-text">Logo</span>
           </div>
         </div>
         <div id="accountBox" className="titlebar-box titlebar-right">
@@ -404,16 +425,12 @@ export default function SettingsPage() {
                       <div key={`${section.id}-${itemIndex}`} className={`section-item ${itemActive ? 'active' : ''}`}>
                         <div
                           className="section-item-label"
-                          onClick={() => {
-                            const input = document.getElementById(toggleId)
-                            if (input) input.click()
-                          }}
+                          onClick={() => triggerToggleById(toggleId)}
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
-                              const input = document.getElementById(toggleId)
-                              if (input) input.click()
+                              triggerToggleById(toggleId)
                             }
                           }}
                         >
@@ -421,7 +438,13 @@ export default function SettingsPage() {
                         </div>
                         <div className="section-item-option">
                           <div className="signup-toggle-parent button-toggle-parent">
-                            <input id={toggleId} type="checkbox" defaultChecked className="button-toggle" />
+                            <input
+                              id={toggleId}
+                              type="checkbox"
+                              defaultChecked
+                              className="button-toggle"
+                              ref={registerToggleRef(toggleId)}
+                            />
                             <label htmlFor={toggleId} />
                           </div>
                         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -14,7 +14,7 @@ import {
   CardActionArea,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { channelAPI, videoAPI, authAPI } from '../services/api';
+import { authAPI, channelAPI, getApiErrorMessage, videoAPI } from '../services/api';
 
 const ChannelDetail = () => {
   const { id } = useParams();
@@ -26,41 +26,53 @@ const ChannelDetail = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  useEffect(() => {
-    setIsAuthenticated(authAPI.isAuthenticated());
-    loadChannel();
-    loadChannelVideos();
-  }, [id]);
-
-  const loadChannel = async () => {
+  const loadChannel = useCallback(async (isMounted, channelId) => {
     try {
+      if (!isMounted.current) return;
       setLoading(true);
-      const response = await channelAPI.getById(id);
-      if (response.data) {
-        setChannel(response.data);
-      }
-    } catch (err) {
-      setError('Failed to load channel');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setError('');
 
-  const loadChannelVideos = async () => {
+      const response = await channelAPI.getById(channelId);
+      const channelData = response?.data || null;
+
+      if (!isMounted.current) return;
+      setChannel(channelData);
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load channel'));
+      setChannel(null);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  const loadChannelVideos = useCallback(async (isMounted, channelId) => {
     try {
       const response = await videoAPI.getAll();
-      if (response.data) {
-        // Filter videos by channel if needed
-        const channelVideos = Array.isArray(response.data)
-          ? response.data.filter((v) => v.channel_id === id || v.channel?.uuid === id)
-          : [];
-        setVideos(channelVideos);
-      }
-    } catch (err) {
-      console.error('Failed to load channel videos:', err);
+      const channelVideos = Array.isArray(response?.data)
+        ? response.data.filter((v) => v.channel_id === channelId || v.channel?.uuid === channelId)
+        : [];
+
+      if (!isMounted.current) return;
+      setVideos(channelVideos);
+    } catch {
+      if (!isMounted.current) return;
+      setVideos([]);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const isMounted = { current: true };
+    setIsAuthenticated(authAPI.isAuthenticated());
+    loadChannel(isMounted, id);
+    loadChannelVideos(isMounted, id);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [id, loadChannel, loadChannelVideos]);
 
   const handleSubscribe = async () => {
     if (!isAuthenticated) {
@@ -71,7 +83,7 @@ const ChannelDetail = () => {
       await channelAPI.subscribe(id);
       setIsSubscribed(true);
     } catch (err) {
-      setError('Failed to subscribe');
+      setError(getApiErrorMessage(err, 'Failed to subscribe'));
     }
   };
 
@@ -80,7 +92,7 @@ const ChannelDetail = () => {
       await channelAPI.unsubscribe(id);
       setIsSubscribed(false);
     } catch (err) {
-      setError('Failed to unsubscribe');
+      setError(getApiErrorMessage(err, 'Failed to unsubscribe'));
     }
   };
 

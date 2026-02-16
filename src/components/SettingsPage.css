@@ -297,13 +297,36 @@ html, body {
 	margin-right: 25px;
 }
 
-.titlebar-logo .material-icons {
-	margin-right: 5px;
-}
-
-/* Raise logo slightly so it vertically aligns with menu icon in settings header */
 .titlebar-logo {
 	top: calc(50% - 2px);
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 4px 8px 4px 2px;
+	border-radius: 999px;
+}
+
+.titlebar-logo:hover {
+	background: var(--theme-surface-overlay);
+}
+
+.titlebar-logo:active {
+	background: color-mix(in srgb, var(--theme-surface-overlay) 65%, var(--theme-on-color) 35%);
+}
+
+.titlebar-logo-image {
+	width: 34px;
+	height: 34px;
+	object-fit: cover;
+	border-radius: 10px;
+	background: #fff;
+	border: 1px solid color-mix(in srgb, var(--theme-on-color) 24%, transparent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+	flex-shrink: 0;
+}
+
+.titlebar-logo-text {
+	display: none;
 }
 
 .titlebar-subs .material-icons {

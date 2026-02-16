@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { videoAPI } from '../services/api';
+import { getApiErrorMessage, videoAPI } from '../services/api';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -23,40 +23,54 @@ const Home = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadVideos();
+  const loadVideos = useCallback(async (isMounted) => {
+    try {
+      if (!isMounted.current) return;
+      setLoading(true);
+      setError('');
+
+      const response = await videoAPI.getAll();
+      const items = Array.isArray(response?.data) ? response.data : [];
+
+      if (!isMounted.current) return;
+      setVideos(items);
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load videos'));
+      setVideos([]);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
   }, []);
 
-  const loadVideos = async () => {
-    try {
-      setLoading(true);
-      const response = await videoAPI.getAll();
-      if (response.data) {
-        setVideos(Array.isArray(response.data) ? response.data : []);
-      }
-    } catch (err) {
-      setError('Failed to load videos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const isMounted = { current: true };
+    loadVideos(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadVideos]);
 
   const handleSearch = async () => {
+    const trimmedSearch = searchTerm.trim();
+
     if (!searchTerm.trim()) {
-      loadVideos();
+      const isMounted = { current: true };
+      await loadVideos(isMounted);
       return;
     }
 
     try {
       setLoading(true);
-      const response = await videoAPI.search(searchTerm, 20);
-      if (response.data) {
-        setVideos(Array.isArray(response.data) ? response.data : []);
-      }
+      setError('');
+      const response = await videoAPI.search(trimmedSearch, 20);
+      setVideos(Array.isArray(response?.data) ? response.data : []);
     } catch (err) {
-      setError('Failed to search videos');
-      console.error(err);
+      setError(getApiErrorMessage(err, 'Failed to search videos'));
+      setVideos([]);
     } finally {
       setLoading(false);
     }
@@ -81,7 +95,7 @@ const Home = () => {
           placeholder="Search videos..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === 'Enter') {
               handleSearch();
             }

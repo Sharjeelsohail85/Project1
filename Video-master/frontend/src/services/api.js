@@ -2,6 +2,47 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
 
+const canUseBrowser = typeof window !== 'undefined';
+
+function getStorageItemSafe(key) {
+  if (!canUseBrowser) return null;
+
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function setStorageItemSafe(key, value) {
+  if (!canUseBrowser) return;
+
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore storage failures in restricted environments
+  }
+}
+
+function removeStorageItemSafe(key) {
+  if (!canUseBrowser) return;
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // ignore storage failures in restricted environments
+  }
+}
+
+export function getApiErrorMessage(error, fallback = 'An error occurred') {
+  return (
+    error?.response?.data?.error_description?.[0] ||
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,8 +54,8 @@ const api = axios.create({
 // Add token and client_id to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    const clientId = localStorage.getItem('client_id');
+    const token = getStorageItemSafe('token');
+    const clientId = getStorageItemSafe('client_id');
     
     if (token && clientId) {
       // Add as query parameters
@@ -38,9 +79,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Clear tokens and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('client_id');
-      window.location.href = '/login';
+      removeStorageItemSafe('token');
+      removeStorageItemSafe('client_id');
+
+      if (canUseBrowser && window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
     }
     return Promise.reject(error);
   }
@@ -54,8 +98,8 @@ export const authAPI = {
     });
     
     if (response.data?.data?.token) {
-      localStorage.setItem('token', response.data.data.token);
-      localStorage.setItem('client_id', response.data.data.client_id);
+      setStorageItemSafe('token', response.data.data.token);
+      setStorageItemSafe('client_id', response.data.data.client_id);
     }
     
     return response.data;
@@ -69,12 +113,12 @@ export const authAPI = {
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('client_id');
+    removeStorageItemSafe('token');
+    removeStorageItemSafe('client_id');
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!(getStorageItemSafe('token') && getStorageItemSafe('client_id'));
   },
 };
 

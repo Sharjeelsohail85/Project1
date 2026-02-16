@@ -9,11 +9,11 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Box,
   Container,
-  Avatar,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -99,34 +99,36 @@ const Layout = ({ children }) => {
         <Box sx={{ width: 250, pt: 2 }}>
           <List>
             {menuItems.map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => handleMenuClick(item.path)}
-                selected={location.pathname === item.path}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-            {isAuthenticated &&
-              authMenuItems.map((item) => (
-                <ListItem
-                  button
-                  key={item.text}
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton
                   onClick={() => handleMenuClick(item.path)}
                   selected={location.pathname === item.path}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+            {isAuthenticated &&
+              authMenuItems.map((item) => (
+                <ListItem key={item.text} disablePadding>
+                  <ListItemButton
+                    onClick={() => handleMenuClick(item.path)}
+                    selected={location.pathname === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItemButton>
                 </ListItem>
               ))}
             {isAuthenticated && (
-              <ListItem button onClick={handleLogout}>
-                <ListItemIcon>
-                  <LogoutIcon />
-                </ListItemIcon>
-                <ListItemText primary="Logout" />
+              <ListItem disablePadding>
+                <ListItemButton onClick={handleLogout}>
+                  <ListItemIcon>
+                    <LogoutIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Logout" />
+                </ListItemButton>
               </ListItem>
             )}
           </List>

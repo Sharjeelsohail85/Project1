@@ -1,22 +1,37 @@
 // OAuth Configuration
 // Replace these with your actual OAuth credentials from each provider
 
+const FALLBACK_ORIGIN = 'http://localhost:3000'
+
+function getOriginSafe() {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return FALLBACK_ORIGIN
+  }
+
+  return window.location.origin
+}
+
+function getSessionStorageSafe() {
+  if (typeof window === 'undefined') return null
+  return window.sessionStorage || null
+}
+
 export const authConfig = {
   google: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-    redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/google/callback`,
+    redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${getOriginSafe()}/auth/google/callback`,
     scope: 'openid profile email',
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   },
   facebook: {
     appId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
-    redirectUri: import.meta.env.VITE_FACEBOOK_REDIRECT_URI || `${window.location.origin}/auth/facebook/callback`,
+    redirectUri: import.meta.env.VITE_FACEBOOK_REDIRECT_URI || `${getOriginSafe()}/auth/facebook/callback`,
     scope: 'email public_profile',
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
   },
   dropbox: {
     clientId: import.meta.env.VITE_DROPBOX_CLIENT_ID || '',
-    redirectUri: import.meta.env.VITE_DROPBOX_REDIRECT_URI || `${window.location.origin}/auth/dropbox/callback`,
+    redirectUri: import.meta.env.VITE_DROPBOX_REDIRECT_URI || `${getOriginSafe()}/auth/dropbox/callback`,
     scope: 'account_info.read',
     authUrl: 'https://www.dropbox.com/oauth2/authorize',
   },
@@ -88,20 +103,24 @@ function generateState() {
 // Store state in sessionStorage for verification
 export function storeOAuthState(provider, state) {
   try {
-    sessionStorage.setItem(`oauth_state_${provider}`, state)
-  } catch (e) {
-    console.error('Failed to store OAuth state:', e)
+    const storage = getSessionStorageSafe()
+    if (!storage) return
+    storage.setItem(`oauth_state_${provider}`, state)
+  } catch {
+    // ignore storage write failures
   }
 }
 
 // Verify OAuth state
 export function verifyOAuthState(provider, state) {
   try {
-    const stored = sessionStorage.getItem(`oauth_state_${provider}`)
-    sessionStorage.removeItem(`oauth_state_${provider}`)
+    const storage = getSessionStorageSafe()
+    if (!storage) return false
+
+    const stored = storage.getItem(`oauth_state_${provider}`)
+    storage.removeItem(`oauth_state_${provider}`)
     return stored === state
-  } catch (e) {
-    console.error('Failed to verify OAuth state:', e)
+  } catch {
     return false
   }
 }

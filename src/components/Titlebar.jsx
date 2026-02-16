@@ -33,6 +33,7 @@ const Titlebar = memo(function Titlebar({
           className="titlebar-item titlebar-left-item titlebar-logo"
           onClick={handleLogoClick}
           role="button"
+          aria-label="Go to home"
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -42,8 +43,13 @@ const Titlebar = memo(function Titlebar({
           }}
           style={{ cursor: 'pointer' }}
         >
-          <i className="material-icons" aria-hidden="true">play_circle_filled</i>
-          <span>Logo</span>
+          <img
+            className="titlebar-logo-image"
+            src="resources/logo-octopus.jpg"
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="titlebar-logo-text">Logo</span>
         </div>
       </div>
 

@@ -48,6 +48,11 @@ export const API_CONFIG = {
       update: '/users',
       search: (name, results) => `/user/search/${name}/${results}`,
     },
+    tag: {
+      popular: '/tag',
+      user: '/user/tag',
+      custom: '/user/tag/custom',
+    },
     comment: {
       list: (videoId) => `/video/${videoId}/comment`,
       create: (videoId) => `/video/${videoId}/comment`,

@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { authAPI } from '../services/api';
+import { authAPI, getApiErrorMessage } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,17 +37,13 @@ const Login = () => {
     try {
       const response = await authAPI.login(formData.email, formData.password);
       
-      if (response.data && response.data.token) {
+      if (response?.data?.token) {
         navigate('/');
       } else {
-        setError(response.error_description?.[0] || 'Login failed. Please try again.');
+        setError(response?.error_description?.[0] || 'Login failed. Please try again.');
       }
     } catch (err) {
-      setError(
-        err.response?.data?.error_description?.[0] ||
-        err.message ||
-        'An error occurred during login.'
-      );
+      setError(getApiErrorMessage(err, 'An error occurred during login.'));
     } finally {
       setLoading(false);
     }

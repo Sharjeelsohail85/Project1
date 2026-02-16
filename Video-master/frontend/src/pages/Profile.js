@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -10,7 +10,7 @@ import {
   Grid,
   Avatar,
 } from '@mui/material';
-import { userAPI } from '../services/api';
+import { getApiErrorMessage, userAPI } from '../services/api';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -22,28 +22,42 @@ const Profile = () => {
     email: '',
   });
 
-  useEffect(() => {
-    loadProfile();
+  const loadProfile = useCallback(async (isMounted) => {
+    try {
+      if (!isMounted.current) return;
+      setLoading(true);
+      setError('');
+
+      const response = await userAPI.getMe();
+      const userData = response?.data || null;
+
+      if (!isMounted.current) return;
+
+      setUser(userData);
+      setFormData({
+        name: userData?.name || '',
+        email: userData?.email || '',
+      });
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load profile'));
+      setUser(null);
+      setFormData({ name: '', email: '' });
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
   }, []);
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const response = await userAPI.getMe();
-      if (response.data) {
-        setUser(response.data);
-        setFormData({
-          name: response.data.name || '',
-          email: response.data.email || '',
-        });
-      }
-    } catch (err) {
-      setError('Failed to load profile');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const isMounted = { current: true };
+    loadProfile(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadProfile]);
 
   const handleChange = (e) => {
     setFormData({
@@ -62,7 +76,7 @@ const Profile = () => {
         setError('');
       }
     } catch (err) {
-      setError('Failed to update profile');
+      setError(getApiErrorMessage(err, 'Failed to update profile'));
     }
   };
 

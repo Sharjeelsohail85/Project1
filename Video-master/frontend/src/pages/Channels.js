@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { channelAPI } from '../services/api';
+import { channelAPI, getApiErrorMessage } from '../services/api';
 
 const Channels = () => {
   const navigate = useNavigate();
@@ -19,24 +19,36 @@ const Channels = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadChannels();
+  const loadChannels = useCallback(async (isMounted) => {
+    try {
+      if (!isMounted.current) return;
+      setLoading(true);
+      setError('');
+
+      const response = await channelAPI.getAll();
+      const items = Array.isArray(response?.data) ? response.data : [];
+
+      if (!isMounted.current) return;
+      setChannels(items);
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load channels'));
+      setChannels([]);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
   }, []);
 
-  const loadChannels = async () => {
-    try {
-      setLoading(true);
-      const response = await channelAPI.getAll();
-      if (response.data) {
-        setChannels(Array.isArray(response.data) ? response.data : []);
-      }
-    } catch (err) {
-      setError('Failed to load channels');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const isMounted = { current: true };
+    loadChannels(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadChannels]);
 
   const handleChannelClick = (channelId) => {
     navigate(`/channels/${channelId}`);

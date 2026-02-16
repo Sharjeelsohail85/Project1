@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -6,7 +6,6 @@ import {
   Paper,
   CircularProgress,
   Alert,
-  Button,
   IconButton,
   TextField,
   List,
@@ -19,7 +18,7 @@ import {
   ThumbDown as ThumbDownIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
-import { videoAPI, commentAPI, authAPI } from '../services/api';
+import { authAPI, commentAPI, getApiErrorMessage, videoAPI } from '../services/api';
 
 const VideoDetail = () => {
   const { id } = useParams();
@@ -30,37 +29,51 @@ const VideoDetail = () => {
   const [commentText, setCommentText] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    setIsAuthenticated(authAPI.isAuthenticated());
-    loadVideo();
-    loadComments();
-  }, [id]);
-
-  const loadVideo = async () => {
+  const loadVideo = useCallback(async (isMounted, videoId) => {
     try {
+      if (!isMounted.current) return;
       setLoading(true);
-      const response = await videoAPI.getById(id);
-      if (response.data) {
-        setVideo(response.data);
-      }
-    } catch (err) {
-      setError('Failed to load video');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setError('');
 
-  const loadComments = async () => {
-    try {
-      const response = await commentAPI.getByVideo(id);
-      if (response.data) {
-        setComments(Array.isArray(response.data) ? response.data : []);
-      }
+      const response = await videoAPI.getById(videoId);
+      const videoData = response?.data || null;
+
+      if (!isMounted.current) return;
+      setVideo(videoData);
     } catch (err) {
-      console.error('Failed to load comments:', err);
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load video'));
+      setVideo(null);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  const loadComments = useCallback(async (isMounted, videoId) => {
+    try {
+      const response = await commentAPI.getByVideo(videoId);
+      const items = Array.isArray(response?.data) ? response.data : [];
+
+      if (!isMounted.current) return;
+      setComments(items);
+    } catch {
+      if (!isMounted.current) return;
+      setComments([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const isMounted = { current: true };
+    setIsAuthenticated(authAPI.isAuthenticated());
+    loadVideo(isMounted, id);
+    loadComments(isMounted, id);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [id, loadComments, loadVideo]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -69,9 +82,10 @@ const VideoDetail = () => {
     }
     try {
       await videoAPI.like(id);
-      loadVideo();
+      const isMounted = { current: true };
+      await loadVideo(isMounted, id);
     } catch (err) {
-      setError('Failed to like video');
+      setError(getApiErrorMessage(err, 'Failed to like video'));
     }
   };
 
@@ -82,9 +96,10 @@ const VideoDetail = () => {
     }
     try {
       await videoAPI.dislike(id);
-      loadVideo();
+      const isMounted = { current: true };
+      await loadVideo(isMounted, id);
     } catch (err) {
-      setError('Failed to dislike video');
+      setError(getApiErrorMessage(err, 'Failed to dislike video'));
     }
   };
 
@@ -99,9 +114,10 @@ const VideoDetail = () => {
     try {
       await commentAPI.create(id, { comment: commentText });
       setCommentText('');
-      loadComments();
+      const isMounted = { current: true };
+      await loadComments(isMounted, id);
     } catch (err) {
-      setError('Failed to post comment');
+      setError(getApiErrorMessage(err, 'Failed to post comment'));
     }
   };
 

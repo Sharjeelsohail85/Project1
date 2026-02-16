@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useRef, useEffect } from 'react'
 
 const ContentItem = memo(function ContentItem({
   title,
@@ -12,11 +12,28 @@ const ContentItem = memo(function ContentItem({
   onOpenVideo
 }) {
   const [isActive, setIsActive] = useState(false)
+  const activeTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (activeTimeoutRef.current) {
+        clearTimeout(activeTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleClick = useCallback(() => {
+    if (activeTimeoutRef.current) {
+      clearTimeout(activeTimeoutRef.current)
+    }
+
     setIsActive(true)
     onOpenVideo?.()
-    setTimeout(() => setIsActive(false), 500)
+
+    activeTimeoutRef.current = setTimeout(() => {
+      setIsActive(false)
+      activeTimeoutRef.current = null
+    }, 500)
   }, [onOpenVideo])
 
   const itemClasses = [

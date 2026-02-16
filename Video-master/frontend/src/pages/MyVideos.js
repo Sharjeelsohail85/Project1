@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { videoAPI } from '../services/api';
+import { getApiErrorMessage, videoAPI } from '../services/api';
 
 const MyVideos = () => {
   const navigate = useNavigate();
@@ -22,24 +22,36 @@ const MyVideos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadMyVideos();
+  const loadMyVideos = useCallback(async (isMounted) => {
+    try {
+      if (!isMounted.current) return;
+      setLoading(true);
+      setError('');
+
+      const response = await videoAPI.getMyVideos();
+      const items = Array.isArray(response?.data) ? response.data : [];
+
+      if (!isMounted.current) return;
+      setVideos(items);
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(getApiErrorMessage(err, 'Failed to load your videos'));
+      setVideos([]);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
   }, []);
 
-  const loadMyVideos = async () => {
-    try {
-      setLoading(true);
-      const response = await videoAPI.getMyVideos();
-      if (response.data) {
-        setVideos(Array.isArray(response.data) ? response.data : []);
-      }
-    } catch (err) {
-      setError('Failed to load your videos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const isMounted = { current: true };
+    loadMyVideos(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [loadMyVideos]);
 
   const handleDelete = async (videoId) => {
     if (!window.confirm('Are you sure you want to delete this video?')) {
@@ -48,9 +60,10 @@ const MyVideos = () => {
 
     try {
       await videoAPI.delete(videoId);
-      loadMyVideos();
+      const isMounted = { current: true };
+      await loadMyVideos(isMounted);
     } catch (err) {
-      setError('Failed to delete video');
+      setError(getApiErrorMessage(err, 'Failed to delete video'));
     }
   };
 

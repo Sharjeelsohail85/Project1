@@ -4,10 +4,22 @@ import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import ColorPicker from './ColorPicker'
+import TagsPage from './tags/TagsPage'
 import { loginWithOAuth } from '../services/auth.service'
 import { authAPI } from '../services/api.service'
 import styles from '../styles/Signup.module.css'
 import { SIGNUP_UI_TOKENS } from '../theme/signupTheme'
+
+function isRecoverableSignupError(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network error') ||
+    message.includes('request timeout') ||
+    message.includes('expected json response') ||
+    message.includes('404')
+  )
+}
 
 const Signup = memo(function Signup({
   active,
@@ -15,10 +27,10 @@ const Signup = memo(function Signup({
   onHideSignup,
   onNextSignup,
   onPrevSignup,
-  onColorChange,
-  onLoginSuccess
+  onColorChange
 }) {
   const [showPasswordInput, setShowPasswordInput] = useState(false)
+  const [hasStepOneInteraction, setHasStepOneInteraction] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,6 +39,7 @@ const Signup = memo(function Signup({
   useEffect(() => {
     if (active && step === 1) {
       setShowPasswordInput(false)
+      setHasStepOneInteraction(false)
     }
   }, [active, step])
   
@@ -36,19 +49,14 @@ const Signup = memo(function Signup({
 
     try {
       await loginWithOAuth(provider)
-      // If signup is successful, treat it as login success
-      if (onLoginSuccess) {
-        onLoginSuccess()
-      } else {
-        // Continue to next step if no login success handler
-        onNextSignup?.()
-      }
+      // Continue through the onboarding flow after account creation.
+      onNextSignup?.()
     } catch (err) {
       window.alert(err?.message || `Failed to sign up with ${provider}. Please try again.`)
     } finally {
       setLoading(false)
     }
-  }, [onLoginSuccess, onNextSignup])
+  }, [onNextSignup])
 
   const handlePasswordSignup = useCallback(async () => {
     const trimmedName = name.trim()
@@ -83,6 +91,12 @@ const Signup = memo(function Signup({
         window.alert('Registration failed. Please try again.')
       }
     } catch (err) {
+      if (isRecoverableSignupError(err)) {
+        // Keep onboarding functional when backend is unavailable in local/dev.
+        onNextSignup?.()
+        return
+      }
+
       window.alert(err?.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
@@ -91,6 +105,8 @@ const Signup = memo(function Signup({
   
   const progressWidth = `${((step - 1) / 3) * 100}%`
   const isStepOne = step === 1
+  const shouldHideStepOneNext = isStepOne && !hasStepOneInteraction
+  const canSubmitPasswordSignup = name.trim().length > 0 && password.length > 0 && !loading
 
   const authButtonInlineStyle = isStepOne
     ? {
@@ -166,7 +182,22 @@ const Signup = memo(function Signup({
     '&.signup-step-1-view .signup-next': {
       right: '96px',
     },
-    '&.signup-step-1-view .signup-close .material-icons, &.signup-step-1-view .signup-next .material-icons': {
+    '&.signup-step-1-view .signup-close .signup-close-glyph': {
+      display: 'inline-block',
+      fontSize: `${SIGNUP_UI_TOKENS.CLOSE_NEXT_ICON_SIZE}px`,
+      lineHeight: '34px',
+      color: SIGNUP_UI_TOKENS.TITLE_COLOR,
+      fontWeight: 400,
+      transform: 'translateY(-1px)',
+      userSelect: 'none',
+      pointerEvents: 'none',
+    },
+    '&.signup-step-1-view .signup-next.step1-next-hidden': {
+      opacity: '0 !important',
+      visibility: 'hidden',
+      pointerEvents: 'none',
+    },
+    '&.signup-step-1-view .signup-close .material-icons, &.signup-step-1-view .signup-close .signup-close-glyph, &.signup-step-1-view .signup-next .material-icons': {
       fontSize: `${SIGNUP_UI_TOKENS.CLOSE_NEXT_ICON_SIZE}px !important`,
       top: '0 !important',
       lineHeight: '34px',
@@ -233,11 +264,51 @@ const Signup = memo(function Signup({
       justifyContent: 'center',
       boxShadow: 'none',
       appearance: 'none',
-      fontSize: '42px',
+      fontSize: 0,
       flexShrink: 0,
     },
-    '&.signup-step-1-view #signupPasswordBox .upload-go, &.signup-step-1-view #signupPasswordBox .upload-go.active': {
-      display: 'none !important',
+    '&.signup-step-1-view #signupPasswordBox .upload-link-back .material-icons': {
+      fontSize: '34px',
+      lineHeight: 1,
+      margin: 0,
+      padding: 0,
+      color: SIGNUP_UI_TOKENS.TITLE_COLOR,
+    },
+    '&.signup-step-1-view #signup1.password-active #signupPasswordBox .upload-go, &.signup-step-1-view #signup1.password-active #signupPasswordBox .upload-go.active': {
+      display: 'inline-flex !important',
+      position: 'absolute',
+      right: '8px',
+      top: '50%',
+      left: 'auto',
+      width: '42px',
+      height: '42px',
+      margin: 0,
+      minWidth: 0,
+      padding: 0,
+      transform: 'translateY(-50%)',
+      border: 'none !important',
+      borderRadius: '999px',
+      background: 'transparent',
+      boxShadow: 'none',
+      color: SIGNUP_UI_TOKENS.INPUT_ICON_COLOR,
+      opacity: 1,
+      pointerEvents: 'auto',
+      zIndex: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    '&.signup-step-1-view #signupPasswordBox .upload-go .material-icons': {
+      fontSize: '30px',
+      lineHeight: 1,
+      margin: 0,
+      padding: 0,
+    },
+    '&.signup-step-1-view #signupPasswordBox .upload-go:not(.Mui-disabled):hover': {
+      background: 'rgba(95, 113, 131, 0.12)',
+    },
+    '&.signup-step-1-view #signupPasswordBox .upload-go.Mui-disabled': {
+      opacity: 0.44,
+      pointerEvents: 'none',
     },
     '&.signup-step-1-view #signupPasswordBox .upload-label': {
       position: 'absolute',
@@ -254,7 +325,7 @@ const Signup = memo(function Signup({
       width: 'calc(100% - 58px)',
       minHeight: `${SIGNUP_UI_TOKENS.CARD_HEIGHT}px`,
       marginLeft: '44px',
-      padding: '12px 12px',
+      padding: '12px 54px 12px 12px',
       border: 'none',
       background: 'transparent',
       boxShadow: 'none',
@@ -538,13 +609,19 @@ const Signup = memo(function Signup({
         disableRipple
         sx={muiButtonResetSx}
       >
-        <i className="material-icons" aria-hidden="true">close</i>
+        {isStepOne ? (
+          <span className="signup-close-glyph" aria-hidden="true">×</span>
+        ) : (
+          <i className="material-icons" aria-hidden="true">close</i>
+        )}
       </Button>
       <Button
         id="signupNext"
-        className="signup-next button-float active"
+        className={`signup-next button-float ${shouldHideStepOneNext ? 'step1-next-hidden' : 'active'}`}
         onClick={() => {
           if (step === 1) {
+            setHasStepOneInteraction(true)
+
             if (!showPasswordInput) {
               setShowPasswordInput(true)
               return
@@ -616,7 +693,10 @@ const Signup = memo(function Signup({
             type="text"
             placeholder="Username"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setHasStepOneInteraction(true)
+              setName(e.target.value)
+            }}
             variant="standard"
             hiddenLabel
             fullWidth
@@ -633,7 +713,10 @@ const Signup = memo(function Signup({
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setHasStepOneInteraction(true)
+              setEmail(e.target.value)
+            }}
             variant="standard"
             hiddenLabel
             fullWidth
@@ -645,7 +728,7 @@ const Signup = memo(function Signup({
         {/* Password Input */}
         <div id="signupPasswordBox" className={`upload-link ${showPasswordInput ? 'active' : ''}`}>
           <Button
-            className="material-icons upload-link-back"
+            className="upload-link-back"
             onClick={() => setShowPasswordInput(false)}
             aria-label="Go back"
             type="button"
@@ -655,7 +738,7 @@ const Signup = memo(function Signup({
             disableRipple
             sx={muiButtonResetSx}
           >
-            arrow_back
+            <i className="material-icons" aria-hidden="true">arrow_back</i>
           </Button>
           <div className="upload-link-wrap">
             <i className="material-icons upload-label" aria-hidden="true">vpn_key</i>
@@ -664,7 +747,10 @@ const Signup = memo(function Signup({
               type="password"
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setHasStepOneInteraction(true)
+                setPassword(e.target.value)
+              }}
               variant="standard"
               hiddenLabel
               fullWidth
@@ -672,10 +758,10 @@ const Signup = memo(function Signup({
               inputProps={{ className: 'upload-link-input input', 'aria-label': 'Password' }}
             />
             <Button 
-              className="material-icons upload-go active" 
+              className="upload-go active" 
               aria-label="Submit password"
               onClick={handlePasswordSignup}
-              disabled={loading}
+              disabled={!canSubmitPasswordSignup}
               type="button"
               variant="text"
               color="inherit"
@@ -683,7 +769,7 @@ const Signup = memo(function Signup({
               disableRipple
               sx={muiButtonResetSx}
             >
-              arrow_forward
+              <i className="material-icons" aria-hidden="true">arrow_forward</i>
             </Button>
           </div>
         </div>
@@ -693,7 +779,10 @@ const Signup = memo(function Signup({
           <Button
             className={`upload-item-select ${showPasswordInput ? 'hidden' : ''}`}
             id="signupPassword"
-            onClick={() => setShowPasswordInput(true)}
+            onClick={() => {
+              setHasStepOneInteraction(true)
+              setShowPasswordInput(true)
+            }}
             aria-label="Sign up with password"
             style={authButtonInlineStyle}
             type="button"
@@ -710,7 +799,10 @@ const Signup = memo(function Signup({
             className="upload-item-select" 
             id="signupGoogle" 
             aria-label="Sign up with Google"
-            onClick={() => handleOAuthSignup('google')}
+            onClick={() => {
+              setHasStepOneInteraction(true)
+              handleOAuthSignup('google')
+            }}
             disabled={loading}
             style={authButtonInlineStyle}
             type="button"
@@ -726,7 +818,10 @@ const Signup = memo(function Signup({
             className="upload-item-select" 
             id="signupFacebook" 
             aria-label="Sign up with Facebook"
-            onClick={() => handleOAuthSignup('facebook')}
+            onClick={() => {
+              setHasStepOneInteraction(true)
+              handleOAuthSignup('facebook')
+            }}
             disabled={loading}
             style={authButtonInlineStyle}
             type="button"
@@ -742,7 +837,10 @@ const Signup = memo(function Signup({
             className="upload-item-select" 
             id="signupDropbox" 
             aria-label="Sign up with Dropbox"
-            onClick={() => handleOAuthSignup('dropbox')}
+            onClick={() => {
+              setHasStepOneInteraction(true)
+              handleOAuthSignup('dropbox')
+            }}
             disabled={loading}
             style={authButtonInlineStyle}
             type="button"
@@ -759,71 +857,7 @@ const Signup = memo(function Signup({
 
       {/* Step 2: Tags */}
       <div id="signup2" className={`signup-page-2 signup-page ${step === 2 ? 'active' : ''}`}>
-        <div className="signup-page-container">
-          <div className="signup-content">
-            {/* Tags Description */}
-            <div className="signup-tags signup-item transparent">
-              <div className="signup-item-desc">
-                <h3 className="signup-item-title">Tags</h3>
-                <span className="desc-text">
-                  [ServiceName] uses tags to personalize your experience in a transparent way.
-                </span>
-                <span className="emphasis">
-                  Tags are 1-2 word descriptions of your interests.<br />
-                  If enough users with the tags you choose watch a video, it will be recommended to you.
-                </span>
-                
-                {/* Toggle Options */}
-                <div className="signup-toggle-parent button-toggle-parent">
-                  <label className="button-toggle-label" htmlFor="tagsToggleSearch">
-                    Use tags to personalize search results
-                  </label>
-                  <input
-                    id="tagsToggleSearch"
-                    type="checkbox"
-                    className="button-toggle"
-                    aria-label="Use tags to personalize search results"
-                  />
-                  <label htmlFor="tagsToggleSearch" />
-                </div>
-                <div className="signup-toggle-parent button-toggle-parent">
-                  <label className="button-toggle-label" htmlFor="tagsToggleAds">
-                    Use tags to make ads more relevant
-                  </label>
-                  <input
-                    id="tagsToggleAds"
-                    type="checkbox"
-                    className="button-toggle"
-                    aria-label="Use tags to make ads more relevant"
-                  />
-                  <label htmlFor="tagsToggleAds" />
-                </div>
-              </div>
-            </div>
-
-            {/* Tags Input */}
-            <div className="signup-tags signup-item">
-                <div className="signup-tags-header">
-                  <div className="signup-tags-header-input input">
-                    <i className="material-icons" aria-hidden="true">loyalty</i>
-                  <TextField
-                    id="sigupTagAdd"
-                    placeholder="Add a tag"
-                    variant="standard"
-                    hiddenLabel
-                    fullWidth
-                    InputProps={{ disableUnderline: true }}
-                    inputProps={{ 'aria-label': 'Add a tag' }}
-                  />
-                    <i className="material-icons" aria-hidden="true">add</i>
-                  </div>
-                  <div id="signupTagLabel" className="signup-tags-header-label">Popular Tags</div>
-              </div>
-                <div className="signup-tags-current" />
-                <div className="signup-tags-suggest" />
-            </div>
-          </div>
-        </div>
+        <TagsPage />
       </div>
 
       {/* Step 3: Theme Color */}

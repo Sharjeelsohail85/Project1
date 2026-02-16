@@ -75,6 +75,21 @@ export function useVideoPlayer({
   const playbackRateRef = useRef(1)
   const durationRef = useRef(0)
 
+  const clearNoticeTimeout = useCallback(() => {
+    if (noticeTimeoutRef.current) {
+      clearTimeout(noticeTimeoutRef.current)
+      noticeTimeoutRef.current = null
+    }
+  }, [])
+
+  const queueNoticeClear = useCallback((ms = 500) => {
+    clearNoticeTimeout()
+    noticeTimeoutRef.current = setTimeout(() => {
+      setNotice('')
+      noticeTimeoutRef.current = null
+    }, ms)
+  }, [clearNoticeTimeout])
+
   // Keep refs in sync with state so keydown handler can read latest without effect re-subscribing
   useEffect(() => {
     volumeRef.current = volume
@@ -89,24 +104,24 @@ export function useVideoPlayer({
   }, [])
 
   const showNotice = useCallback((msg, stay = false) => {
-    if (noticeTimeoutRef.current) {
-      clearTimeout(noticeTimeoutRef.current)
-      noticeTimeoutRef.current = null
-    }
+    clearNoticeTimeout()
     setNotice(msg)
     if (!stay) {
-      noticeTimeoutRef.current = setTimeout(() => setNotice(''), 500)
+      queueNoticeClear(500)
     }
-  }, [])
+  }, [clearNoticeTimeout, queueNoticeClear])
 
   // Clear notice timeout on unmount to avoid leaks
   useEffect(() => {
     return () => {
-      if (noticeTimeoutRef.current) {
-        clearTimeout(noticeTimeoutRef.current)
+      clearNoticeTimeout()
+
+      if (fadeTimerRef.current) {
+        clearTimeout(fadeTimerRef.current)
+        fadeTimerRef.current = null
       }
     }
-  }, [])
+  }, [clearNoticeTimeout])
 
   const togglePlay = useCallback(() => {
     const p = playerRef.current
@@ -120,7 +135,7 @@ export function useVideoPlayer({
       p.play()
       pb.play()
       setNotice('play_arrow')
-      setTimeout(() => setNotice(''), 500)
+      queueNoticeClear(500)
       setIsPlaying(true)
     } else {
       setShowControls(true)
@@ -128,10 +143,10 @@ export function useVideoPlayer({
       p.pause()
       pb.pause()
       setNotice('pause')
-      setTimeout(() => setNotice(''), 500)
+      queueNoticeClear(500)
       setIsPlaying(false)
     }
-  }, [hidePopups])
+  }, [hidePopups, queueNoticeClear])
 
   const forcePlay = useCallback(() => {
     const p = playerRef.current
@@ -342,11 +357,21 @@ export function useVideoPlayer({
 
   // Controls visibility: show on move, hide after delay when playing
   const scheduleFade = useCallback(() => {
-    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
+    if (fadeTimerRef.current) {
+      clearTimeout(fadeTimerRef.current)
+      fadeTimerRef.current = null
+    }
+
     if (!isPlaying) {
-      fadeTimerRef.current = setTimeout(() => setShowControls(false), 1000)
+      fadeTimerRef.current = setTimeout(() => {
+        setShowControls(false)
+        fadeTimerRef.current = null
+      }, 1000)
     } else {
-      fadeTimerRef.current = setTimeout(() => setShowControls(false), 2000)
+      fadeTimerRef.current = setTimeout(() => {
+        setShowControls(false)
+        fadeTimerRef.current = null
+      }, 2000)
     }
   }, [isPlaying])
 

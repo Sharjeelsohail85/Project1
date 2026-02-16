@@ -6,6 +6,28 @@ import { getOAuthUrl, storeOAuthState, verifyOAuthState } from '../config/auth.c
 import { authAPI } from './api.service'
 import { getAuthTokens, saveAuthTokens } from '../config/api.config'
 
+function canUseBrowserStorage() {
+  return typeof window !== 'undefined' && !!window.localStorage
+}
+
+function setLocalStorageItem(key, value) {
+  try {
+    if (!canUseBrowserStorage()) return
+    localStorage.setItem(key, value)
+  } catch {
+    // no-op in restricted environments
+  }
+}
+
+function getLocalStorageItem(key) {
+  try {
+    if (!canUseBrowserStorage()) return null
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 function isNetworkOrBackendOAuthError(error) {
   const message = String(error?.message || '').toLowerCase()
   return (
@@ -32,8 +54,8 @@ function completeOAuthInDemoMode(provider) {
 
   // Keep app auth flow functional even when backend OAuth endpoint is not available.
   saveAuthTokens(`demo-token-${provider}-${timestamp}`, `demo-client-${provider}-${timestamp}`)
-  localStorage.setItem('user_info', JSON.stringify(demoUser))
-  localStorage.setItem('auth_provider', provider)
+  setLocalStorageItem('user_info', JSON.stringify(demoUser))
+  setLocalStorageItem('auth_provider', provider)
 
   return demoUser
 }
@@ -44,7 +66,53 @@ function completeOAuthInDemoMode(provider) {
  * @returns {Promise<Object>} User information and access token
  */
 export async function loginWithOAuth(provider) {
+  if (typeof window === 'undefined') {
+    throw new Error('OAuth login is only available in browser environment')
+  }
+
   return new Promise((resolve, reject) => {
+    let popup = null
+    let checkPopup = null
+    let timeoutId = null
+    let settled = false
+    let isAwaitingCallbackCompletion = false
+
+    const cleanup = () => {
+      if (checkPopup) {
+        clearInterval(checkPopup)
+        checkPopup = null
+      }
+
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+    }
+
+    const resolveOnce = (value) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve(value)
+    }
+
+    const rejectOnce = (error) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(error)
+    }
+
+    const closePopupSafe = () => {
+      try {
+        if (popup && !popup.closed) {
+          popup.close()
+        }
+      } catch {
+        // ignore popup close errors
+      }
+    }
+
     // Generate state for security
     const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
     storeOAuthState(provider, state)
@@ -54,7 +122,7 @@ export async function loginWithOAuth(provider) {
     try {
       authUrl = getOAuthUrl(provider, state)
     } catch (error) {
-      reject(new Error(`Failed to get OAuth URL: ${error.message}`))
+      rejectOnce(new Error(`Failed to get OAuth URL: ${error.message}`))
       return
     }
 
@@ -64,23 +132,26 @@ export async function loginWithOAuth(provider) {
     const left = window.screenX + (window.outerWidth - width) / 2
     const top = window.screenY + (window.outerHeight - height) / 2
 
-    const popup = window.open(
+    popup = window.open(
       authUrl,
       `${provider}Login`,
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
     )
 
     if (!popup) {
-      reject(new Error('Popup blocked. Please allow popups for this site.'))
+      rejectOnce(new Error('Popup blocked. Please allow popups for this site.'))
       return
     }
 
     // Listen for OAuth callback
-    const checkPopup = setInterval(() => {
+    checkPopup = setInterval(() => {
       try {
         if (popup.closed) {
-          clearInterval(checkPopup)
-          reject(new Error('Login cancelled or popup closed'))
+          if (isAwaitingCallbackCompletion) {
+            return
+          }
+
+          rejectOnce(new Error('Login cancelled or popup closed'))
           return
         }
 
@@ -88,30 +159,35 @@ export async function loginWithOAuth(provider) {
         try {
           const popupUrl = popup.location.href
           if (popupUrl.includes('/auth/') || popupUrl.includes('code=') || popupUrl.includes('error=')) {
-            clearInterval(checkPopup)
-            
             // Get the authorization code from the callback URL
-            const urlParams = new URLSearchParams(popup.location.search)
+            const callbackUrl = new URL(popupUrl)
+            const urlParams = new URLSearchParams(callbackUrl.search)
             const code = urlParams.get('code')
-            const state = urlParams.get('state')
             const error = urlParams.get('error')
             
             if (error) {
-              popup.close()
-              reject(new Error(`OAuth error: ${error}`))
+              closePopupSafe()
+              rejectOnce(new Error(`OAuth error: ${error}`))
               return
             }
             
             if (code) {
-              popup.close()
+              isAwaitingCallbackCompletion = true
+
+              if (checkPopup) {
+                clearInterval(checkPopup)
+                checkPopup = null
+              }
+
+              closePopupSafe()
               
               // Exchange code for tokens via backend
-              handleOAuthCallback(provider, new URLSearchParams(popup.location.search))
+              handleOAuthCallback(provider, urlParams)
                 .then((userInfo) => {
-                  resolve(userInfo)
+                  resolveOnce(userInfo)
                 })
                 .catch((err) => {
-                  reject(err)
+                  rejectOnce(err)
                 })
             }
           }
@@ -126,12 +202,9 @@ export async function loginWithOAuth(provider) {
     }, 100)
 
     // Timeout after 5 minutes
-    setTimeout(() => {
-      clearInterval(checkPopup)
-      if (!popup.closed) {
-        popup.close()
-      }
-      reject(new Error('Login timeout. Please try again.'))
+    timeoutId = setTimeout(() => {
+      closePopupSafe()
+      rejectOnce(new Error('Login timeout. Please try again.'))
     }, 300000)
   })
 }
@@ -170,10 +243,6 @@ export async function handleOAuthCallback(provider, params) {
     throw new Error('Invalid response from server')
   } catch (error) {
     if (isNetworkOrBackendOAuthError(error)) {
-      console.warn(
-        `OAuth backend endpoint is unavailable. Falling back to demo mode for ${provider}.`,
-        error
-      )
       return completeOAuthInDemoMode(provider)
     }
 
@@ -187,7 +256,7 @@ export async function handleOAuthCallback(provider, params) {
 export async function getCurrentUser() {
   try {
     // First check localStorage
-    const storedUserInfo = localStorage.getItem('user_info')
+    const storedUserInfo = getLocalStorageItem('user_info')
     if (storedUserInfo) {
       return JSON.parse(storedUserInfo)
     }
@@ -198,11 +267,11 @@ export async function getCurrentUser() {
       try {
         const response = await authAPI.getCurrentUser()
         if (response.data) {
-          localStorage.setItem('user_info', JSON.stringify(response.data))
+          setLocalStorageItem('user_info', JSON.stringify(response.data))
           return response.data
         }
-      } catch (e) {
-        console.error('Failed to fetch user from API:', e)
+      } catch {
+        // ignore and fall through to null
       }
     }
     
