@@ -13,6 +13,11 @@ use Illuminate\Http\Request;
 |
 */
 
+// Include module routes
+require base_path('app/Modules/Video/routes.php');
+require base_path('app/Modules/User/routes.php');
+require base_path('app/Modules/Admin/routes.php');
+
 //Route::middleware('auth:api')->get('/user', function (Request $request) {
 //    return $request->user();
 //});

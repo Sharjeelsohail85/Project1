@@ -37,22 +37,43 @@ class Cors
      */
     private function getHeaders()
     {
-        $allowedOrigins = env('CORS_ALLOWED_ORIGINS', '*');
-        $allowedMethods = env('CORS_ALLOWED_METHODS', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-        $allowedHeaders = env('CORS_ALLOWED_HEADERS', 'Content-Type, Authorization, X-Requested-With, token, client_id');
+        // NUCLEAR OPTION: Explicit origin configuration for credentialed requests
+        $allowedOrigins = env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000');
+        $allowedMethods = env('CORS_ALLOWED_METHODS', 'GET, POST, PUT, DELETE, OPTIONS');
+        $allowedHeaders = env('CORS_ALLOWED_HEADERS', 'Content-Type, Authorization, X-Requested-With, token, client_id, Accept');
         $maxAge = env('CORS_MAX_AGE', '3600');
 
+        // CRITICAL: Extract the actual origin from the request
+        $currentOrigin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+        
+        // Handle comma-separated origins - find exact match
+        $origin = '*';
+        if ($allowedOrigins !== '*') {
+            $originList = array_map('trim', explode(',', $allowedOrigins));
+            
+            // Find exact match for the current origin
+            foreach ($originList as $allowedOrigin) {
+                if ($allowedOrigin === $currentOrigin) {
+                    $origin = $allowedOrigin;
+                    break;
+                }
+            }
+            
+            // If no exact match found, use the first allowed origin as fallback
+            if ($origin === '*') {
+                $origin = $originList[0] ?? '*';
+            }
+        }
+
+        // CRITICAL: For credentialed requests (which we have due to custom headers),
+        // we MUST use explicit origin and MUST allow credentials
         $headers = [
-            'Access-Control-Allow-Origin' => $allowedOrigins,
+            'Access-Control-Allow-Origin' => $origin,
             'Access-Control-Allow-Methods' => $allowedMethods,
             'Access-Control-Allow-Headers' => $allowedHeaders,
             'Access-Control-Max-Age' => $maxAge,
+            'Access-Control-Allow-Credentials' => 'true', // REQUIRED for credentialed requests
         ];
-
-        // Only set credentials if not using wildcard origin
-        if ($allowedOrigins !== '*') {
-            $headers['Access-Control-Allow-Credentials'] = 'true';
-        }
 
         return $headers;
     }
