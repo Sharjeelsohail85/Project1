@@ -45,7 +45,7 @@ const TopWrap = memo(function TopWrap({
   // Only reserve hero layout space for sections that render inline inside .top-wrap.
   // Login is rendered via a portal, so including it here creates an empty 400px gap.
   const hasActiveCenter = dailyActive || promoActive || signupActive || uploadActive
-  const topWrapClassName = `top-wrap ${hasActiveCenter ? 'active' : 'collapsed'} ${dailyActive && dailyCommentsExpanded ? 'comments-expanded' : ''}`
+  const topWrapClassName = `top-wrap ${hasActiveCenter ? 'active' : 'collapsed'} ${dailyActive && theaterMode ? 'theater-active' : ''} ${dailyActive && dailyCommentsExpanded ? 'comments-expanded' : ''}`
 
   return (
     <div id="topWrap" className={topWrapClassName}>

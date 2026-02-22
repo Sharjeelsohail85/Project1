@@ -28,6 +28,10 @@ const Daily = memo(function Daily({
     setCommentsOpen((previous) => !previous)
   }, [])
 
+  const handleCloseComments = useCallback(() => {
+    setCommentsOpen(false)
+  }, [])
+
   useEffect(() => {
     if (!active) {
       setCommentsOpen(false)
@@ -79,9 +83,12 @@ const Daily = memo(function Daily({
         id="dailyFull"
         className="promoverlay-next button-float active"
         onClick={handleGoTheater}
-        aria-label="Enter theater mode"
+        aria-label={theaterMode ? 'Exit theater mode' : 'Enter theater mode'}
+        aria-pressed={theaterMode}
       >
-        <i className="material-icons" aria-hidden="true">panorama_horizontal</i>
+        <i className="material-icons" aria-hidden="true">
+          {theaterMode ? 'close_fullscreen' : 'panorama_horizontal'}
+        </i>
       </button>
 
       {/* Comments Button */}
@@ -129,7 +136,7 @@ const Daily = memo(function Daily({
       <DailyInfo />
 
       {/* Comments Section */}
-      <DailyComments active={commentsOpen} />
+      <DailyComments active={commentsOpen} onClose={handleCloseComments} />
     </section>
   )
 })

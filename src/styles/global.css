@@ -519,6 +519,12 @@ body.theme-effect-mixing .titlebar {
 	/* keep desktop hero sizing from css/style.css */
 }
 
+.top-wrap.active.theater-active {
+	/* In theater mode, let hero remain in normal flow so browser grid (Editor's Picks)
+	   stays visible below instead of being visually covered. */
+	height: 760px;
+}
+
 .top-wrap.collapsed {
 	/* Ensure collapsed hero cannot reserve/bleed visible space */
 	height: 0 !important;
@@ -1419,6 +1425,10 @@ body.theme-effect-mixing .titlebar {
    while the editors bar flow remains intact. */
 .top-wrap.active.comments-expanded {
 	height: 860px;
+}
+
+.top-wrap.active.theater-active.comments-expanded {
+	height: 920px;
 }
 
 #daily.comments-open {

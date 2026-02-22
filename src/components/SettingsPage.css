@@ -803,6 +803,7 @@ html, body {
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
+	position: relative;
 	min-height: 36px;
 	padding: 0 12px;
 	flex: 1 1 180px;
@@ -820,7 +821,15 @@ html, body {
 }
 
 .theme-designer-category-item .material-icons {
+	position: absolute;
+	left: 12px;
 	font-size: 16px;
+}
+
+.theme-designer-category-item span {
+	width: 100%;
+	text-align: center;
+	padding: 0 22px;
 }
 
 .theme-designer-category-item:hover {
@@ -896,6 +905,11 @@ html, body {
 	letter-spacing: 0.08em;
 	color: rgba(33, 33, 33, 0.76);
 	margin-bottom: 10px;
+}
+
+.personalization-widget-title-centered {
+	text-align: center;
+	width: 100%;
 }
 
 .personalization-grid-picker {

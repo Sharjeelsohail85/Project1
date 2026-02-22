@@ -1072,7 +1072,7 @@ export default function SettingsPage({
 
                         {isPersonalizationToggle && isPersonalizationChecked && personalizationKey === 'infiniteGridExplorer' && (
                           <div className="personalization-widget-row">
-                            <div className="personalization-widget-title">Infinite Grid Explorer (Exact)</div>
+                            <div className="personalization-widget-title personalization-widget-title-centered">Infinite Grid Explorer (Exact)</div>
                             <InfiniteGridExact onColorChange={applyThemeFromColor} />
                           </div>
                         )}

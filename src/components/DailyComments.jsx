@@ -45,7 +45,7 @@ const SOCIAL_LINKS = [
   { id: 'github', label: '@arbaoui-mehdi', href: 'https://github.com/arbaoui-mehdi', iconClass: 'zmdi zmdi-github' },
 ]
 
-const DailyComments = memo(function DailyComments({ active = false }) {
+const DailyComments = memo(function DailyComments({ active = false, onClose }) {
   return (
     <section
       className={`daily-comments ${active ? 'active' : ''}`}
@@ -56,7 +56,17 @@ const DailyComments = memo(function DailyComments({ active = false }) {
       <div className="daily-comments-shell">
         <header className="daily-comments-header">
           <h2 className="daily-comments-title">Comments</h2>
-          <span className="daily-comments-count">{COMMENT_ITEMS.length}</span>
+          <div className="daily-comments-header-actions">
+            <span className="daily-comments-count">{COMMENT_ITEMS.length}</span>
+            <button
+              type="button"
+              className="daily-comments-close"
+              onClick={() => onClose?.()}
+              aria-label="Close comments"
+            >
+              <i className="material-icons" aria-hidden="true">close</i>
+            </button>
+          </div>
         </header>
 
         <div className="daily-comments-scroll">

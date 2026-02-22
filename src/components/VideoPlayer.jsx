@@ -1,4 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import { useVideoPlayer, formatTime } from '../hooks/useVideoPlayer'
 import { resolvePlaybackSource } from '../utils/videoSource'
 
@@ -14,6 +15,12 @@ const SPEED_OPTIONS = [
 ]
 
 const QUALITY_OPTIONS = [1080, 720, 480, 360, 240, 144, 0]
+
+const COLLAGE_PIECES_NUM = 50
+const COLLAGE_LEVEL_SPLIT = 0.75
+const COLLAGE_STRENGTH = 3
+const COLLAGE_FALLBACK_FRAME = 'resources/video-thumbnail.jpg'
+const COLLAGE_FRAME_INTERVAL_MS = 90
 
 const PROVIDER_LABELS = Object.freeze({
   youtube: 'YouTube',
@@ -36,6 +43,8 @@ const VideoPlayer = memo(function VideoPlayer({
   const sourceToken = `${playbackSource.mode}|${playbackSource.src}`
   const [playerError, setPlayerError] = useState('')
   const [embedLoaded, setEmbedLoaded] = useState(false)
+  const [collageEnabled, setCollageEnabled] = useState(false)
+  const collageContainerRef = useRef(null)
 
   const providerLabel = useMemo(() => {
     return PROVIDER_LABELS[playbackSource.provider] || 'External provider'
@@ -46,6 +55,10 @@ const VideoPlayer = memo(function VideoPlayer({
   useEffect(() => {
     setPlayerError('')
     setEmbedLoaded(false)
+    setCollageEnabled(false)
+    if (collageContainerRef.current) {
+      collageContainerRef.current.innerHTML = ''
+    }
   }, [sourceToken])
 
   const api = useVideoPlayer({
@@ -92,6 +105,7 @@ const VideoPlayer = memo(function VideoPlayer({
       handleProgressMove,
       handleProgressLeave,
       hidePopups,
+      showNotice,
       setShowSpeedPopup,
       setShowCaptionsPopup,
       setShowQualityPopup,
@@ -99,6 +113,136 @@ const VideoPlayer = memo(function VideoPlayer({
       onContainerMouseLeave
     }
   } = api
+
+  useEffect(() => {
+    if (!collageEnabled || isEmbedSource) return
+
+    const container = collageContainerRef.current
+    const mainVideo = playerRef.current
+    if (!container || !mainVideo) return
+
+    container.style.setProperty('--collage-frame', `url('${COLLAGE_FALLBACK_FRAME}')`)
+
+    const frameCanvas = document.createElement('canvas')
+    const frameCtx = frameCanvas.getContext('2d')
+    let frameTimer = null
+
+    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+
+    const buildPieces = () => {
+      const containerWidth = container.offsetWidth
+      const containerHeight = container.offsetHeight
+      if (!containerWidth || !containerHeight) return []
+
+      const levelIndex = Math.floor(COLLAGE_PIECES_NUM * COLLAGE_LEVEL_SPLIT)
+      const maxsizeX = Math.round(containerWidth / 2)
+      const maxsizeY = Math.round(containerHeight / 2)
+      container.innerHTML = ''
+      const nextPieces = []
+
+      for (let i = 0; i < COLLAGE_PIECES_NUM; i += 1) {
+        const piece = document.createElement('div')
+        piece.className = 'collage_piece'
+
+        if (i < levelIndex) {
+          piece.classList.add('level_1')
+          piece.dataset.level = '1'
+          piece.style.width = `${getRandomInt(100, maxsizeX)}px`
+          piece.style.height = `${getRandomInt(100, maxsizeY)}px`
+        } else {
+          piece.classList.add('level_2')
+          piece.dataset.level = '2'
+          piece.style.width = `${getRandomInt(40, Math.round(maxsizeX / 2))}px`
+          piece.style.height = `${getRandomInt(40, Math.round(maxsizeY / 2))}px`
+        }
+        container.appendChild(piece)
+
+        const levelNum = Number(piece.dataset.level) || 1
+        piece.dataset.offset = String(getRandomInt(COLLAGE_STRENGTH, COLLAGE_STRENGTH * 2 * levelNum))
+        piece.style.backgroundSize = `${containerWidth}px ${containerHeight}px`
+
+        const maxLeft = Math.max(0, containerWidth - piece.offsetWidth)
+        const maxTop = Math.max(0, containerHeight - piece.offsetHeight)
+        piece.style.left = `${getRandomInt(0, maxLeft)}px`
+        piece.style.top = `${getRandomInt(0, maxTop)}px`
+        piece.style.backgroundPosition = `${-piece.offsetLeft}px ${-piece.offsetTop}px`
+        gsap.set(piece, { x: 0, y: 0 })
+        nextPieces.push(piece)
+      }
+
+      return nextPieces
+    }
+
+    let pieces = buildPieces()
+
+    const refreshFrame = () => {
+      if (!frameCtx) return
+      if (!mainVideo.videoWidth || !mainVideo.videoHeight) return
+
+      const containerWidth = container.offsetWidth
+      const containerHeight = container.offsetHeight
+      if (!containerWidth || !containerHeight) return
+
+      frameCanvas.width = containerWidth
+      frameCanvas.height = containerHeight
+
+      frameCtx.drawImage(mainVideo, 0, 0, containerWidth, containerHeight)
+
+      try {
+        const dataUrl = frameCanvas.toDataURL('image/jpeg', 0.72)
+        container.style.setProperty('--collage-frame', `url("${dataUrl}")`)
+      } catch {
+        // Cross-origin videos without CORS headers cannot be painted to canvas.
+      }
+    }
+
+    refreshFrame()
+    frameTimer = window.setInterval(refreshFrame, COLLAGE_FRAME_INTERVAL_MS)
+
+    const handleMouseMove = (e) => {
+      const containerWidth = container.offsetWidth
+      const containerHeight = container.offsetHeight
+      const mouseX = e.pageX
+      const mouseY = e.pageY
+
+      pieces.forEach((piece) => {
+        const levelNum = Number(piece.dataset.level) || 1
+        const off = Number(piece.dataset.offset) || COLLAGE_STRENGTH
+        const denom = off - levelNum || 1
+        const xpos = (-mouseX / 2 + containerWidth / 2) / denom
+        const ypos = (-mouseY / 2 + containerHeight / 2) / denom
+        gsap.set(piece, { x: xpos, y: ypos })
+      })
+    }
+
+    const handleResize = () => {
+      pieces = buildPieces()
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      if (frameTimer) {
+        window.clearInterval(frameTimer)
+      }
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('resize', handleResize)
+      container.innerHTML = ''
+      container.style.removeProperty('--collage-frame')
+    }
+  }, [collageEnabled, isEmbedSource, sourceToken, playerRef])
+
+  const toggleCollage = useCallback(() => {
+    if (isEmbedSource) return
+
+    hidePopups()
+    setCollageEnabled((prev) => {
+      const next = !prev
+      showNotice(next ? 'grid_view' : 'grid_off')
+      return next
+    })
+  }, [hidePopups, isEmbedSource, showNotice])
 
   const handleContainerClick = useCallback(() => {
     if (pending) forcePlay()
@@ -130,7 +274,7 @@ const VideoPlayer = memo(function VideoPlayer({
       <div
         id="playerContainer"
         ref={containerRef}
-        className={pending ? 'pending' : ''}
+        className={`${pending ? 'pending' : ''} ${collageEnabled ? 'collage-enabled' : ''}`.trim()}
         onMouseMove={onContainerMouseMove}
         onMouseLeave={onContainerMouseLeave}
         onClick={handleContainerClick}
@@ -162,6 +306,10 @@ const VideoPlayer = memo(function VideoPlayer({
         >
           <source src={isEmbedSource ? '' : playbackSource.src} />
         </video>
+
+        {!isEmbedSource && collageEnabled ? (
+          <div ref={collageContainerRef} className="collage_container" aria-hidden="true" />
+        ) : null}
 
         {isEmbedSource ? (
           <iframe
@@ -323,35 +471,103 @@ const VideoPlayer = memo(function VideoPlayer({
           </div>
 
           <div id="controlsRight" className="controls-container">
+            <div className="player-popup-anchor">
+              <button
+                id="speed"
+                type="button"
+                className={`player-button material-icons ${speedActive ? 'active' : ''}`}
+                onClick={() => { setShowSpeedPopup((v) => !v); setShowCaptionsPopup(false); setShowQualityPopup(false); }}
+                aria-label="Speed"
+                aria-expanded={showSpeedPopup}
+              >
+                timer
+              </button>
+              {showSpeedPopup && (
+                <div id="speedPopup" className="player-popup" role="menu">
+                  <div className="player-popup-head">
+                    <i className="material-icons" aria-hidden="true">timer</i> Speed
+                  </div>
+                  {SPEED_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`player-popup-entry ${playbackRate === value ? 'active' : ''}`}
+                      onClick={() => setPlaybackRate(value)}
+                      role="menuitem"
+                    >
+                      <i className="material-icons" aria-hidden="true">fiber_manual_record</i> {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="player-popup-anchor">
+              <button
+                id="captions"
+                type="button"
+                className="player-button material-icons"
+                onClick={() => { setShowCaptionsPopup((v) => !v); setShowSpeedPopup(false); setShowQualityPopup(false); }}
+                aria-label="Captions"
+                aria-expanded={showCaptionsPopup}
+              >
+                subtitles
+              </button>
+              {showCaptionsPopup && (
+                <div id="captionsPopup" className="player-popup" role="menu">
+                  <div className="player-popup-head">
+                    <i className="material-icons" aria-hidden="true">subtitles</i> Captions
+                  </div>
+                  <button type="button" className="player-popup-entry" role="menuitem">
+                    <i className="material-icons" aria-hidden="true">language</i> English
+                  </button>
+                  <button type="button" className="player-popup-entry active" role="menuitem">
+                    <i className="material-icons" aria-hidden="true">clear</i> None
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="player-popup-anchor">
+              <button
+                id="quality"
+                type="button"
+                className={`player-button material-icons ${qualityActive ? 'active' : ''}`}
+                onClick={() => { setShowQualityPopup((v) => !v); setShowSpeedPopup(false); setShowCaptionsPopup(false); }}
+                aria-label="Quality"
+                aria-expanded={showQualityPopup}
+              >
+                high_quality
+              </button>
+              {showQualityPopup && (
+                <div id="qualityPopup" className="player-popup" role="menu">
+                  <div className="player-popup-head">
+                    <i className="material-icons" aria-hidden="true">high_quality</i> Quality
+                  </div>
+                  {QUALITY_OPTIONS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className={`player-popup-entry ${q === 720 ? 'quality-720' : ''} ${q === 1080 ? 'quality-1080' : ''}`}
+                      onClick={() => setQuality(q)}
+                      role="menuitem"
+                    >
+                      {q === 0 ? 'Auto' : `${q}p`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
-              id="speed"
+              id="collage"
               type="button"
-              className={`player-button material-icons ${speedActive ? 'active' : ''}`}
-              onClick={() => { setShowSpeedPopup((v) => !v); setShowCaptionsPopup(false); setShowQualityPopup(false); }}
-              aria-label="Speed"
-              aria-expanded={showSpeedPopup}
+              className={`player-button material-icons ${collageEnabled ? 'active' : ''}`}
+              onClick={toggleCollage}
+              aria-label={collageEnabled ? 'Disable collage mode' : 'Enable collage mode'}
+              aria-pressed={collageEnabled}
             >
-              timer
-            </button>
-            <button
-              id="captions"
-              type="button"
-              className="player-button material-icons"
-              onClick={() => { setShowCaptionsPopup((v) => !v); setShowSpeedPopup(false); setShowQualityPopup(false); }}
-              aria-label="Captions"
-              aria-expanded={showCaptionsPopup}
-            >
-              subtitles
-            </button>
-            <button
-              id="quality"
-              type="button"
-              className={`player-button material-icons ${qualityActive ? 'active' : ''}`}
-              onClick={() => { setShowQualityPopup((v) => !v); setShowSpeedPopup(false); setShowCaptionsPopup(false); }}
-              aria-label="Quality"
-              aria-expanded={showQualityPopup}
-            >
-              high_quality
+              dashboard
             </button>
             <button
               id="theater"
@@ -372,58 +588,6 @@ const VideoPlayer = memo(function VideoPlayer({
               fullscreen
             </button>
           </div>
-
-          {showSpeedPopup && (
-            <div id="speedPopup" className="player-popup" role="menu">
-              <div className="player-popup-head">
-                <i className="material-icons" aria-hidden="true">timer</i> Speed
-              </div>
-              {SPEED_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`player-popup-entry ${playbackRate === value ? 'active' : ''}`}
-                  onClick={() => setPlaybackRate(value)}
-                  role="menuitem"
-                >
-                  <i className="material-icons" aria-hidden="true">fiber_manual_record</i> {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {showCaptionsPopup && (
-            <div id="captionsPopup" className="player-popup" role="menu">
-              <div className="player-popup-head">
-                <i className="material-icons" aria-hidden="true">subtitles</i> Captions
-              </div>
-              <button type="button" className="player-popup-entry" role="menuitem">
-                <i className="material-icons" aria-hidden="true">language</i> English
-              </button>
-              <button type="button" className="player-popup-entry active" role="menuitem">
-                <i className="material-icons" aria-hidden="true">clear</i> None
-              </button>
-            </div>
-          )}
-
-          {showQualityPopup && (
-            <div id="qualityPopup" className="player-popup" role="menu">
-              <div className="player-popup-head">
-                <i className="material-icons" aria-hidden="true">high_quality</i> Quality
-              </div>
-              {QUALITY_OPTIONS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  className={`player-popup-entry ${q === 720 ? 'quality-720' : ''} ${q === 1080 ? 'quality-1080' : ''}`}
-                  onClick={() => setQuality(q)}
-                  role="menuitem"
-                >
-                  {q === 0 ? 'Auto' : `${q}p`}
-                </button>
-              ))}
-            </div>
-          )}
 
           <div id="nextUp" className="nextup" aria-hidden="true">
             <div className="nextup-frame" />
