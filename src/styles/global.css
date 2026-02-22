@@ -36,7 +36,9 @@
 /* Material-style secondary nav (Editors' Picks / Popular / etc.) */
 .browser-nav {
 	position: sticky;
-	top: 60px; /* sits just under the titlebar */
+	/* Content already sits below the fixed titlebar via base layout,
+	   so keeping an extra 60px sticky offset leaves a blank gap. */
+	top: 0;
 	z-index: 50;
 	background: var(--theme-color, #673AB7);
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -81,6 +83,8 @@
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 /* Each tab panel is a grid of cards */
@@ -377,6 +381,77 @@ body {
 	--app-header-height: 60px;
 	--app-hero-height: 400px;
 	--app-hero-height-mobile: clamp(320px, 62vh, 420px);
+	--theme-effect-color-a: #4ecdc4;
+	--theme-effect-color-b: #ff8c00;
+}
+
+html.theme-effect-infinite-grid body,
+body.theme-effect-infinite-grid {
+	background-image:
+		linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--theme-color) 20%, transparent) 1px,
+			transparent 1px
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--theme-color) 20%, transparent) 1px,
+			transparent 1px
+		);
+	background-size: 34px 34px;
+	background-attachment: fixed;
+	animation: themeInfiniteGridPan 14s linear infinite;
+}
+
+html.theme-effect-infinite-grid .content,
+body.theme-effect-infinite-grid .content {
+	background: color-mix(in srgb, #fafafa 86%, var(--theme-color) 14%);
+}
+
+html.theme-effect-css2 body,
+body.theme-effect-css2 {
+	--theme-effect-color-b: color-mix(in srgb, #ff8c00 74%, var(--theme-color) 26%);
+	background:
+		radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--theme-effect-color-b) 30%, transparent), transparent 40%),
+		radial-gradient(circle at 80% 15%, color-mix(in srgb, var(--theme-color) 25%, transparent), transparent 45%),
+		#050505;
+}
+
+html.theme-effect-css2 .browser-content-item,
+body.theme-effect-css2 .browser-content-item,
+html.theme-effect-css2 .section,
+body.theme-effect-css2 .section {
+	border: 1px solid color-mix(in srgb, var(--theme-effect-color-b) 38%, transparent);
+	box-shadow:
+		0 8px 20px color-mix(in srgb, var(--theme-effect-color-b) 20%, transparent),
+		0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+html.theme-effect-mixing body,
+body.theme-effect-mixing {
+	--theme-effect-color-a: color-mix(in srgb, #436e82 65%, var(--theme-color) 35%);
+	background:
+		radial-gradient(circle at 28% 15%, color-mix(in srgb, var(--theme-effect-color-a) 36%, transparent), transparent 45%),
+		radial-gradient(circle at 74% 10%, color-mix(in srgb, var(--theme-color) 32%, transparent), transparent 40%),
+		linear-gradient(180deg, #0b1118 0%, #0f1d28 42%, #123149 100%);
+}
+
+html.theme-effect-mixing .titlebar,
+body.theme-effect-mixing .titlebar {
+	background: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--theme-color) 82%, #0f2f45 18%) 0%,
+		color-mix(in srgb, var(--theme-effect-color-a) 58%, var(--theme-color) 42%) 100%
+	);
+}
+
+@keyframes themeInfiniteGridPan {
+	0% {
+		background-position: 0 0, 0 0;
+	}
+	100% {
+		background-position: 34px 34px, 34px 34px;
+	}
 }
 
 .browser-nav {
@@ -442,6 +517,13 @@ body {
 
 .top-wrap.active {
 	/* keep desktop hero sizing from css/style.css */
+}
+
+.top-wrap.collapsed {
+	/* Ensure collapsed hero cannot reserve/bleed visible space */
+	height: 0 !important;
+	min-height: 0 !important;
+	overflow: hidden !important;
 }
 
 .daily,
@@ -612,12 +694,12 @@ body {
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference .signup-title {
-		font-size: clamp(1.9rem, 7.3vw, 2.4rem);
+		font-size: clamp(0.95rem, 3.65vw, 1.2rem);
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference .signup-desc {
 		max-width: 92%;
-		font-size: 15px;
+		font-size: 7.5px;
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName,
@@ -997,11 +1079,11 @@ body {
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference .signup-title {
-		font-size: clamp(1.7rem, 8.6vw, 2.1rem);
+		font-size: clamp(0.85rem, 4.3vw, 1.05rem);
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference .signup-desc {
-		font-size: 14px;
+		font-size: 7px;
 	}
 
 	#signup.signup.signup-step-1-view .signup-step1-reference #signupInputName .upload-link-input,
@@ -1127,4 +1209,310 @@ body {
 	.browser-content-item-rating {
 		opacity: 0.92;
 	}
+}
+
+/* ============================================
+   DAILY COMMENTS PANEL (on-page scroll)
+   ============================================ */
+
+#daily #dailyComment.active-comments {
+	background: rgba(255, 255, 255, 0.22);
+	color: #ffffff;
+}
+
+#daily #dailyComments.daily-comments {
+	position: absolute;
+	top: 76px;
+	right: 24px;
+	left: auto;
+	width: min(460px, calc(100% - 48px));
+	height: calc(100% - 122px);
+	max-height: calc(100% - 122px);
+	opacity: 0;
+	transform: translateY(16px);
+	pointer-events: none;
+	overflow: hidden;
+	border-radius: 16px;
+	background: rgba(18, 20, 28, 0.72);
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	backdrop-filter: blur(8px);
+	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+	z-index: 12;
+	transition: opacity 180ms ease, transform 180ms ease;
+}
+
+#daily #dailyComments.daily-comments.active {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+#daily .daily-comments-shell {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+#daily .daily-comments-header {
+	height: 56px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 16px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#daily .daily-comments-title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: #ffffff;
+}
+
+#daily .daily-comments-count {
+	min-width: 24px;
+	height: 24px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.18);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 600;
+	color: #fff;
+}
+
+#daily .daily-comments-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+#daily .daily-comments-scroll::-webkit-scrollbar {
+	width: 8px;
+}
+
+#daily .daily-comments-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.34);
+	border-radius: 999px;
+}
+
+#daily .comment {
+	position: relative;
+	height: auto;
+	padding: 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+#daily .comment.comment-level-2 {
+	margin-top: 8px;
+	margin-left: 24px;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+#daily .comment-info-wrap {
+	position: static;
+	height: auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	line-height: 1;
+	overflow: visible;
+	font-size: 13px;
+	margin-bottom: 8px;
+}
+
+#daily .comment-avatar {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.2);
+	color: #fff;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+#daily .comment-info-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+	flex: 1;
+}
+
+#daily .comment-info-user {
+	font-weight: 600;
+	font-size: 13px;
+	color: #fff;
+	margin-right: 0;
+}
+
+#daily .comment-info-date {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.72);
+	margin-right: 0;
+}
+
+#daily .comment-info-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+}
+
+#daily .comment-info-actions .button-flat {
+	background: transparent;
+	border: 0;
+	padding: 2px;
+	color: rgba(255, 255, 255, 0.86);
+	cursor: pointer;
+	line-height: 1;
+}
+
+#daily .comment-info-actions .material-icons {
+	font-size: 16px;
+}
+
+#daily .comment-score {
+	min-width: 18px;
+	text-align: center;
+	font-size: 12px;
+	font-weight: 600;
+	color: #fff;
+}
+
+#daily .comment-content {
+	position: static;
+	display: block;
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: rgba(255, 255, 255, 0.9);
+	overflow: visible;
+	text-overflow: initial;
+}
+
+#daily .comment-replies {
+	margin-top: 8px;
+}
+
+#daily.daily.alternate #dailyComments.daily-comments {
+	top: 92px;
+	height: calc(100% - 148px);
+	max-height: calc(100% - 148px);
+}
+
+/* Bottom-growth behavior requested for comments:
+   grow the hero area downward so the comments panel sits below video/info,
+   while the editors bar flow remains intact. */
+.top-wrap.active.comments-expanded {
+	height: 860px;
+}
+
+#daily.comments-open {
+	overflow: visible;
+}
+
+#daily #dailyComments.daily-comments {
+	top: 410px;
+	left: 24px;
+	right: 24px;
+	width: auto;
+	transform: none;
+	height: 0;
+	max-height: 0;
+	z-index: 7;
+	transition: opacity 180ms ease, max-height 220ms ease;
+}
+
+#daily.comments-open #dailyComments.daily-comments.active {
+	height: 430px;
+	max-height: 430px;
+	opacity: 1;
+	pointer-events: auto;
+}
+
+#daily.daily.alternate.comments-open #dailyComments.daily-comments.active {
+	top: 520px;
+	height: 420px;
+	max-height: 420px;
+}
+
+/* Visual alignment pass: match CodePen-style typography,
+   then tint panel to same hero blue family. */
+#daily #dailyComments.daily-comments {
+	background: rgba(96, 125, 139, 0.96);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+	backdrop-filter: none;
+}
+
+#daily .daily-comments-title {
+	font-size: 30px;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.3px;
+	text-decoration: none;
+}
+
+#daily .comment-info-user,
+#daily .comment-info-date,
+#daily .comment-content,
+#daily .comment-score {
+	text-decoration: none;
+}
+
+#daily .comment {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+#daily .comment.comment-level-2 {
+	background: rgba(255, 255, 255, 0.08);
+}
+
+#daily .daily-comments-header {
+	background: rgba(255, 255, 255, 0.08);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+#daily .comment-content {
+	font-size: 14px;
+	line-height: 1.4;
+	font-weight: 400;
+	text-shadow: none;
+}
+
+/* Blue-box parity pass (match encircled hero tone) */
+#daily #dailyComments.daily-comments {
+	background: linear-gradient(180deg, rgba(128, 153, 166, 0.96) 0%, rgba(96, 125, 139, 0.96) 100%) !important;
+	border: 1px solid rgba(255, 255, 255, 0.24) !important;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18) !important;
+	backdrop-filter: none !important;
+}
+
+#daily .daily-comments-header {
+	background: rgba(140, 166, 178, 0.34) !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+
+#daily .daily-comments-scroll {
+	background: rgba(103, 132, 146, 0.20) !important;
+}
+
+#daily .comment {
+	background: rgba(255, 255, 255, 0.14) !important;
+	border-color: rgba(255, 255, 255, 0.20) !important;
 }

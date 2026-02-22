@@ -1,6 +1,6 @@
 <?php
 Route::group(['middleware' => ['web', 'general-access'], 'prefix' => 'api/v1', 'namespace' => 'App\Modules\User\Controllers'], function(){
-    Route::get('user/tag/custom', 'UserTagApiController@addCustom');
+    Route::match(['get', 'post'], 'user/tag/custom', 'UserTagApiController@addCustom');
     Route::resource('user/tag', 'UserTagApiController');
     
     Route::get('users/me','UserApiController@me');

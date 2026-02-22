@@ -338,12 +338,6 @@ body {
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.button-float.daily-sub:hover {
-	color: #fafafa;
-	background: var(--theme-color);
-	box-shadow: 0 5px 5px rgba(0, 0, 0, 0.14);
-}
-
 .button-float-caption {
 	position: relative;
 	display: inline-block;
@@ -662,7 +656,7 @@ select:disabled {
 
 .titlebar-menu .material-icons {
 	margin-left: 0;
-	top: 0;
+	top: 8px;
 }
 
 .titlebar-logo {
@@ -844,6 +838,7 @@ select:disabled {
 
 .shadow.hidden {
 	background: transparent;
+	pointer-events: none;
 }
 
 .content {
@@ -852,12 +847,14 @@ select:disabled {
 	z-index: 1;
 	display: block;
 	width: 100%;
+	height: 100vh;
 	min-height: calc(100vh - 60px);
 	margin-top: 0;
 	color: #212121;
 	background: #fafafa;
 	overflow-y: auto;
 	overflow-x: hidden;
+	overscroll-behavior: contain;
 	padding-top: 60px;
 	box-sizing: border-box;
 }
@@ -1621,25 +1618,27 @@ select:disabled {
 }
 
 .daily-comment {
-	position: absolute;
-	top: 330px;
+	position: fixed;
+	top: auto;
+	bottom: 20px;
 	right: 20px;
-	padding-left: 13px;
+	padding-left: 0;
 }
 
 .daily.alternate .daily-comment {
-	transform: translateY(100px);
+	transform: none;
 	z-index: 11;
 }
 
 .daily-sub {
-	position: absolute;
-	top: 330px;
+	position: fixed;
+	top: auto;
+	bottom: 20px;
 	right: 90px;
 }
 
 .daily.alternate .daily-sub {
-	transform: translateY(100px);
+	transform: none;
 	z-index: 11;
 }
 
@@ -4487,6 +4486,19 @@ select:disabled {
 	display: inline-block;
 }
 
+.player-popup-anchor {
+	position: relative;
+	display: inline-block;
+}
+
+.player-popup-anchor .player-popup {
+	left: 50%;
+	right: auto;
+	bottom: 36px;
+	-webkit-transform: translateX(-50%);
+	transform: translateX(-50%);
+}
+
 #progressholder {
 	display: inline-block;
 	height: 5px;
@@ -5528,7 +5540,7 @@ video.background {
 .browser-nav {
     cursor: default;
     position: sticky;
-    top: 60px;
+    top: 0;
     left: 0;
     right: 0;
     display: flex;
@@ -5553,7 +5565,7 @@ video.background {
 
 .browser-nav.fixed {
 	position: fixed !important;
-	top: 60px !important;
+	top: 0 !important;
 }
 
 .browser-nav-fuck {
@@ -5626,8 +5638,51 @@ video.background {
 	bottom: 0;
 	width: 100%;
 	height: auto;
-	overflow: visible;
+	overflow-y: auto;
+	overflow-x: hidden;
 	background: #fafafa;
+}
+
+/* Unified scrollbar style for core app scroll containers */
+.content,
+.browser-content,
+.column-left,
+.content-main {
+	scrollbar-width: auto;
+	scrollbar-color: rgba(44, 44, 44, 0.55) transparent;
+}
+
+.content::-webkit-scrollbar,
+.browser-content::-webkit-scrollbar,
+.column-left::-webkit-scrollbar,
+.content-main::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+
+.content::-webkit-scrollbar-track,
+.browser-content::-webkit-scrollbar-track,
+.column-left::-webkit-scrollbar-track,
+.content-main::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb,
+.browser-content::-webkit-scrollbar-thumb,
+.column-left::-webkit-scrollbar-thumb,
+.content-main::-webkit-scrollbar-thumb {
+	background: rgba(44, 44, 44, 0.55);
+	border-radius: 10px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+.content::-webkit-scrollbar-thumb:hover,
+.browser-content::-webkit-scrollbar-thumb:hover,
+.column-left::-webkit-scrollbar-thumb:hover,
+.content-main::-webkit-scrollbar-thumb:hover {
+	background: rgba(30, 30, 30, 0.72);
+	background-clip: padding-box;
 }
 
 /* Individual tab panels; margin-top handled in global.css */

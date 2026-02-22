@@ -11,15 +11,15 @@ import useVideoUploadForm from '../hooks/useVideoUploadForm'
 import {
   formatBytes,
   MAX_THUMBNAIL_SIZE_BYTES,
-  MAX_VIDEO_SIZE_BYTES,
   THUMBNAIL_INPUT_ACCEPT,
-  VIDEO_INPUT_ACCEPT,
 } from '../config/upload.config'
 
 const SOURCE_OPTIONS = [
   { id: 'uploadLink', icon: 'link', label: 'Paste a Link' },
+  { id: 'uploadGoogle', icon: 'cloud_queue', label: 'Google Drive' },
   { id: 'uploadYoutube', icon: 'smart_display', label: 'YouTube' },
   { id: 'uploadFacebook', icon: 'facebook', label: 'Facebook' },
+  { id: 'uploadDropbox', icon: 'folder_shared', label: 'Dropbox' },
 ]
 
 const PRIVACY_OPTIONS = [
@@ -32,6 +32,17 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
 }
 
+function isValidHttpUrl(value) {
+  if (!value) return false
+
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 const Upload = memo(function Upload({
   active,
   step = 1,
@@ -40,6 +51,7 @@ const Upload = memo(function Upload({
   onHideUpload,
   onNextUpload,
   onPrevUpload,
+  onVideoReady,
 }) {
   const {
     formValues,
@@ -47,16 +59,10 @@ const Upload = memo(function Upload({
     thumbnailPreviewUrl,
     uploadProgress,
     isUploading,
-    isVideoDragActive,
     fieldErrors,
     snackbar,
     handleChange,
     handleThumbnailInput,
-    handleVideoInput,
-    handleVideoDragEnter,
-    handleVideoDragOver,
-    handleVideoDragLeave,
-    handleVideoDrop,
     closeSnackbar,
     submitUpload,
   } = useVideoUploadForm({
@@ -78,19 +84,69 @@ const Upload = memo(function Upload({
 
   const [selectedSource, setSelectedSource] = useState('')
   const [sourceInputValue, setSourceInputValue] = useState('')
+  const [sourceError, setSourceError] = useState('')
 
   const sourcePlaceholder = useMemo(() => {
+    if (selectedSource === 'uploadGoogle') return 'Paste Google Drive URL'
     if (selectedSource === 'uploadYoutube') return 'Paste YouTube URL'
     if (selectedSource === 'uploadFacebook') return 'Paste Facebook URL'
+    if (selectedSource === 'uploadDropbox') return 'Paste Dropbox URL'
     return 'Paste video URL'
   }, [selectedSource])
+
+  const selectedSourceLabel = useMemo(
+    () => SOURCE_OPTIONS.find((source) => source.id === selectedSource)?.label || 'Source link',
+    [selectedSource],
+  )
+  const sourceUrlTrimmed = useMemo(() => sourceInputValue.trim(), [sourceInputValue])
+
+  const validateSourceInput = () => {
+    const trimmed = sourceInputValue.trim()
+
+    if (!selectedSource) {
+      setSourceError('Select a source platform.')
+      return false
+    }
+
+    if (!trimmed) {
+      setSourceError('Source URL is required.')
+      return false
+    }
+
+    if (!isValidHttpUrl(trimmed)) {
+      setSourceError('Enter a valid source URL (http or https).')
+      return false
+    }
+
+    setSourceError('')
+    return true
+  }
 
   const handleNext = async () => {
     if (!canGoNext || isUploading) return
 
+    if (boundedStep === 1) {
+      if (!validateSourceInput()) return
+      onNextUpload?.()
+      return
+    }
+
     if (boundedStep === 2) {
-      const result = await submitUpload()
+      const result = await submitUpload({
+        sourceType: selectedSource,
+        sourceUrl: sourceInputValue,
+      })
       if (!result) return
+
+      if (typeof onVideoReady === 'function') {
+        onVideoReady({
+          sourceType: selectedSource,
+          sourceUrl: sourceInputValue.trim(),
+          title: formValues.title.trim(),
+          uploadResponse: result,
+        })
+        return
+      }
     }
 
     onNextUpload?.()
@@ -99,6 +155,83 @@ const Upload = memo(function Upload({
   const handlePrev = () => {
     if (!canGoPrev || isUploading) return
     onPrevUpload?.()
+  }
+
+  const floatButtonBaseSx = {
+    minWidth: 0,
+    padding: 0,
+    textTransform: 'none',
+    position: 'absolute',
+    top: 20,
+    width: 50,
+    height: 50,
+    borderRadius: '50%',
+    color: '#fafafa',
+    backgroundColor: 'rgba(96, 125, 139, 0.55)',
+    boxShadow: '0 3px 5px rgba(0, 0, 0, 0.14), 0 1px 18px rgba(0, 0, 0, 0.12)',
+    '&:hover': {
+      backgroundColor: 'rgba(96, 125, 139, 0.9)',
+    },
+  }
+
+  const helperTextNoShadowProps = {
+    sx: {
+      textShadow: 'none',
+      textDecoration: 'none',
+    },
+  }
+
+  const step2FieldSx = {
+    '& .MuiFilledInput-root': {
+      backgroundColor: '#fff',
+      '&:before, &:after': {
+        display: 'none',
+      },
+      '&:hover': {
+        backgroundColor: '#fff',
+      },
+      '&.Mui-focused': {
+        backgroundColor: '#fff',
+      },
+    },
+    '& .MuiFilledInput-input': {
+      color: '#424242',
+    },
+    '& .MuiSelect-icon': {
+      color: '#424242',
+    },
+    '& .MuiFormHelperText-root': {
+      textShadow: 'none',
+      textDecoration: 'none',
+    },
+  }
+
+  const step2InputWrapperSx = {
+    boxShadow: 'none !important',
+  }
+
+  const mediaDropZoneSx = {
+    flex: { xs: '1 1 100%', sm: '0 0 220px' },
+    minHeight: 120,
+    border: '2px dashed rgba(255,255,255,0.45)',
+    borderRadius: 1,
+    backgroundImage: 'url("/resources/photo.jpg")',
+    backgroundSize: 'cover',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center center',
+    p: 2,
+    cursor: 'pointer',
+    float: 'none',
+    width: 'auto',
+    marginRight: 0,
+  }
+
+  const step2DescriptionFieldSx = {
+    ...step2FieldSx,
+    '& .MuiInputBase-inputMultiline': {
+      maxHeight: 120,
+      overflowY: 'auto !important',
+    },
   }
 
   return (
@@ -118,7 +251,7 @@ const Upload = memo(function Upload({
         color="inherit"
         disableElevation
         disableRipple
-        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+        sx={{ ...floatButtonBaseSx, right: 20 }}
       >
         <i className="material-icons" aria-hidden="true">close</i>
       </Button>
@@ -136,7 +269,7 @@ const Upload = memo(function Upload({
         disableElevation
         disableRipple
         disabled={!canGoNext || isUploading}
-        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+        sx={{ ...floatButtonBaseSx, right: 90 }}
       >
         <i className="material-icons" aria-hidden="true">navigate_next</i>
       </Button>
@@ -152,7 +285,7 @@ const Upload = memo(function Upload({
         disableElevation
         disableRipple
         disabled={!canGoPrev || isUploading}
-        sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+        sx={{ ...floatButtonBaseSx, right: 160 }}
       >
         <i className="material-icons" aria-hidden="true">navigate_before</i>
       </Button>
@@ -162,8 +295,8 @@ const Upload = memo(function Upload({
       </div>
 
       <div id="upload1" className={`upload-page ${boundedStep === 1 ? 'active' : ''}`}>
-        <h2 className="upload-title">Post a Video</h2>
-        <p className="upload-desc">Choose how you want to share your content.</p>
+        <h2 className="upload-title">Post a Video Link</h2>
+        <p className="upload-desc">Choose a platform and add your video URL.</p>
 
         {SOURCE_OPTIONS.map((source) => (
           <Button
@@ -173,6 +306,7 @@ const Upload = memo(function Upload({
             onClick={() => {
               setSelectedSource(source.id)
               setSourceInputValue('')
+              setSourceError('')
             }}
             aria-label={source.label}
             type="button"
@@ -192,6 +326,7 @@ const Upload = memo(function Upload({
             onClick={() => {
               setSelectedSource('')
               setSourceInputValue('')
+              setSourceError('')
             }}
             aria-label="Back to source options"
             type="button"
@@ -211,7 +346,10 @@ const Upload = memo(function Upload({
               className="upload-link-input input"
               placeholder={sourcePlaceholder}
               value={sourceInputValue}
-              onChange={(event) => setSourceInputValue(event.target.value)}
+              onChange={(event) => {
+                setSourceInputValue(event.target.value)
+                setSourceError('')
+              }}
               aria-label="Source URL"
             />
             <Button
@@ -227,60 +365,172 @@ const Upload = memo(function Upload({
               <i className="material-icons" aria-hidden="true">arrow_forward</i>
             </Button>
           </div>
+          {sourceError ? <p className="upload-desc" style={{ top: 'auto', marginTop: 8, color: '#ffdddd' }}>{sourceError}</p> : null}
         </div>
       </div>
 
-      <div id="upload2" className={`upload-page ${boundedStep === 2 ? 'active' : ''}`}>
-        <h2 id="uploadInformationTitle" className="upload-title">Video Information</h2>
+      <div
+        id="upload2"
+        className={`upload-page ${boundedStep === 2 ? 'active' : ''}`}
+        style={{
+          top: 0,
+          textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          paddingBottom: 20,
+        }}
+      >
+        <h2
+          id="uploadInformationTitle"
+          className="upload-title"
+          style={{
+            position: 'static',
+            left: 'auto',
+            top: 'auto',
+            transform: 'none',
+            width: '100%',
+            maxWidth: '690px',
+            margin: '0 0 14px',
+            padding: 0,
+            textAlign: 'left',
+            textShadow: 'none',
+          }}
+        >
+          Video Information
+        </h2>
 
-        <div className="upload-inputs" id="upload2Inputs">
-          <div id="uploadInputTitle" className="upload-input upload-input-title">
-            <TextField
-              fullWidth
-              value={formValues.title}
-              onChange={handleChange('title')}
-              placeholder="Title"
-              error={Boolean(fieldErrors.title)}
-              helperText={fieldErrors.title || 'Required'}
-              variant="filled"
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: 'input', 'aria-label': 'Video title' }}
-            />
-          </div>
-
-          <div className="upload-input upload-visibility">
-            <TextField
-              select
-              fullWidth
-              value={formValues.privacy}
-              onChange={handleChange('privacy')}
-              error={Boolean(fieldErrors.privacy)}
-              helperText={fieldErrors.privacy || 'Privacy'}
-              variant="filled"
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: 'input', 'aria-label': 'Video privacy' }}
+        <Box
+          className="upload-inputs"
+          id="upload2Inputs"
+          sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', float: 'none' }}
+        >
+          <Box
+            id="uploadVideoTitlePrivacyRow"
+            sx={{
+              width: '100%',
+              maxWidth: 690,
+              display: 'flex',
+              gap: 2,
+              alignItems: 'flex-start',
+              flexWrap: { xs: 'wrap', sm: 'nowrap' },
+              mb: 1,
+            }}
+          >
+            <Box
+              id="uploadInputTitle"
+              className="upload-input upload-input-title"
+              sx={{ ...step2InputWrapperSx, flex: { xs: '1 1 100%', sm: '1 1 auto' }, width: 'auto', float: 'none', mb: 0, minWidth: 0, ml: 0 }}
             >
-              {PRIVACY_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-              ))}
-            </TextField>
-          </div>
+              <TextField
+                fullWidth
+                value={formValues.title}
+                onChange={handleChange('title')}
+                placeholder="Title"
+                error={Boolean(fieldErrors.title)}
+                helperText={fieldErrors.title || 'Required'}
+                FormHelperTextProps={helperTextNoShadowProps}
+                variant="filled"
+                sx={step2FieldSx}
+                InputProps={{ disableUnderline: true }}
+                inputProps={{ className: 'input', 'aria-label': 'Video title' }}
+              />
+            </Box>
 
-          <div id="uploadInputChat" className="upload-input upload-input-desc">
-            <TextField
-              fullWidth
-              value={formValues.discussion_link}
-              onChange={handleChange('discussion_link')}
-              placeholder="Link to a Discussion Page (i.e. reddit)"
-              error={Boolean(fieldErrors.discussion_link)}
-              helperText={fieldErrors.discussion_link || 'Optional'}
-              variant="filled"
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: 'input', 'aria-label': 'Discussion link' }}
-            />
-          </div>
+            <Box
+              className="upload-input upload-visibility"
+              sx={{ ...step2InputWrapperSx, flex: { xs: '1 1 100%', sm: '0 0 180px' }, width: 'auto', float: 'none', mb: 0, minWidth: 0, ml: 0 }}
+            >
+              <TextField
+                select
+                fullWidth
+                value={formValues.privacy}
+                onChange={handleChange('privacy')}
+                error={Boolean(fieldErrors.privacy)}
+                helperText={fieldErrors.privacy || 'Privacy'}
+                FormHelperTextProps={helperTextNoShadowProps}
+                variant="filled"
+                sx={step2FieldSx}
+                InputProps={{ disableUnderline: true }}
+                inputProps={{ className: 'input', 'aria-label': 'Video privacy' }}
+              >
+                {PRIVACY_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          </Box>
 
-          <div id="uploadInputDesc" className="upload-input upload-input-desc">
+          <Box
+            id="uploadThumbAndChatRow"
+            sx={{
+              width: '100%',
+              maxWidth: 690,
+              display: 'flex',
+              gap: 2,
+              alignItems: 'flex-start',
+              flexWrap: { xs: 'wrap', sm: 'nowrap' },
+              mb: 2,
+            }}
+          >
+            <Box
+              id="uploadThumbnailPicker"
+              sx={{
+                ...mediaDropZoneSx,
+                backgroundColor: 'rgba(0,0,0,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+              onClick={() => document.getElementById('uploadThumbnailFileInput')?.click()}
+            >
+              {thumbnailPreviewUrl ? (
+                <img src={thumbnailPreviewUrl} alt="Thumbnail preview" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 4 }} />
+              ) : (
+                <Typography variant="body2" sx={{ color: '#fff' }}>
+                  {selectedFiles.thumbnail ? `Thumbnail: ${selectedFiles.thumbnail.name}` : 'Drop thumbnail here or click to select'}
+                </Typography>
+              )}
+              <input
+                id="uploadThumbnailFileInput"
+                type="file"
+                accept={THUMBNAIL_INPUT_ACCEPT}
+                onChange={handleThumbnailInput}
+                aria-label="Select thumbnail file"
+                style={{ display: 'none' }}
+              />
+            </Box>
+
+            <Box
+              id="uploadInputChat"
+              className="upload-input upload-input-desc"
+              sx={{ ...step2InputWrapperSx, flex: 1, width: 'auto', marginTop: 0, float: 'none', mb: 0, ml: 0 }}
+            >
+              <TextField
+                fullWidth
+                value={formValues.discussion_link}
+                onChange={handleChange('discussion_link')}
+                placeholder="Paste Reddit discussion link (optional)"
+                error={Boolean(fieldErrors.discussion_link)}
+                helperText={fieldErrors.discussion_link || 'Optional'}
+                FormHelperTextProps={helperTextNoShadowProps}
+                variant="filled"
+                sx={step2FieldSx}
+                InputProps={{ disableUnderline: true }}
+                inputProps={{ className: 'input', 'aria-label': 'Discussion link' }}
+              />
+            </Box>
+          </Box>
+
+          <div
+            id="uploadInputDesc"
+            className="upload-input upload-input-desc"
+            style={{ ...step2InputWrapperSx, marginTop: 0 }}
+          >
             <TextField
               fullWidth
               multiline
@@ -290,85 +540,22 @@ const Upload = memo(function Upload({
               placeholder="Description"
               error={Boolean(fieldErrors.description)}
               helperText={fieldErrors.description || 'Optional'}
+              FormHelperTextProps={helperTextNoShadowProps}
               variant="filled"
+              sx={step2DescriptionFieldSx}
               InputProps={{ disableUnderline: true }}
               inputProps={{ className: 'input', 'aria-label': 'Video description' }}
             />
           </div>
-        </div>
+        </Box>
 
         <Box className="upload-toggles" sx={{ width: '100%', maxWidth: 690, mt: 1 }}>
-          <Box
-            id="uploadVideoDropZone"
-            className={`upload-frame ${isVideoDragActive ? 'active' : ''}`}
-            onDragEnter={handleVideoDragEnter}
-            onDragOver={handleVideoDragOver}
-            onDragLeave={handleVideoDragLeave}
-            onDrop={handleVideoDrop}
-            sx={{
-              width: '100%',
-              minHeight: 120,
-              border: '2px dashed rgba(255,255,255,0.45)',
-              borderRadius: 1,
-              p: 2,
-              mb: 1.5,
-              cursor: 'pointer',
-              backgroundColor: isVideoDragActive ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-            }}
-            onClick={() => document.getElementById('uploadVideoFileInput')?.click()}
-          >
-            <Typography variant="body2" sx={{ color: '#fff' }}>
-              {selectedFiles.video ? `Video: ${selectedFiles.video.name}` : 'Drop video here or click to select'}
-            </Typography>
-            <input
-              id="uploadVideoFileInput"
-              type="file"
-              accept={VIDEO_INPUT_ACCEPT}
-              onChange={handleVideoInput}
-              aria-label="Select video file"
-              style={{ display: 'none' }}
-            />
-          </Box>
 
-          <Box
-            id="uploadThumbnailPicker"
-            sx={{
-              width: '100%',
-              minHeight: 120,
-              border: '2px dashed rgba(255,255,255,0.35)',
-              borderRadius: 1,
-              p: 2,
-              mb: 1,
-              cursor: 'pointer',
-              backgroundColor: 'rgba(0,0,0,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onClick={() => document.getElementById('uploadThumbnailFileInput')?.click()}
-          >
-            {thumbnailPreviewUrl ? (
-              <img src={thumbnailPreviewUrl} alt="Thumbnail preview" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 4 }} />
-            ) : (
-              <Typography variant="body2" sx={{ color: '#fff' }}>
-                {selectedFiles.thumbnail ? `Thumbnail: ${selectedFiles.thumbnail.name}` : 'Choose thumbnail (optional)'}
-              </Typography>
-            )}
-            <input
-              id="uploadThumbnailFileInput"
-              type="file"
-              accept={THUMBNAIL_INPUT_ACCEPT}
-              onChange={handleThumbnailInput}
-              aria-label="Select thumbnail file"
-              style={{ display: 'none' }}
-            />
-          </Box>
-
-          {fieldErrors.video ? <Typography className="field-error-text" sx={{ color: '#ffdddd', mb: 0.5 }}>{fieldErrors.video}</Typography> : null}
+          {fieldErrors.source_url ? <Typography className="field-error-text" sx={{ color: '#ffdddd', mb: 0.5 }}>{fieldErrors.source_url}</Typography> : null}
           {fieldErrors.thumbnail ? <Typography className="field-error-text" sx={{ color: '#ffdddd', mb: 0.5 }}>{fieldErrors.thumbnail}</Typography> : null}
 
           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
-            Max video size: {formatBytes(MAX_VIDEO_SIZE_BYTES)} · Max thumbnail size: {formatBytes(MAX_THUMBNAIL_SIZE_BYTES)}
+            Max thumbnail size: {formatBytes(MAX_THUMBNAIL_SIZE_BYTES)}
           </Typography>
 
           {isUploading ? (

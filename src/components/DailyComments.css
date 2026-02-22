@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Satisfy&display=swap');
+
+#daily .retro-comments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#daily .retro-comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 0 4px 18px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.32);
+}
+
+#daily .retro-comment-item.is-even {
+  flex-direction: row-reverse;
+}
+
+#daily .retro-comment-infos {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  flex: 0 0 108px;
+  padding: 3px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.4);
+}
+
+#daily .retro-comment-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+#daily .retro-social {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.34);
+  color: #fff;
+  text-decoration: none !important;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0 9px;
+  box-shadow: -1px 1px 0 1px rgba(0, 0, 0, 0.18);
+  transition: width 0.2s ease, background-color 0.2s ease;
+  z-index: 3;
+}
+
+#daily .retro-comment-item.is-even .retro-social {
+  box-shadow: 1px 1px 0 1px rgba(0, 0, 0, 0.18);
+}
+
+#daily .retro-social span {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.18s ease, opacity 0.18s ease;
+}
+
+#daily .retro-social:hover {
+  width: auto;
+  padding-right: 12px;
+}
+
+#daily .retro-social:hover span {
+  max-width: 170px;
+  opacity: 1;
+}
+
+#daily .retro-social-twitter {
+  top: 16%;
+  left: -8%;
+}
+
+#daily .retro-social-facebook {
+  top: 42%;
+  left: -12%;
+}
+
+#daily .retro-social-github {
+  bottom: 17%;
+  left: -2%;
+}
+
+#daily .retro-comment-item.is-even .retro-social-twitter {
+  left: auto;
+  right: -8%;
+}
+
+#daily .retro-comment-item.is-even .retro-social-facebook {
+  left: auto;
+  right: -12%;
+}
+
+#daily .retro-comment-item.is-even .retro-social-github {
+  left: auto;
+  right: -2%;
+}
+
+#daily .retro-social-twitter:hover {
+  background: #2094dd;
+}
+
+#daily .retro-social-facebook:hover {
+  background: #3b5998;
+}
+
+#daily .retro-social-github:hover {
+  background: #444;
+}
+
+#daily .retro-comment-content {
+  position: relative;
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-right-width: 4px;
+  border-bottom-width: 4px;
+  background-color: rgba(225, 218, 176, 0.9);
+  background-image:
+    linear-gradient(0deg, transparent 11px, rgba(219, 173, 169, 0.52) 0, rgba(219, 173, 169, 0.52) 14px, transparent 12px),
+    linear-gradient(rgba(225, 218, 176, 0.85) 0.1em, transparent 0.1em);
+  background-size: 100% 10px;
+  color: #2f2f2f;
+}
+
+#daily .retro-comment-content::after,
+#daily .retro-comment-content::before {
+  content: '';
+  position: absolute;
+  top: 46px;
+  border-bottom: 23px solid transparent;
+  transform: rotate(220deg);
+}
+
+#daily .retro-comment-content::after {
+  left: -9px;
+  border-right: 20px solid rgba(225, 218, 176, 0.9);
+}
+
+#daily .retro-comment-content::before {
+  left: -11px;
+  border-right: 19px solid rgba(0, 0, 0, 0.12);
+}
+
+#daily .retro-comment-item.is-even .retro-comment-content {
+  border-right-width: 3px;
+  border-left-width: 4px;
+}
+
+#daily .retro-comment-item.is-even .retro-comment-content::after,
+#daily .retro-comment-item.is-even .retro-comment-content::before {
+  left: auto;
+  right: -9px;
+  transform: rotate(41deg);
+}
+
+#daily .retro-comment-item.is-even .retro-comment-content::before {
+  right: -11px;
+}
+
+#daily .retro-comment-content h3 {
+  margin: 0;
+  padding: 0;
+  font-family: 'Satisfy', Georgia, 'Times New Roman', serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: #3a2a16;
+  text-decoration: none;
+}
+
+#daily .retro-comment-content h3 b {
+  display: block;
+  margin-top: 2px;
+  font: italic 500 15px/1.35 Georgia, 'Times New Roman', serif;
+  color: #6b2b13;
+  text-decoration: none;
+}
+
+#daily .retro-comment-content p {
+  margin: 10px 0 0;
+  font: 15px/1.62 Georgia, 'Times New Roman', serif;
+  color: #2f2f2f;
+  text-decoration: none;
+}
+
+#daily .retro-comment-content p a {
+  text-decoration: none;
+  background: rgba(247, 243, 197, 0.8);
+  border-bottom: 1px solid rgba(207, 206, 190, 0.9);
+  color: #834202;
+  padding: 1px 4px;
+}
+
+#daily .retro-comment-content p a:hover {
+  background: rgba(245, 236, 130, 0.9);
+}
+
+@media (max-width: 900px) {
+  #daily .retro-comment-item,
+  #daily .retro-comment-item.is-even {
+    flex-direction: column;
+  }
+
+  #daily .retro-comment-infos {
+    width: 88px;
+    height: 88px;
+    flex-basis: 88px;
+  }
+
+  #daily .retro-comment-content {
+    width: 100%;
+  }
+
+  #daily .retro-comment-content::before,
+  #daily .retro-comment-content::after,
+  #daily .retro-comment-item.is-even .retro-comment-content::before,
+  #daily .retro-comment-item.is-even .retro-comment-content::after {
+    display: none;
+  }
+}

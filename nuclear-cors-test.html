@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear CORS Test - Credentialed Requests</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .critical { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
+        .header-row { display: flex; gap: 20px; margin-bottom: 10px; }
+        .header-item { flex: 1; }
+        .status-badge { padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .status-pass { background: #d4edda; color: #155724; }
+        .status-fail { background: #f8d7da; color: #721c24; }
+        .status-warn { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>☢️ Nuclear CORS Test - Credentialed Requests</h1>
+    <p><strong>Testing the "Nuclear Option" fix for credentialed requests with custom headers.</strong></p>
+    
+    <div class="test-section info">
+        <h3>🔧 Test Configuration</h3>
+        <div class="header-row">
+            <div class="header-item">
+                <strong>Backend URL:</strong> <span id="backend-url">http://localhost:8000/api/v1</span>
+            </div>
+            <div class="header-item">
+                <strong>Frontend Origin:</strong> <span id="frontend-origin">http://localhost:3000</span>
+            </div>
+            <div class="header-item">
+                <strong>Test Type:</strong> <span class="status-badge status-warn">Credentialed</span>
+            </div>
+        </div>
+        <p><strong>Custom Headers:</strong> token, client_id (treated as credentials by browsers)</p>
+    </div>
+
+    <div class="test-section critical">
+        <h3>⚠️ Critical Requirements for Credentialed Requests</h3>
+        <ul>
+            <li>✅ <strong>Origin must be explicit</strong> (not wildcard *)</li>
+            <li>✅ <strong>Access-Control-Allow-Credentials must be true</strong></li>
+            <li>✅ <strong>Origin in response must match request origin exactly</strong></li>
+            <li>✅ <strong>Both preflight AND actual response must have proper headers</strong></li>
+        </ul>
+    </div>
+
+    <div class="test-section" id="preflight-test">
+        <h3>1. OPTIONS Preflight Request (Credentialed)</h3>
+        <button onclick="testPreflight()">Run Preflight Test</button>
+        <div id="preflight-result"></div>
+    </div>
+
+    <div class="test-section" id="actual-request-test">
+        <h3>2. Actual POST Request (Credentialed)</h3>
+        <button onclick="testActualRequest()">Run Actual Request Test</button>
+        <div id="actual-request-result"></div>
+    </div>
+
+    <div class="test-section" id="credentials-test">
+        <h3>3. Credentials Verification</h3>
+        <button onclick="testCredentials()">Verify Credentials</button>
+        <div id="credentials-result"></div>
+    </div>
+
+    <div class="test-section" id="summary">
+        <h3>📊 Nuclear Test Summary</h3>
+        <div id="summary-result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000/api/v1';
+        const FRONTEND_ORIGIN = window.location.origin;
+
+        async function testPreflight() {
+            const resultDiv = document.getElementById('preflight-result');
+            resultDiv.innerHTML = '<p>Testing OPTIONS preflight for credentialed request...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,token,client_id',
+                    }
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                    headers: response.headers.get('access-control-allow-headers'),
+                    credentials: response.headers.get('access-control-allow-credentials')
+                };
+
+                // CRITICAL CHECKS for credentialed requests
+                const isOriginExplicit = headers.origin !== '*' && headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const hasRequiredHeaders = headers.headers && headers.headers.includes('token') && headers.headers.includes('client_id');
+                const isPass = response.status === 200 && isOriginExplicit && hasCredentials && hasRequiredHeaders;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Status:</strong> ${response.status} ${response.status === 200 ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginExplicit ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Methods:</strong> ${headers.methods}
+                            </div>
+                            <div class="header-item">
+                                <strong>Headers:</strong> ${headers.headers}
+                            </div>
+                        </div>
+                        <p><strong>Required Headers Present:</strong> ${hasRequiredHeaders ? '✅ YES' : '❌ NO'}</p>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Preflight ready for credentialed requests' : '❌ FAIL - Preflight not configured for credentials'}</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Network error</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function testActualRequest() {
+            const resultDiv = document.getElementById('actual-request-result');
+            resultDiv.innerHTML = '<p>Testing actual POST request with credentials...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Content-Type': 'application/json',
+                        'token': 'test-token-for-credentialed-request',
+                        'client_id': 'test-client-id-for-credentialed-request',
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            email: 'test@example.com',
+                            password: 'test123'
+                        }
+                    })
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    credentials: response.headers.get('access-control-allow-credentials'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                    allHeaders: response.headers.get('access-control-allow-headers')
+                };
+
+                // CRITICAL CHECKS for actual credentialed request
+                const isOriginMatch = headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const hasRequiredHeaders = headers.allHeaders && headers.allHeaders.includes('token') && headers.allHeaders.includes('client_id');
+                const isPass = isOriginMatch && hasCredentials && hasRequiredHeaders;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Status:</strong> ${response.status}
+                            </div>
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginMatch ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Methods:</strong> ${headers.methods}
+                            </div>
+                            <div class="header-item">
+                                <strong>All Headers:</strong> ${headers.allHeaders}
+                            </div>
+                        </div>
+                        <p><strong>Required Headers Present:</strong> ${hasRequiredHeaders ? '✅ YES' : '❌ NO'}</p>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Credentialed request successful' : '❌ FAIL - Credentialed request blocked'}</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Request blocked by CORS</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function testCredentials() {
+            const resultDiv = document.getElementById('credentials-result');
+            resultDiv.innerHTML = '<p>Verifying credentials configuration...</p>';
+            
+            try {
+                // Test with credentials: include (simulating fetch with credentials)
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include', // This forces browser to treat as credentialed
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Content-Type': 'application/json',
+                        'token': 'test-credentials-token',
+                        'client_id': 'test-credentials-client',
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            email: 'test@example.com',
+                            password: 'test123'
+                        }
+                    })
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    credentials: response.headers.get('access-control-allow-credentials'),
+                    vary: response.headers.get('vary')
+                };
+
+                // For credentialed requests, origin MUST be explicit
+                const isOriginExplicit = headers.origin !== '*' && headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const isPass = isOriginExplicit && hasCredentials;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginExplicit ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Vary Header:</strong> ${headers.vary || 'none'}
+                            </div>
+                        </div>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Credentials properly configured' : '❌ FAIL - Credentials not allowed'}</p>
+                        <p><strong>Note:</strong> Vary header should include Origin for proper caching of credentialed responses</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Credentials test failed</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            const preflightPass = await testPreflight();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const actualPass = await testActualRequest();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const credentialsPass = await testCredentials();
+            
+            const summaryDiv = document.getElementById('summary-result');
+            const allPass = preflightPass && actualPass && credentialsPass;
+            const className = allPass ? 'pass' : 'fail';
+            
+            summaryDiv.innerHTML = `
+                <div class="${className}">
+                    <h4>☢️ Nuclear CORS Test Results:</h4>
+                    <div class="header-row">
+                        <div class="header-item">
+                            <span class="status-badge ${preflightPass ? 'status-pass' : 'status-fail'}">Preflight: ${preflightPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                        <div class="header-item">
+                            <span class="status-badge ${actualPass ? 'status-pass' : 'status-fail'}">Actual Request: ${actualPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                        <div class="header-item">
+                            <span class="status-badge ${credentialsPass ? 'status-pass' : 'status-fail'}">Credentials: ${credentialsPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                    </div>
+                    <p><strong>Final Status: ${allPass ? '✅ ALL TESTS PASS - NUCLEAR OPTION SUCCESSFUL' : '❌ SOME TESTS FAILED - NUCLEAR OPTION INCOMPLETE'}</strong></p>
+                </div>
+            `;
+            
+            if (allPass) {
+                summaryDiv.innerHTML += `
+                    <div class="pass">
+                        <h4>🎉 Nuclear Option Summary:</h4>
+                        <p><strong>The CORS fix is working correctly for credentialed requests!</strong></p>
+                        <ul>
+                            <li>✅ Preflight requests properly configured for credentials</li>
+                            <li>✅ Actual requests with custom headers work</li>
+                            <li>✅ Origin matching is explicit (not wildcard)</li>
+                            <li>✅ Credentials are properly allowed</li>
+                        </ul>
+                        <p><strong>Your frontend should now be able to make API calls without CORS errors.</strong></p>
+                    </div>
+                `;
+            } else {
+                summaryDiv.innerHTML += `
+                    <div class="fail">
+                        <h4>⚠️ Nuclear Option Issues:</h4>
+                        <p>Some tests failed. Check the backend CORS configuration:</p>
+                        <ul>
+                            <li>Ensure <code>Access-Control-Allow-Origin</code> is explicit (not wildcard)</li>
+                            <li>Ensure <code>Access-Control-Allow-Credentials</code> is <code>true</code></li>
+                            <li>Ensure custom headers are in the allowed list</li>
+                            <li>Ensure middleware is at the top of the stack</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests when page loads
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>

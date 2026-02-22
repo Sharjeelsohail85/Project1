@@ -6,7 +6,7 @@ function asClassName(value) {
   return value ? 'active' : ''
 }
 
-export default function TagsPage() {
+export default function TagsPage({ inlineFeedback = false, embedded = false }) {
   const [inputValue, setInputValue] = useState('')
 
   const {
@@ -52,10 +52,26 @@ export default function TagsPage() {
     actions.togglePreference('relevantAds', event.target.checked)
   }
 
+  const tagInputAlertSx = inlineFeedback
+    ? { mt: 2 }
+    : { position: 'absolute', left: 24, right: 24, bottom: 16, zIndex: 8 }
+
+  const pageAlertSx = inlineFeedback
+    ? { mt: 2 }
+    : { position: 'absolute', left: 24, right: 24, bottom: 16, zIndex: 9 }
+
+  const pageContainerClassName = embedded
+    ? 'signup-page-container settings-tags-page-container'
+    : 'signup-page-container'
+
+  const contentClassName = embedded
+    ? 'signup-content settings-tags-content'
+    : 'signup-content'
+
   return (
     <>
-      <div className="signup-page-container">
-        <div className="signup-content">
+      <div className={pageContainerClassName}>
+        <div className={contentClassName}>
           <div className="signup-tags signup-item transparent">
             <div className="signup-item-desc">
               <h3 className="signup-item-title">Tags</h3>
@@ -181,13 +197,13 @@ export default function TagsPage() {
       </div>
 
       {errorState.tagInput ? (
-        <Box sx={{ position: 'absolute', left: 24, right: 24, bottom: 16, zIndex: 8 }}>
+        <Box sx={tagInputAlertSx}>
           <Alert severity="error" variant="filled">{errorState.tagInput}</Alert>
         </Box>
       ) : null}
 
       {errorState.page ? (
-        <Box sx={{ position: 'absolute', left: 24, right: 24, bottom: 16, zIndex: 9 }}>
+        <Box sx={pageAlertSx}>
           <Alert
             severity="error"
             variant="filled"

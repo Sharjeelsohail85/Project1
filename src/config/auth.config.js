@@ -48,6 +48,17 @@ function isMissingCredential(value) {
   )
 }
 
+export function isOAuthProviderConfigured(provider) {
+  const config = authConfig[provider]
+  if (!config) return false
+
+  if (provider === 'facebook') {
+    return !isMissingCredential(config.appId)
+  }
+
+  return !isMissingCredential(config.clientId)
+}
+
 // Helper to get OAuth URL for each provider
 export function getOAuthUrl(provider, state) {
   const config = authConfig[provider]

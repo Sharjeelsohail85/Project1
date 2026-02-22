@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class CategoryTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -26,3 +26,4 @@ class CategoryTransformer extends TransformerAbstract
     }
     
 }
+

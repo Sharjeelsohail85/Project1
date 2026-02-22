@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class ReplyCommentTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -30,3 +30,4 @@ class ReplyCommentTransformer extends TransformerAbstract
     }
     
 }
+

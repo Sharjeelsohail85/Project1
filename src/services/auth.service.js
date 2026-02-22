@@ -39,6 +39,15 @@ function isNetworkOrBackendOAuthError(error) {
   )
 }
 
+function isProviderNotConfiguredError(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return message.includes('oauth is not configured') || message.includes('set vite_')
+}
+
+function isOAuthDemoModeEnabled() {
+  return String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
+}
+
 function completeOAuthInDemoMode(provider) {
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1)
   const timestamp = Date.now()
@@ -122,6 +131,13 @@ export async function loginWithOAuth(provider) {
     try {
       authUrl = getOAuthUrl(provider, state)
     } catch (error) {
+      if (import.meta.env.DEV && isProviderNotConfiguredError(error) && isOAuthDemoModeEnabled()) {
+        // Keep signup/login usable in local development when OAuth app credentials
+        // have not been configured yet.
+        resolveOnce(completeOAuthInDemoMode(provider))
+        return
+      }
+
       rejectOnce(new Error(`Failed to get OAuth URL: ${error.message}`))
       return
     }
@@ -242,7 +258,7 @@ export async function handleOAuthCallback(provider, params) {
     
     throw new Error('Invalid response from server')
   } catch (error) {
-    if (isNetworkOrBackendOAuthError(error)) {
+    if (isNetworkOrBackendOAuthError(error) && isOAuthDemoModeEnabled()) {
       return completeOAuthInDemoMode(provider)
     }
 

@@ -7,6 +7,22 @@ function canUseWindow() {
   return typeof window !== 'undefined'
 }
 
+function normalizeEndpoint(endpoint) {
+  if (!endpoint) {
+    return '/'
+  }
+
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+}
+
+function buildRequestUrl(endpoint) {
+  const normalizedEndpoint = normalizeEndpoint(endpoint)
+  const { token, client_id } = getAuthTokens()
+  const authEndpoint = token && client_id ? buildAuthUrl(normalizedEndpoint) : normalizedEndpoint
+
+  return `${API_CONFIG.baseURL}${authEndpoint}`
+}
+
 function setStorageItemSafe(key, value) {
   if (!canUseWindow()) return
 
@@ -22,6 +38,71 @@ function emitAuthLogout() {
   window.dispatchEvent(new CustomEvent('auth:logout'))
 }
 
+function tryParseJsonFromText(value) {
+  if (typeof value !== 'string') return null
+
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return null
+
+  try {
+    return JSON.parse(trimmedValue)
+  } catch {
+    return null
+  }
+}
+
+function normalizeAuthIdentifierToEmail(value) {
+  const trimmedValue = String(value || '').trim()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  if (trimmedValue.includes('@')) {
+    return trimmedValue.toLowerCase()
+  }
+
+  const normalizedLocalPart = trimmedValue
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+
+  return `${normalizedLocalPart || 'user'}@example.com`
+}
+
+function detectClientOS() {
+  if (!canUseWindow() || typeof navigator === 'undefined') return 'web'
+
+  const userAgent = String(navigator.userAgent || '').toLowerCase()
+
+  if (userAgent.includes('windows')) return 'windows'
+  if (userAgent.includes('mac os') || userAgent.includes('macintosh')) return 'macos'
+  if (userAgent.includes('android')) return 'android'
+  if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ios')) return 'ios'
+  if (userAgent.includes('linux')) return 'linux'
+
+  return 'web'
+}
+
+function getLoginClientMetadata() {
+  if (!canUseWindow() || typeof navigator === 'undefined') {
+    return {
+      client_id: 'web_client',
+      device: 'web-browser',
+      os: 'web',
+    }
+  }
+
+  const platform = String(navigator.platform || '').trim()
+
+  return {
+    client_id: 'web_client',
+    device: platform || 'web-browser',
+    os: detectClientOS(),
+  }
+}
+
 /**
  * Main API request function
  * @param {string} endpoint - API endpoint (e.g., '/auth/login')
@@ -30,10 +111,9 @@ function emitAuthLogout() {
  */
 export async function apiRequest(endpoint, options = {}) {
   const { token, client_id } = getAuthTokens()
-  
-  // Build URL with auth params if tokens exist
-  const authUrl = token && client_id ? buildAuthUrl(endpoint) : endpoint
-  const fullUrl = `${API_CONFIG.baseURL}${authUrl}`
+  const hasActiveAuthSession = Boolean(token && client_id)
+
+  const fullUrl = buildRequestUrl(endpoint)
   
   const config = {
     ...options,
@@ -51,6 +131,9 @@ export async function apiRequest(endpoint, options = {}) {
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
 
   try {
+    console.log(`[API Request] ${config.method || 'GET'} ${fullUrl}`)
+    console.log(`[API Request] Headers:`, config.headers)
+    
     const response = await fetch(fullUrl, {
       ...config,
       signal: controller.signal,
@@ -58,39 +141,88 @@ export async function apiRequest(endpoint, options = {}) {
     
     clearTimeout(timeoutId)
     
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Expected JSON response, got ${contentType}`)
+    // Handle JSON + resilient fallback for text/plain JSON responses
+    const contentType = String(response.headers.get('content-type') || '')
+    const isJsonResponse = contentType.includes('application/json') || contentType.includes('+json')
+    console.log(`[API Response] Status: ${response.status}, Content-Type: ${contentType}`)
+
+    let data = null
+    let responseText = ''
+
+    if (isJsonResponse) {
+      try {
+        data = await response.json()
+      } catch {
+        responseText = await response.text()
+        data = tryParseJsonFromText(responseText)
+      }
+    } else {
+      responseText = await response.text()
+      data = tryParseJsonFromText(responseText)
     }
+
+    if (!data) {
+      if (!response.ok) {
+        const isHtml = responseText.includes('<!DOCTYPE') || responseText.includes('<html')
+        if (isHtml) {
+          throw new Error(`Server returned HTML page (likely 404 or error). Status: ${response.status}`)
+        }
+
+        const proxyOrConnectionError = /proxy error|econnrefused|failed to connect|connect error/i.test(responseText)
+        if (proxyOrConnectionError || response.status >= 500) {
+          throw new Error('Failed to fetch. Backend server may be offline. Start Laravel and try again.')
+        }
+
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+
+      throw new Error(`Expected JSON response, got ${contentType || 'unknown content type'}`)
+    }
+
+    console.log(`[API Response] Data:`, data)
     
-    const data = await response.json()
-    
-    // Handle authentication errors
+    // Handle authentication errors only when we have an active session.
+    // This prevents guest/public flows (like onboarding tags) from being
+    // redirected to home when backend returns 401 for protected actions.
     if (data.status === 401 || data.error === 401) {
-      clearAuthTokens()
-      // You can dispatch an event or redirect to login here
-      emitAuthLogout()
+      if (hasActiveAuthSession) {
+        console.warn(`[API Auth] Authentication failed, clearing tokens`)
+        clearAuthTokens()
+        emitAuthLogout()
+      }
     }
     
     // Handle other errors
     if (data.status && data.status >= 400) {
       const errorMessage = data.error_description?.[0] || data.message || 'An error occurred'
+      console.error(`[API Error] ${data.status}: ${errorMessage}`)
       throw new Error(errorMessage)
     }
     
     return data
   } catch (error) {
     clearTimeout(timeoutId)
-    
+
     if (error.name === 'AbortError') {
+      console.error(`[API Error] Request timeout`)
       throw new Error('Request timeout. Please try again.')
     }
-    
+
+    if (error instanceof TypeError) {
+      console.error(`[API Error] Network request failed`, {
+        baseURL: API_CONFIG.baseURL,
+        endpoint,
+        message: error.message,
+      })
+      throw new Error('Failed to fetch. Backend server may be offline. Start Laravel and try again.')
+    }
+
     if (error?.message) {
+      console.error(`[API Error] ${error.message}`)
       throw error
     }
 
+    console.error(`[API Error] Network error`)
     throw new Error('Network error. Please check your connection.')
   }
 }
@@ -100,18 +232,24 @@ export async function apiRequest(endpoint, options = {}) {
  */
 export const authAPI = {
   /**
-   * Login with email and password
-   * @param {string} email
+   * Login with username/email and password
+   * @param {string} identifier
    * @param {string} password
    * @returns {Promise<Object>} Login response with token and client_id
    */
-  async login(email, password) {
+  async login(identifier, password) {
+    const loginMetadata = getLoginClientMetadata()
+    const normalizedEmail = normalizeAuthIdentifierToEmail(identifier)
+
     const response = await apiRequest(API_CONFIG.endpoints.auth.login, {
       method: 'POST',
       body: JSON.stringify({
         data: {
-          email,
+          email: normalizedEmail,
           password,
+          client_id: loginMetadata.client_id,
+          device: loginMetadata.device,
+          os: loginMetadata.os,
         },
       }),
     })
@@ -134,10 +272,22 @@ export const authAPI = {
    * @returns {Promise<Object>} Registration response
    */
   async register(userData) {
+    const fullName = String(userData?.name || '').trim()
+    const [firstNamePart, ...lastNameParts] = fullName.split(/\s+/).filter(Boolean)
+    const first_name = String(userData?.first_name || firstNamePart || 'User').trim()
+    const last_name = String(userData?.last_name || lastNameParts.join(' ') || 'User').trim()
+    const phone = String(userData?.phone || '0000000000').trim()
+
     const response = await apiRequest(API_CONFIG.endpoints.auth.register, {
       method: 'POST',
       body: JSON.stringify({
-        data: userData,
+        data: {
+          first_name,
+          last_name,
+          phone,
+          email: normalizeAuthIdentifierToEmail(userData?.email),
+          password: userData?.password,
+        },
       }),
     })
     
@@ -232,8 +382,14 @@ export const tagAPI = {
   },
 
   addCustomTag(name) {
-    const query = new URLSearchParams({ 'data[name]': name }).toString()
-    return apiRequest(`${API_CONFIG.endpoints.tag.custom}?${query}`)
+    return apiRequest(API_CONFIG.endpoints.tag.custom, {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          name,
+        },
+      }),
+    })
   },
 
   removeUserTag(tagId) {

@@ -55,7 +55,10 @@ class GeneralApiAccessMiddleWare
                 $query->whereNull('expiry_date')->orWhere('expiry_date', '>=', Carbon::now());
             })->first();
             
-            if(!$res || $res->user->registration_type != 'general')
+            // Allow any authenticated non-admin user (general + social providers).
+            // Frontend supports OAuth login, so restricting to `general` only causes
+            // false 401 "Please login" responses for valid logged-in sessions.
+            if(!$res || !$res->user || $res->user->registration_type == 'admin')
             {
                 return response()->json(['error' => 401, 'error_description' => ['You are not authorized. Please login'], 'status' => 401, 'message' => 'dashboard.success']);
             }

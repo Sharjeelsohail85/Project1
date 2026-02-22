@@ -5,13 +5,27 @@ import Slideout from './components/Slideout'
 import Shadow from './components/Shadow'
 import Content from './components/Content'
 import SettingsPage from './components/SettingsPage'
-import { isAuthenticated as checkAuth } from './services/auth.service'
+import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
+import { isAuthenticated as checkAuth, logout } from './services/auth.service'
 import './styles/global.css'
 import './styles/design-system.css'
 
 // Persistence keys (replaces Cookies from original)
 const STORAGE_DAILY_VISIBLE = 'dailyVisible'
 const STORAGE_CURRENT_PAGE = 'currentPage'
+const STORAGE_PERSONALIZATION_EFFECTS = 'personalizationEffects'
+
+const DEFAULT_PERSONALIZATION_EFFECTS = {
+  infiniteGridExplorer: false,
+  css2: false,
+  mixingItUp: false,
+}
+
+const PERSONALIZATION_EFFECT_CLASS_MAP = {
+  infiniteGridExplorer: 'theme-effect-infinite-grid',
+  css2: 'theme-effect-css2',
+  mixingItUp: 'theme-effect-mixing',
+}
 
 // Keep runtime-injected styles minimal.
 // Responsive layout behavior is centralized in css/style.css.
@@ -24,7 +38,7 @@ const inlineStyles = `
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer'
   
   // Check authentication status on mount
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -65,16 +79,8 @@ function App() {
     return true
   })
   
-  // Show promo hero by default when not authenticated so the
-  // white space under the titlebar is always filled with either
-  // promo, signup, login, or the daily player.
-  const [promoActive, setPromoActive] = useState(() => {
-    try {
-      return !checkAuth()
-    } catch {
-      return true
-    }
-  })
+  // Make the home route default to the promo/content page.
+  const [promoActive, setPromoActive] = useState(true)
   const [signupActive, setSignupActive] = useState(false)
   
   const [loginActive, setLoginActive] = useState(false)
@@ -83,6 +89,7 @@ function App() {
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0)
   const [signupStep, setSignupStep] = useState(1)
   const [uploadStep, setUploadStep] = useState(1)
+  const [currentVideoSource, setCurrentVideoSource] = useState(() => ({ ...DEFAULT_VIDEO_SOURCE }))
   const [activeBrowserPage, setActiveBrowserPage] = useState(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -102,6 +109,32 @@ function App() {
       // localStorage unavailable
     }
     return '#673AB7'
+  })
+  const [personalizationEffects, setPersonalizationEffects] = useState(() => {
+    const fallback = { ...DEFAULT_PERSONALIZATION_EFFECTS }
+
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem(STORAGE_PERSONALIZATION_EFFECTS)
+        if (!stored) {
+          return fallback
+        }
+
+        const parsed = JSON.parse(stored)
+        if (!parsed || typeof parsed !== 'object') {
+          return fallback
+        }
+
+        return {
+          ...fallback,
+          ...Object.fromEntries(Object.keys(fallback).map((key) => [key, Boolean(parsed[key])])),
+        }
+      }
+    } catch {
+      // localStorage unavailable or invalid data
+    }
+
+    return fallback
   })
 
   // Helper function to darken a hex color
@@ -176,6 +209,45 @@ function App() {
       // ignore
     }
   }, [themeColor])
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(STORAGE_PERSONALIZATION_EFFECTS, JSON.stringify(personalizationEffects))
+      }
+    } catch {
+      // ignore
+    }
+  }, [personalizationEffects])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined
+    }
+
+    const html = document.documentElement
+    const body = document.body
+    if (!html || !body) {
+      return undefined
+    }
+
+    const targets = [html, body]
+
+    Object.entries(PERSONALIZATION_EFFECT_CLASS_MAP).forEach(([key, className]) => {
+      const enabled = Boolean(personalizationEffects[key])
+      targets.forEach((element) => {
+        element.classList.toggle(className, enabled)
+      })
+    })
+
+    return () => {
+      Object.values(PERSONALIZATION_EFFECT_CLASS_MAP).forEach((className) => {
+        targets.forEach((element) => {
+          element.classList.remove(className)
+        })
+      })
+    }
+  }, [personalizationEffects])
 
 
   // Toggle slideout menu
@@ -300,8 +372,26 @@ function App() {
     setSignupActive(false)
     setUploadActive(false)
     setDailyActive(false)
-    setPromoActive(false)
-    setLoginActive(true)
+    // Return user to the home promo/content page.
+    setPromoActive(true)
+    setLoginActive(false)
+    navigate('/')
+  }, [navigate])
+
+  const handleSignOut = useCallback(() => {
+    try {
+      logout()
+    } catch {
+      // ignore and continue local sign-out transition
+    }
+
+    setSlideoutVisible(false)
+    setIsAuthenticated(false)
+    setSignupActive(false)
+    setUploadActive(false)
+    setDailyActive(false)
+    setPromoActive(true)
+    setLoginActive(false)
     navigate('/')
   }, [navigate])
 
@@ -387,10 +477,9 @@ function App() {
 
     setIsAuthenticated(auth)
     
-    // If authenticated and on home page, show daily player if preferred.
-    // Promo/login/signup visibility is now controlled purely by their own
-    // state so the main hero text and buttons can always render when needed.
-    if (auth && location.pathname === '/') {
+    // Keep home defaulting to the promo/content page.
+    // Only auto-open daily when promo is not active.
+    if (auth && location.pathname === '/' && !promoActive) {
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
           const stored = localStorage.getItem(STORAGE_DAILY_VISIBLE)
@@ -402,7 +491,7 @@ function App() {
         // ignore
       }
     }
-  }, [location.pathname])
+  }, [location.pathname, promoActive])
 
   // Switch browser page
   const switchPage = useCallback((pageId) => {
@@ -410,10 +499,29 @@ function App() {
   }, [])
 
   // Open Settings view (from right sidebar)
-  const openSettings = useCallback(() => {
+  const openSettings = useCallback((sectionId) => {
     setSlideoutVisible(false)
+    if (sectionId) {
+      navigate(`/settings?section=${encodeURIComponent(sectionId)}`)
+      return
+    }
     navigate('/settings')
   }, [navigate])
+
+  const openThemeDesigner = useCallback(() => {
+    navigate('/theme-designer')
+  }, [navigate])
+
+  const handlePersonalizationSettingChange = useCallback((settingKey, isEnabled) => {
+    if (!(settingKey in DEFAULT_PERSONALIZATION_EFFECTS)) {
+      return
+    }
+
+    setPersonalizationEffects((prev) => ({
+      ...prev,
+      [settingKey]: Boolean(isEnabled),
+    }))
+  }, [])
 
   // Handle theme color change
   const handleColorChange = useCallback((color) => {
@@ -435,12 +543,29 @@ function App() {
 
   // Open the video player from content cards (Editors' Picks / etc.)
   const handleOpenVideo = useCallback(() => {
+    setCurrentVideoSource({ ...DEFAULT_VIDEO_SOURCE })
     setPromoActive(false)
     setSignupActive(false)
     setLoginActive(false)
     setUploadActive(false)
     setDailyActive(true)
   }, [])
+
+  const handleVideoReadyFromPost = useCallback((payload) => {
+    const nextSource = {
+      sourceType: String(payload?.sourceType || DEFAULT_VIDEO_SOURCE.sourceType),
+      sourceUrl: String(payload?.sourceUrl || DEFAULT_VIDEO_SOURCE.sourceUrl),
+      title: String(payload?.title || ''),
+    }
+
+    setCurrentVideoSource(nextSource)
+    setPromoActive(false)
+    setSignupActive(false)
+    setLoginActive(false)
+    setUploadActive(false)
+    setDailyActive(true)
+    navigate('/')
+  }, [navigate])
 
   const handleCloseCenterPage = useCallback(() => {
     setPromoActive(false)
@@ -465,7 +590,28 @@ function App() {
       <>
         <style>{inlineStyles}</style>
         <Routes>
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route
+            path="/settings"
+            element={(
+              <SettingsPage
+                isAuthenticated={isAuthenticated}
+                personalizationSettings={personalizationEffects}
+                onPersonalizationSettingChange={handlePersonalizationSettingChange}
+                onThemeColorChange={handleColorChange}
+              />
+            )}
+          />
+          <Route
+            path="/theme-designer"
+            element={(
+              <SettingsPage
+                isAuthenticated={isAuthenticated}
+                personalizationSettings={personalizationEffects}
+                onPersonalizationSettingChange={handlePersonalizationSettingChange}
+                onThemeColorChange={handleColorChange}
+              />
+            )}
+          />
           <Route path="*" element={<Navigate to="/settings" replace />} />
         </Routes>
       </>
@@ -491,6 +637,9 @@ function App() {
         onColorChange={handleColorChange}
         onShowPromo={showPromo}
         onOpenSettings={openSettings}
+        onOpenThemeDesigner={openThemeDesigner}
+        onSignOut={handleSignOut}
+        isAuthenticated={isAuthenticated}
       />
 
       <Shadow
@@ -501,6 +650,7 @@ function App() {
       {/* Always render main content; it will manage overlays internally */}
       <Content
         currentPath={location.pathname}
+        currentVideoSource={currentVideoSource}
         dailyActive={dailyActive}
         promoActive={promoActive}
         signupActive={signupActive}
@@ -530,6 +680,7 @@ function App() {
         onHideOverlays={onHideOverlays}
         onLoginSuccess={handleLoginSuccess}
         onOpenVideo={handleOpenVideo}
+        onVideoReadyFromPost={handleVideoReadyFromPost}
         onCloseCenterPage={handleCloseCenterPage}
         themeColor={themeColor}
       />

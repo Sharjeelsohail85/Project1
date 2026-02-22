@@ -187,9 +187,12 @@ body.modal-open .browser-nav {
    PASSWORD INPUT CONTAINER
    ============================================ */
 .passwordInputContainer {
-	display: flex;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-rows: auto auto;
+	column-gap: 12px;
+	row-gap: 10px;
 	align-items: center;
-	gap: 12px;
 	width: 100%;
 	margin: 0;
 	padding: 0;
@@ -206,10 +209,23 @@ body.modal-open .browser-nav {
 	overflow: visible;
 }
 
+.passwordInputContainer .inputWrapper:first-of-type {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.passwordInputContainer .inputWrapper:last-of-type {
+	grid-column: 2;
+	grid-row: 2;
+}
+
 .backButton {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	grid-column: 1;
+	grid-row: 1 / span 2;
+	align-self: center;
 	width: 48px;
 	height: 48px;
 	min-width: 48px;
@@ -380,6 +396,40 @@ body.modal-open .browser-nav {
 	display: none;
 }
 
+.loginMethods.passwordMode {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	gap: 24px;
+	transform: translateX(28px);
+}
+
+.loginMethods.passwordMode .authButton {
+	width: 96px;
+	min-height: auto;
+	padding: 6px 4px;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 0;
+}
+
+.loginMethods.passwordMode .authButton:hover,
+.loginMethods.passwordMode .authButton:active {
+	background: transparent;
+	box-shadow: none;
+	transform: none;
+}
+
+.loginMethods.passwordMode .authButton .material-icons,
+.loginMethods.passwordMode .authButton .zmdi {
+	font-size: 30px;
+}
+
+.loginMethods.passwordMode .authButtonLabel {
+	font-size: 11px;
+	margin-top: 2px;
+}
+
 /* ============================================
    CLOSE BUTTON
    ============================================ */
@@ -440,6 +490,15 @@ body.modal-open .browser-nav {
 		gap: 12px;
 	}
 
+	.loginMethods.passwordMode {
+		gap: 16px;
+		transform: translateX(20px);
+	}
+
+	.loginMethods.passwordMode .authButton {
+		width: 88px;
+	}
+
 	.authButton {
 		min-height: 100px;
 		padding: 14px 10px;
@@ -495,6 +554,25 @@ body.modal-open .browser-nav {
 	.loginMethods {
 		grid-template-columns: repeat(2, 1fr);
 		gap: 10px;
+	}
+
+	.loginMethods.passwordMode {
+		gap: 12px;
+		transform: translateX(14px);
+	}
+
+	.loginMethods.passwordMode .authButton {
+		width: 78px;
+		padding: 4px 2px;
+	}
+
+	.loginMethods.passwordMode .authButton .material-icons,
+	.loginMethods.passwordMode .authButton .zmdi {
+		font-size: 26px;
+	}
+
+	.loginMethods.passwordMode .authButtonLabel {
+		font-size: 10px;
 	}
 
 	.authButton {

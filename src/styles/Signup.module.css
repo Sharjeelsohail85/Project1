@@ -12,7 +12,7 @@
 	height: 400px;
 	z-index: 4;
 	color: #fafafa;
-	background: #607D8B;
+	background: var(--theme-color, #607D8B);
 	overflow: hidden;
 	-webkit-transform: translateY(-100%);
 	pointer-events: none;
@@ -165,6 +165,7 @@
 
 .signupTitle {
 	top: 50px;
+	font-size: 48px;
 }
 
 .signupDesc,
@@ -185,6 +186,7 @@
 .signupDesc {
 	top: 130px;
 	text-align: center;
+	font-size: 34px;
 }
 
 .uploadDesc {

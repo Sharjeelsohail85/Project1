@@ -12,8 +12,8 @@ use App\Modules\Video\Transformers\VideoLogTransformer;
 class VideoTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = ['user', 'channel', 'privacyOption', 'videoLog'];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = ['user', 'channel', 'privacyOption', 'videoLog'];
     
 
     /**

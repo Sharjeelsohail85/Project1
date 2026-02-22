@@ -15,6 +15,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Auth::routes();
+if (class_exists(\Laravel\Ui\UiServiceProvider::class)) {
+    Auth::routes();
+}
 
 Route::get('/home', 'HomeController@index')->name('home');

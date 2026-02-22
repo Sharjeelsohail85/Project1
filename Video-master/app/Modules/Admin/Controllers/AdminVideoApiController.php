@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Modules\Managers\Video\VideoRepositoryInterface;
 use App\Modules\Managers\PrivacyOption\PrivacyOptionRepositoryInterface;
 use App\Modules\Managers\VideoLog\VideoLogRepositoryInterface;
-use App\Modules\Managers\VideoHistroy\VideoHistoryRepositoryInterface;
+use App\Modules\Managers\VideoHistory\VideoHistoryRepositoryInterface;
 use App\Modules\Video\Validators\VideoValidator;
 use App\Modules\Helper\Helper;
 use App\Modules\Video\Transformers\VideoTransformer;

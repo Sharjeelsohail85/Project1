@@ -9,8 +9,8 @@ use App\Modules\User\Transformers\UserTransformer;
 class VideoLogTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**

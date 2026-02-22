@@ -40,7 +40,9 @@ export function useVideoPlayer({
   onGoTheater,
   onHideOverlays,
   themeColor = '#673AB7',
-  theaterMode = false
+  theaterMode = false,
+  sourceToken = '',
+  disableNativePlayback = false,
 }) {
   const playerRef = useRef(null)
   const playerBackgroundRef = useRef(null)
@@ -97,6 +99,36 @@ export function useVideoPlayer({
     durationRef.current = duration
   }, [volume, playbackRate, duration])
 
+  useEffect(() => {
+    const p = playerRef.current
+    const pb = playerBackgroundRef.current
+
+    if (disableNativePlayback) {
+      setPending(false)
+      setIsLoading(false)
+      setShowControls(false)
+      setCurrentTime(0)
+      setDuration(0)
+      setProgressPct(0)
+      setBufferedPct(0)
+      setIsPlaying(false)
+      return
+    }
+
+    try {
+      p?.load?.()
+      pb?.load?.()
+    } catch {
+      // ignore media reload issues
+    }
+
+    setPending(true)
+    setIsLoading(true)
+    setShowControls(false)
+    setIsPlaying(false)
+    setPlayIcon('play_arrow')
+  }, [disableNativePlayback, sourceToken])
+
   const hidePopups = useCallback(() => {
     setShowSpeedPopup(false)
     setShowCaptionsPopup(false)
@@ -124,6 +156,7 @@ export function useVideoPlayer({
   }, [clearNoticeTimeout])
 
   const togglePlay = useCallback(() => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     const pb = playerBackgroundRef.current
     if (!p || !pb) return
@@ -146,9 +179,10 @@ export function useVideoPlayer({
       queueNoticeClear(500)
       setIsPlaying(false)
     }
-  }, [hidePopups, queueNoticeClear])
+  }, [disableNativePlayback, hidePopups, queueNoticeClear])
 
   const forcePlay = useCallback(() => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     const pb = playerBackgroundRef.current
     if (!p || !pb) return
@@ -159,9 +193,10 @@ export function useVideoPlayer({
     p.play()
     pb.play()
     setIsPlaying(true)
-  }, [hidePopups])
+  }, [disableNativePlayback, hidePopups])
 
   const jumpTo = useCallback((time) => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     const pb = playerBackgroundRef.current
     if (!p || !pb) return
@@ -173,9 +208,10 @@ export function useVideoPlayer({
       pb.play()
       setIsPlaying(true)
     }
-  }, [duration])
+  }, [disableNativePlayback, duration])
 
   const setVolume = useCallback((v) => {
+    if (disableNativePlayback) return
     const vol = Math.max(0, Math.min(1, v))
     setVolumeState(vol)
     beforeVolRef.current = vol
@@ -184,9 +220,10 @@ export function useVideoPlayer({
     if (vol >= 1) setVolumeIconDown('volume_down')
     else if (vol <= 0.1) setVolumeIconDown('volume_mute')
     else setVolumeIconDown('volume_down')
-  }, [])
+  }, [disableNativePlayback])
 
   const setPlaybackRate = useCallback((rate) => {
+    if (disableNativePlayback) return
     setPlaybackRateState(rate)
     const p = playerRef.current
     const pb = playerBackgroundRef.current
@@ -195,7 +232,7 @@ export function useVideoPlayer({
     setShowSpeedPopup(false)
     setSpeedActive(rate !== 1)
     showNotice(String(rate) + 'x')
-  }, [showNotice])
+  }, [disableNativePlayback, showNotice])
 
   const setQuality = useCallback((qual) => {
     setQualityActive(qual >= 720)
@@ -223,6 +260,7 @@ export function useVideoPlayer({
   }, [hidePopups, onGoTheater, onHideOverlays])
 
   const seekByClick = useCallback((e) => {
+    if (disableNativePlayback) return
     const holder = progressHolderRef.current
     const p = playerRef.current
     const pb = playerBackgroundRef.current
@@ -235,9 +273,10 @@ export function useVideoPlayer({
     const t = Math.max(0, Math.min(time, duration - 0.1))
     p.currentTime = t
     pb.currentTime = t
-  }, [duration])
+  }, [disableNativePlayback, duration])
 
   const handleProgressMove = useCallback((e) => {
+    if (disableNativePlayback) return
     const holder = progressHolderRef.current
     const p = playerRef.current
     if (!holder || !p) return
@@ -248,7 +287,7 @@ export function useVideoPlayer({
     setScrubTime(prop * (p.duration || 0))
     setScrubPct(prop * 100)
     setProgressHover(true)
-  }, [])
+  }, [disableNativePlayback])
 
   const handleProgressLeave = useCallback(() => {
     setProgressHover(false)
@@ -257,6 +296,7 @@ export function useVideoPlayer({
 
   // Loader and duration: bind to player element when ref is set
   useEffect(() => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     if (!p) return
     const onLoadStart = () => setIsLoading(true)
@@ -279,10 +319,11 @@ export function useVideoPlayer({
       p.removeEventListener('loadeddata', onLoadedData)
       p.removeEventListener('durationchange', onDurationChange)
     }
-  }, [])
+  }, [disableNativePlayback])
 
   // Update progress from video
   useEffect(() => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     if (!p) return
     const onTimeUpdate = () => {
@@ -310,10 +351,11 @@ export function useVideoPlayer({
       p.removeEventListener('progress', onProgress)
       p.removeEventListener('ended', onEnded)
     }
-  }, [])
+  }, [disableNativePlayback])
 
   // Status check interval: progress and pointer-events when duration ready
   useEffect(() => {
+    if (disableNativePlayback) return
     const id = setInterval(() => {
       const p = playerRef.current
       if (!p) return
@@ -329,16 +371,18 @@ export function useVideoPlayer({
       }
     }, 500)
     return () => clearInterval(id)
-  }, [])
+  }, [disableNativePlayback])
 
   // Sync volume to video element when volume state changes
   useEffect(() => {
+    if (disableNativePlayback) return
     const p = playerRef.current
     if (p) p.volume = volume
-  }, [volume])
+  }, [disableNativePlayback, volume])
 
   // Sync background video with main when in theater or fullscreen (from original syncCheck)
   useEffect(() => {
+    if (disableNativePlayback) return
     const interval = setInterval(() => {
       const p = playerRef.current
       const pb = playerBackgroundRef.current
@@ -353,10 +397,15 @@ export function useVideoPlayer({
       }
     }, 2000)
     return () => clearInterval(interval)
-  }, [theaterMode])
+  }, [disableNativePlayback, theaterMode])
 
   // Controls visibility: show on move, hide after delay when playing
   const scheduleFade = useCallback(() => {
+    if (disableNativePlayback) {
+      setShowControls(false)
+      return
+    }
+
     if (fadeTimerRef.current) {
       clearTimeout(fadeTimerRef.current)
       fadeTimerRef.current = null
@@ -373,20 +422,24 @@ export function useVideoPlayer({
         fadeTimerRef.current = null
       }, 2000)
     }
-  }, [isPlaying])
+  }, [disableNativePlayback, isPlaying])
 
   const onContainerMouseMove = useCallback(() => {
+    if (disableNativePlayback) return
     setShowControls(true)
     scheduleFade()
-  }, [scheduleFade])
+  }, [disableNativePlayback, scheduleFade])
 
   const onContainerMouseLeave = useCallback(() => {
+    if (disableNativePlayback) return
     scheduleFade()
-  }, [scheduleFade])
+  }, [disableNativePlayback, scheduleFade])
 
   // Keyboard shortcuts (when no input/textarea focused). Use refs for volume/playbackRate/duration
   // so this effect only re-subscribes when callbacks change, not on every state tick.
   useEffect(() => {
+    if (disableNativePlayback) return
+
     const handleKeyDown = (e) => {
       const active = document.activeElement
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
@@ -449,7 +502,7 @@ export function useVideoPlayer({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [togglePlay, jumpTo, handleTheater, requestFullscreen, setVolume, setPlaybackRate, showNotice])
+  }, [disableNativePlayback, togglePlay, jumpTo, handleTheater, requestFullscreen, setVolume, setPlaybackRate, showNotice])
 
   return {
     refs: { playerRef, playerBackgroundRef, containerRef, progressHolderRef },

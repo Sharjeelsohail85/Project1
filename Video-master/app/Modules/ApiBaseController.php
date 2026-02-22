@@ -4,7 +4,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Lang;
 use League\Fractal\Manager;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
@@ -34,8 +33,8 @@ class ApiBaseController extends Controller
         $this->fractal->setSerializer(new ArraySerializer());
 
         // Are we going to try and include embedded data?
-        if (Input::has('embed')) {
-            $this->fractal->parseIncludes(Input::get('embed'));
+        if (request()->has('embed')) {
+            $this->fractal->parseIncludes((string) request()->get('embed'));
         }
     }
 

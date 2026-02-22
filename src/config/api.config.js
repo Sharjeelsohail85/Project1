@@ -1,9 +1,41 @@
 // API Configuration for Laravel Backend
 // Backend location: M:\Video-master
 
+function stripTrailingSlashes(value) {
+  return String(value || '').trim().replace(/\/+$/, '')
+}
+
+function resolveApiBaseURL() {
+  const configuredBaseURL = stripTrailingSlashes(import.meta.env.VITE_API_BASE_URL)
+
+  if (!configuredBaseURL) {
+    return import.meta.env.DEV ? '/api/v1' : 'http://localhost:8000/api/v1'
+  }
+
+  if (!import.meta.env.DEV) {
+    return configuredBaseURL
+  }
+
+  try {
+    const parsedURL = new URL(configuredBaseURL)
+    const isLocalhostBackend = parsedURL.hostname === 'localhost' || parsedURL.hostname === '127.0.0.1'
+
+    if (isLocalhostBackend) {
+      const localPath = stripTrailingSlashes(parsedURL.pathname)
+      return localPath || '/api/v1'
+    }
+  } catch {
+    // If configuredBaseURL is already a relative path, keep it as-is.
+  }
+
+  return configuredBaseURL
+}
+
+const RESOLVED_API_BASE_URL = resolveApiBaseURL()
+
 export const API_CONFIG = {
   // Base URL - Update this to match your Laravel backend URL
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
+  baseURL: RESOLVED_API_BASE_URL,
   
   // API Version
   version: 'v1',

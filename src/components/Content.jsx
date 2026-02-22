@@ -3,9 +3,11 @@ import TopWrap from './TopWrap'
 import BrowserNav from './BrowserNav'
 import Browser from './Browser'
 import PostPage from './PostPage'
+import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 
 const Content = memo(function Content({
   currentPath,
+  currentVideoSource,
   dailyActive,
   promoActive,
   signupActive,
@@ -35,6 +37,7 @@ const Content = memo(function Content({
   onHideOverlays,
   onLoginSuccess,
   onOpenVideo,
+  onVideoReadyFromPost,
   onCloseCenterPage,
   themeColor
 }) {
@@ -42,6 +45,15 @@ const Content = memo(function Content({
   const isModalOpen = signupActive || loginActive || uploadActive
   const isPostRoute = currentPath === '/post'
   const contentClass = `content ${!dailyActive ? 'alternate' : ''} ${isModalOpen ? 'modal-open' : ''}`
+
+  useSmoothWheelScroll(contentRef, {
+    // Temporarily disable custom wheel interception to restore native page scrolling reliability.
+    enabled: false,
+    damping: 0.1,
+    wheelMultiplier: 1.15,
+    maxDelta: 220,
+    usePageFallback: false
+  })
 
   useEffect(() => {
     const el = contentRef.current
@@ -74,9 +86,10 @@ const Content = memo(function Content({
 >
 
       {isPostRoute ? (
-        <PostPage onClose={onCloseCenterPage} />
+        <PostPage onClose={onCloseCenterPage} onVideoReady={onVideoReadyFromPost} />
       ) : (
         <TopWrap
+          currentVideoSource={currentVideoSource}
           dailyActive={dailyActive}
           promoActive={promoActive}
           signupActive={signupActive}

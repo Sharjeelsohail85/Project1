@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   formatBytes,
   MAX_THUMBNAIL_SIZE_BYTES,
-  MAX_VIDEO_SIZE_BYTES,
 } from '../config/upload.config'
 import { uploadVideo } from '../services/videoService'
 
@@ -29,10 +28,20 @@ function parseValidationErrors(payload) {
   }, {})
 }
 
+function isValidHttpUrl(value) {
+  if (!value) return false
+
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export default function useVideoUploadForm({ onUnauthorized } = {}) {
   const [formValues, setFormValues] = useState(INITIAL_VALUES)
   const [thumbnailFile, setThumbnailFile] = useState(null)
-  const [videoFile, setVideoFile] = useState(null)
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -42,7 +51,6 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     severity: 'success',
     message: '',
   })
-  const [isVideoDragActive, setIsVideoDragActive] = useState(false)
 
   const previewUrlRef = useRef('')
 
@@ -90,29 +98,11 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     return ''
   }, [])
 
-  const validateVideo = useCallback((file) => {
-    if (!file) {
-      return 'Video file is required.'
-    }
-
-    if (!String(file.type || '').startsWith('video/')) {
-      return 'Please select a valid video file.'
-    }
-
-    if (file.size > MAX_VIDEO_SIZE_BYTES) {
-      return `Video must be less than ${formatBytes(MAX_VIDEO_SIZE_BYTES)}.`
-    }
-
-    return ''
-  }, [])
-
   const resetForm = useCallback(() => {
     setFormValues(INITIAL_VALUES)
     setThumbnailFile(null)
-    setVideoFile(null)
     setUploadProgress(0)
     setFieldErrors({})
-    setIsVideoDragActive(false)
     resetThumbnailPreview()
   }, [resetThumbnailPreview])
 
@@ -148,24 +138,6 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     setThumbnailPreviewUrl(nextUrl)
   }, [clearFieldError, resetThumbnailPreview, setFieldError, validateThumbnail])
 
-  const setVideo = useCallback((file) => {
-    if (!file) {
-      setVideoFile(null)
-      clearFieldError('video')
-      return
-    }
-
-    const validationMessage = validateVideo(file)
-
-    if (validationMessage) {
-      setFieldError('video', validationMessage)
-      return
-    }
-
-    setVideoFile(file)
-    clearFieldError('video')
-  }, [clearFieldError, setFieldError, validateVideo])
-
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) {
@@ -180,42 +152,6 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     setThumbnail(file)
   }, [setThumbnail])
 
-  const handleVideoInput = useCallback((event) => {
-    const file = event.target.files?.[0] || null
-    setVideo(file)
-  }, [setVideo])
-
-  const handleVideoDragEnter = useCallback((event) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsVideoDragActive(true)
-  }, [])
-
-  const handleVideoDragOver = useCallback((event) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsVideoDragActive(true)
-  }, [])
-
-  const handleVideoDragLeave = useCallback((event) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsVideoDragActive(false)
-  }, [])
-
-  const handleVideoDrop = useCallback((event) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsVideoDragActive(false)
-
-    const droppedFile = event.dataTransfer?.files?.[0] || null
-    if (!droppedFile) {
-      return
-    }
-
-    setVideo(droppedFile)
-  }, [setVideo])
-
   const closeSnackbar = useCallback(() => {
     setSnackbar((previous) => ({
       ...previous,
@@ -223,16 +159,18 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     }))
   }, [])
 
-  const submitUpload = useCallback(async () => {
+  const submitUpload = useCallback(async ({ sourceType = '', sourceUrl = '' } = {}) => {
     const nextErrors = {}
+    const trimmedSourceUrl = String(sourceUrl || '').trim()
 
     if (!formValues.title.trim()) {
       nextErrors.title = 'Title is required.'
     }
 
-    const videoValidation = validateVideo(videoFile)
-    if (videoValidation) {
-      nextErrors.video = videoValidation
+    if (!trimmedSourceUrl) {
+      nextErrors.source_url = 'Video source link is required.'
+    } else if (!isValidHttpUrl(trimmedSourceUrl)) {
+      nextErrors.source_url = 'Enter a valid source URL (http or https).'
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -245,13 +183,12 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     payload.append('privacy', formValues.privacy)
     payload.append('discussion_link', formValues.discussion_link.trim())
     payload.append('description', formValues.description.trim())
+    payload.append('source_platform', sourceType || 'uploadLink')
+    payload.append('source_url', trimmedSourceUrl)
+    payload.append('video_url', trimmedSourceUrl)
 
     if (thumbnailFile) {
       payload.append('thumbnail', thumbnailFile)
-    }
-
-    if (videoFile) {
-      payload.append('video', videoFile)
     }
 
     setIsUploading(true)
@@ -263,7 +200,7 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
       setSnackbar({
         open: true,
         severity: 'success',
-        message: 'Video uploaded successfully.',
+        message: 'Video link posted successfully.',
       })
 
       resetForm()
@@ -294,7 +231,7 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
       }
 
       const networkErrorMessage = 'Network error. Please check your connection and try again.'
-      const fallbackMessage = 'Video upload failed. Please try again.'
+      const fallbackMessage = 'Video post failed. Please try again.'
 
       setSnackbar({
         open: true,
@@ -315,14 +252,11 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     onUnauthorized,
     resetForm,
     thumbnailFile,
-    validateVideo,
-    videoFile,
   ])
 
   const selectedFiles = useMemo(() => ({
     thumbnail: thumbnailFile,
-    video: videoFile,
-  }), [thumbnailFile, videoFile])
+  }), [thumbnailFile])
 
   return {
     formValues,
@@ -330,16 +264,10 @@ export default function useVideoUploadForm({ onUnauthorized } = {}) {
     thumbnailPreviewUrl,
     uploadProgress,
     isUploading,
-    isVideoDragActive,
     fieldErrors,
     snackbar,
     handleChange,
     handleThumbnailInput,
-    handleVideoInput,
-    handleVideoDragEnter,
-    handleVideoDragOver,
-    handleVideoDragLeave,
-    handleVideoDrop,
     closeSnackbar,
     submitUpload,
   }

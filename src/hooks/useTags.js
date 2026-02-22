@@ -12,6 +12,19 @@ const PREFERENCE_SEARCH_OFF = 'pref_search_off'
 const PREFERENCE_ADS_ON = 'pref_ads_on'
 const PREFERENCE_ADS_OFF = 'pref_ads_off'
 
+const FALLBACK_POPULAR_TAGS = [
+  'Music',
+  'Gaming',
+  'Technology',
+  'Sports',
+  'Education',
+  'Comedy',
+  'News',
+  'Movies',
+  'Cooking',
+  'Travel',
+]
+
 function normalizeTagName(name) {
   return String(name || '').trim().replace(/\s+/g, ' ')
 }
@@ -57,6 +70,15 @@ function derivePreferencesFromUser(user) {
     personalizeSearch: address === PREFERENCE_SEARCH_ON,
     relevantAds: phone === PREFERENCE_ADS_ON,
   }
+}
+
+function buildFallbackPopularTags() {
+  return FALLBACK_POPULAR_TAGS.map((name, index) => ({
+    id: `fallback-popular-${index}`,
+    name,
+    key: normalizeTagKey(name),
+    active: true,
+  }))
 }
 
 export function validateTagInput(rawValue, userTags, popularTags) {
@@ -130,11 +152,15 @@ export function useTags() {
     setErrorState((previous) => ({ ...previous, page: '' }))
 
     try {
-      const [userResponse, userTagsResponse, popularTagsResponse] = await Promise.all([
+      const [userResult, userTagsResult, popularTagsResult] = await Promise.allSettled([
         userAPI.me(),
         tagAPI.userTags(),
         tagAPI.popular(),
       ])
+
+      const userResponse = userResult.status === 'fulfilled' ? userResult.value : null
+      const userTagsResponse = userTagsResult.status === 'fulfilled' ? userTagsResult.value : null
+      const popularTagsResponse = popularTagsResult.status === 'fulfilled' ? popularTagsResult.value : null
 
       const userPayload = userResponse?.data?.data || null
       currentUserRef.current = userPayload
@@ -165,10 +191,17 @@ export function useTags() {
         uniqueUser.push(tag)
       })
 
-      setPopularTags(uniquePopular)
+      const hasPopularTags = uniquePopular.length > 0
+      setPopularTags(hasPopularTags ? uniquePopular : buildFallbackPopularTags())
       setUserTags(uniqueUser)
       if (!keepPreferences) {
         setPreferences(initialPreferences)
+      }
+      const criticalFailure = userResult.status === 'rejected' && userTagsResult.status === 'rejected' && popularTagsResult.status === 'rejected'
+      if (criticalFailure) {
+        const message = userResult.reason?.message || userTagsResult.reason?.message || popularTagsResult.reason?.message || 'Failed to load tags and preferences.'
+        setErrorState((previous) => ({ ...previous, page: message }))
+        showSnackbar(message, 'error')
       }
     } catch (error) {
       const message = error?.message || 'Failed to load tags and preferences.'
@@ -208,16 +241,22 @@ export function useTags() {
       setUserTags((previous) => [...previous, optimisticTag])
 
       try {
+        console.log('[useTags] Adding tag:', { nextName, matchedPopular })
+        
         if (matchedPopular?.id) {
+          console.log('[useTags] Adding popular tag with ID:', matchedPopular.id)
           await tagAPI.addUserTag(matchedPopular.id)
         } else {
+          console.log('[useTags] Adding custom tag:', nextName)
           await tagAPI.addCustomTag(nextName)
         }
 
+        console.log('[useTags] Tag added successfully, refetching data')
         await getInitialData({ silent: true, keepPreferences: true })
         showSnackbar('Tag added successfully.', 'success')
         return true
       } catch (error) {
+        console.error('[useTags] Error adding tag:', error)
         setUserTags((previous) => previous.filter((tag) => tag.key !== nextKey))
         const message = error?.message || 'Unable to add tag.'
         setErrorState((previous) => ({ ...previous, tagInput: message }))

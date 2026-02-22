@@ -9,8 +9,8 @@ use App\Modules\User\Transformers\UserTransformer;
 class CommentTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = ['user', 'reply'];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = ['user', 'reply'];
     
 
     /**
@@ -39,3 +39,4 @@ class CommentTransformer extends TransformerAbstract
         return $this->collection($comment->reply, new ReplyCommentTransformer());
     }
 }
+

@@ -9,8 +9,8 @@ use App\Modules\User\Transformers\UserTransformer;
 class ChannelLogTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -28,3 +28,4 @@ class ChannelLogTransformer extends TransformerAbstract
     }
     
 }
+

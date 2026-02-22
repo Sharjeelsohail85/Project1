@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class ChannelTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -29,3 +29,4 @@ class ChannelTransformer extends TransformerAbstract
     }
     
 }
+

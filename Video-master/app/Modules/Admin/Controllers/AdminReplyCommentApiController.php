@@ -1,4 +1,4 @@
-<?php namespace App\Modules\Video\Controllers;
+<?php namespace App\Modules\Admin\Controllers;
 
 use App\Modules\ApiBaseController;
 use App\Http\Controllers\Controller;

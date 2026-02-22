@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class AdminTagTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -31,3 +31,4 @@ class AdminTagTransformer extends TransformerAbstract
     }
     
 }
+

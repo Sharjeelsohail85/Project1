@@ -1,4 +1,4 @@
-<?php namespace App\Modules\Managers\UserCategory;
+<?php namespace App\Modules\Managers\Category;
 //use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

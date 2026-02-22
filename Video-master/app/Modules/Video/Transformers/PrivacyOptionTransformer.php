@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class PrivacyOptionTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = [];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = [];
     
 
     /**
@@ -27,3 +27,4 @@ class PrivacyOptionTransformer extends TransformerAbstract
     }
     
 }
+

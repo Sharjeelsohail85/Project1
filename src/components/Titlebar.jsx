@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 
 const Titlebar = memo(function Titlebar({
   onToggleSlideout,
@@ -28,7 +30,7 @@ const Titlebar = memo(function Titlebar({
     <header id="titlebar" className="titlebar" role="banner">
       {/* Logo Section */}
       <div id="logoBox" className="titlebar-box titlebar-left">
-        <div 
+        <Box
           id="titlebarLogo" 
           className="titlebar-item titlebar-left-item titlebar-logo"
           onClick={handleLogoClick}
@@ -41,16 +43,57 @@ const Titlebar = memo(function Titlebar({
               handleLogoClick()
             }
           }}
-          style={{ cursor: 'pointer' }}
+          sx={{
+            cursor: 'pointer',
+            transform: 'translateY(-26px)',
+            backgroundColor: 'transparent !important',
+            '&:hover': { backgroundColor: 'transparent !important' },
+            '&:active': { backgroundColor: 'transparent !important' }
+          }}
         >
-          <img
+          <Box
+            component="img"
             className="titlebar-logo-image"
-            src="resources/logo-octopus.jpg"
-            alt=""
-            aria-hidden="true"
+            src="/resources/logo-octopus.png"
+            alt="Octopussol logo"
+            sx={{
+              width: 63,
+              height: 63,
+              minWidth: 63,
+              minHeight: 63,
+              maxWidth: 63,
+              maxHeight: 63,
+              display: 'block',
+              objectFit: 'contain',
+              backgroundColor: 'transparent !important',
+              border: '0 !important',
+              boxShadow: 'none !important',
+              borderRadius: '0 !important'
+            }}
           />
-          <span className="titlebar-logo-text">Logo</span>
-        </div>
+          <Typography
+            className="titlebar-logo-deco"
+            component="span"
+            variant="subtitle1"
+            aria-hidden="true"
+            sx={{
+              textDecoration: 'none !important',
+              textDecorationLine: 'none',
+              textTransform: 'none',
+              letterSpacing: 0,
+              lineHeight: 1,
+              fontWeight: 600,
+              position: 'static',
+              p: 0,
+              m: 0,
+              backgroundColor: 'transparent !important',
+              border: '0 !important'
+            }}
+          >
+            octopussol
+          </Typography>
+          <span className="titlebar-logo-text">Octopussol</span>
+        </Box>
       </div>
 
       {/* Navigation Section */}

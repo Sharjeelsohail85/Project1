@@ -1,17 +1,20 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import VideoPlayer from './VideoPlayer'
 import DailyInfo from './DailyInfo'
 import DailyComments from './DailyComments'
 
 const Daily = memo(function Daily({
   active,
+  currentVideoSource,
   theaterMode,
   onToggleDaily,
   onGoTheater,
+  onCommentsToggle,
   onHideOverlays,
   themeColor
 }) {
-  const dailyClasses = `daily ${active ? 'active' : ''} profile ${theaterMode ? 'alternate' : ''}`
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const dailyClasses = `daily ${active ? 'active' : ''} profile ${theaterMode ? 'alternate' : ''} ${commentsOpen ? 'comments-open' : ''}`
 
   const handleToggleDaily = useCallback(() => {
     onToggleDaily?.()
@@ -20,6 +23,26 @@ const Daily = memo(function Daily({
   const handleGoTheater = useCallback(() => {
     onGoTheater?.()
   }, [onGoTheater])
+
+  const handleToggleComments = useCallback(() => {
+    setCommentsOpen((previous) => !previous)
+  }, [])
+
+  useEffect(() => {
+    if (!active) {
+      setCommentsOpen(false)
+    }
+  }, [active])
+
+  useEffect(() => {
+    onCommentsToggle?.(commentsOpen)
+  }, [commentsOpen, onCommentsToggle])
+
+  useEffect(() => {
+    return () => {
+      onCommentsToggle?.(false)
+    }
+  }, [onCommentsToggle])
 
   return (
     <section
@@ -44,34 +67,32 @@ const Daily = memo(function Daily({
       {/* Close Button */}
       <button
         id="dailyClose"
-        className="daily-close button-float active"
+        className="promoverlay-close button-float active"
         onClick={handleToggleDaily}
         aria-label="Close video player"
       >
         <i className="material-icons" aria-hidden="true">close</i>
-        <span className="button-float-label bottom">Close</span>
       </button>
 
       {/* Theater Mode Button */}
       <button
         id="dailyFull"
-        className="daily-full button-float active"
+        className="promoverlay-next button-float active"
         onClick={handleGoTheater}
         aria-label="Enter theater mode"
       >
         <i className="material-icons" aria-hidden="true">panorama_horizontal</i>
-        <span className="button-float-label bottom">Theater Mode</span>
       </button>
 
       {/* Comments Button */}
       <button
         id="dailyComment"
-        className="daily-comment button-float active"
-        onClick={handleGoTheater}
+        className={`daily-comment button-float active ${commentsOpen ? 'active-comments' : ''}`}
+        onClick={handleToggleComments}
         aria-label="View comments"
+        aria-pressed={commentsOpen}
       >
-        <i className="material-icons" aria-hidden="true">comments</i>
-        <span className="button-float-label top">Comments</span>
+        <i className="material-icons" aria-hidden="true">comment</i>
       </button>
 
       {/* Subscribe Button */}
@@ -81,7 +102,6 @@ const Daily = memo(function Daily({
         aria-label="Subscribe"
       >
         <i className="material-icons" aria-hidden="true">add_alert</i>
-        <span className="button-float-label top">Subscribe</span>
       </button>
 
       {/* External Comments Button */}
@@ -98,6 +118,7 @@ const Daily = memo(function Daily({
 
       {/* Video Player */}
       <VideoPlayer
+        currentVideoSource={currentVideoSource}
         onGoTheater={onGoTheater}
         onHideOverlays={onHideOverlays}
         themeColor={themeColor}
@@ -108,7 +129,7 @@ const Daily = memo(function Daily({
       <DailyInfo />
 
       {/* Comments Section */}
-      <DailyComments />
+      <DailyComments active={commentsOpen} />
     </section>
   )
 })

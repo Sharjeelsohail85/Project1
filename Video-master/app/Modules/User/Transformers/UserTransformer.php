@@ -8,8 +8,8 @@ use App\Modules\User\Transformers\UserTagTransformer;
 class UserTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = ['userTag'];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = ['userTag'];
     
 
     /**
@@ -37,3 +37,4 @@ class UserTransformer extends TransformerAbstract
     }
     
 }
+

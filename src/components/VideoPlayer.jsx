@@ -1,5 +1,6 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useVideoPlayer, formatTime } from '../hooks/useVideoPlayer'
+import { resolvePlaybackSource } from '../utils/videoSource'
 
 const noop = () => {}
 
@@ -14,13 +15,47 @@ const SPEED_OPTIONS = [
 
 const QUALITY_OPTIONS = [1080, 720, 480, 360, 240, 144, 0]
 
+const PROVIDER_LABELS = Object.freeze({
+  youtube: 'YouTube',
+  google: 'Google Drive',
+  facebook: 'Facebook',
+  dropbox: 'Dropbox',
+  direct: 'Direct link',
+  external: 'External provider',
+})
+
 const VideoPlayer = memo(function VideoPlayer({
+  currentVideoSource,
   onGoTheater = noop,
   onHideOverlays = noop,
   themeColor = '#673AB7',
   theaterMode = false
 }) {
-  const api = useVideoPlayer({ onGoTheater, onHideOverlays, themeColor, theaterMode })
+  const playbackSource = resolvePlaybackSource(currentVideoSource)
+  const isEmbedSource = playbackSource.mode === 'iframe'
+  const sourceToken = `${playbackSource.mode}|${playbackSource.src}`
+  const [playerError, setPlayerError] = useState('')
+  const [embedLoaded, setEmbedLoaded] = useState(false)
+
+  const providerLabel = useMemo(() => {
+    return PROVIDER_LABELS[playbackSource.provider] || 'External provider'
+  }, [playbackSource.provider])
+
+  const fallbackUrl = playbackSource.openUrl || playbackSource.src
+
+  useEffect(() => {
+    setPlayerError('')
+    setEmbedLoaded(false)
+  }, [sourceToken])
+
+  const api = useVideoPlayer({
+    onGoTheater,
+    onHideOverlays,
+    themeColor,
+    theaterMode,
+    sourceToken,
+    disableNativePlayback: isEmbedSource,
+  })
   const {
     refs: { playerRef, playerBackgroundRef, containerRef, progressHolderRef },
     state: {
@@ -78,6 +113,10 @@ const VideoPlayer = memo(function VideoPlayer({
     togglePlay()
   }, [togglePlay])
 
+  const handleNativeError = useCallback(() => {
+    setPlayerError(`This ${providerLabel} video could not be streamed in-app.`)
+  }, [providerLabel])
+
   const isIconName = (s) => typeof s === 'string' && s.length < 30 && /^[a-z_0-9]+$/i.test(s)
 
   const timeText = duration
@@ -104,8 +143,10 @@ const VideoPlayer = memo(function VideoPlayer({
           poster="resources/video-thumbnail.jpg"
           playsInline
           onClick={handleVideoClick}
+          onError={handleNativeError}
+          style={isEmbedSource ? { display: 'none' } : undefined}
         >
-          <source src="resources/video.mp4" type="video/mp4" />
+          <source src={isEmbedSource ? '' : playbackSource.src} />
           <track id="subtitles" label="English" kind="subtitles" srcLang="en" src="" default />
         </video>
         <video
@@ -117,14 +158,100 @@ const VideoPlayer = memo(function VideoPlayer({
           muted
           playsInline
           aria-hidden="true"
+          style={isEmbedSource ? { display: 'none' } : undefined}
         >
-          <source src="resources/video.mp4" type="video/mp4" />
+          <source src={isEmbedSource ? '' : playbackSource.src} />
         </video>
+
+        {isEmbedSource ? (
+          <iframe
+            key={sourceToken}
+            id="playerEmbed"
+            title={playbackSource.title || 'External video player'}
+            src={playbackSource.src}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            onLoad={() => setEmbedLoaded(true)}
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ position: 'relative', zIndex: 6, width: '100%', height: '100%', border: 0, borderRadius: 2 }}
+          />
+        ) : null}
+
+        {isEmbedSource && fallbackUrl ? (
+          <div
+            style={{
+              position: 'absolute',
+              right: 12,
+              bottom: 12,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              maxWidth: 'min(92%, 560px)',
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(0, 0, 0, 0.62)',
+              color: '#fff',
+              fontSize: 12,
+              lineHeight: 1.35,
+            }}
+          >
+            <span>
+              {embedLoaded
+                ? `${providerLabel} embed loaded. If playback is blocked, open source.`
+                : `Loading ${providerLabel} embed. If it does not play, open source.`}
+            </span>
+            <a
+              href={fallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+            >
+              Open source
+            </a>
+          </div>
+        ) : null}
+
+        {playerError ? (
+          <div
+            role="status"
+            style={{
+              position: 'absolute',
+              left: 12,
+              right: 12,
+              bottom: 12,
+              zIndex: 10,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'rgba(183, 28, 28, 0.88)',
+              color: '#fff',
+              fontSize: 12,
+              lineHeight: 1.35,
+            }}
+          >
+            {playerError}
+            {fallbackUrl ? (
+              <>
+                {' '}
+                <a
+                  href={fallbackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}
+                >
+                  Open source
+                </a>
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Controls */}
         <div
           id="controls"
-          className={`controls ${showControls ? '' : 'hidden'}`}
+          className={`controls ${showControls && !isEmbedSource ? '' : 'hidden'}`}
           role="group"
           aria-label="Video controls"
           onClick={(e) => e.stopPropagation()}

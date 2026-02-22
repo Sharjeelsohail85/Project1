@@ -1,5 +1,6 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import ContentItem from './ContentItem'
+import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 
 // Sample content items data
 const SAMPLE_ITEMS = Array(20).fill(null).map((_, index) => ({
@@ -15,9 +16,20 @@ const SAMPLE_ITEMS = Array(20).fill(null).map((_, index) => ({
 }))
 
 const Browser = memo(function Browser({ activePage, onOpenVideo }) {
+  const browserContentRef = useRef(null)
+
+  useSmoothWheelScroll(browserContentRef, {
+    // Disable custom wheel interception to rely on native scrolling behavior.
+    enabled: false,
+    damping: 0.1,
+    wheelMultiplier: 1.15,
+    maxDelta: 220,
+    usePageFallback: false,
+  })
+
   return (
     <div id="browser" className="browser">
-      <div id="browserContent" className="browser-content">
+      <div id="browserContent" className="browser-content" ref={browserContentRef}>
         {/* Editors' Picks */}
         <div
           id="browserContentPicks"

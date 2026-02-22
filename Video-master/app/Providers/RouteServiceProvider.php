@@ -65,8 +65,10 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapApiRoutes()
     {
-        Route::prefix('api')
-             ->middleware('api')
+        // Module route files already include the "api/v1" prefix.
+        // Keeping the default "api" prefix here would produce URLs like
+        // /api/api/v1/* and break frontend calls expecting /api/v1/*.
+        Route::middleware('api')
              ->namespace($this->namespace)
              ->group(base_path('routes/api.php'));
     }

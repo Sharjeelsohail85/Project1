@@ -7,6 +7,7 @@ import ColorPicker from './ColorPicker'
 import TagsPage from './tags/TagsPage'
 import { loginWithOAuth } from '../services/auth.service'
 import { authAPI } from '../services/api.service'
+import { isOAuthProviderConfigured } from '../config/auth.config'
 import styles from '../styles/Signup.module.css'
 import { SIGNUP_UI_TOKENS } from '../theme/signupTheme'
 
@@ -19,6 +20,25 @@ function isRecoverableSignupError(error) {
     message.includes('expected json response') ||
     message.includes('404')
   )
+}
+
+function isExistingCredentialSignupError(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    message.includes('already exists') ||
+    message.includes('already been taken') ||
+    message.includes('duplicate') ||
+    message.includes('unique constraint') ||
+    message.includes('integrity constraint')
+  )
+}
+
+function getSignupErrorMessage(error) {
+  if (isExistingCredentialSignupError(error)) {
+    return 'This username already exists. Please choose a different one.'
+  }
+
+  return error?.message || 'Registration failed. Please try again.'
 }
 
 const Signup = memo(function Signup({
@@ -35,6 +55,9 @@ const Signup = memo(function Signup({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const isGoogleConfigured = isOAuthProviderConfigured('google')
+  const isFacebookConfigured = isOAuthProviderConfigured('facebook')
+  const isDropboxConfigured = isOAuthProviderConfigured('dropbox')
 
   useEffect(() => {
     if (active && step === 1) {
@@ -45,6 +68,12 @@ const Signup = memo(function Signup({
   
   // Handle OAuth signup
   const handleOAuthSignup = useCallback(async (provider) => {
+    if (!isOAuthProviderConfigured(provider)) {
+      const providerName = provider.charAt(0).toUpperCase() + provider.slice(1)
+      window.alert(`${providerName} sign-up is not available right now.`)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -73,7 +102,7 @@ const Signup = memo(function Signup({
         .replace(/[^a-z0-9]+/g, '.')
         .replace(/^\.+|\.+$/g, '') || `user.${Date.now()}`
 
-    const signupEmail = trimmedEmail || `${normalizedEmailLocalPart}.${Date.now()}@example.com`
+    const signupEmail = trimmedEmail || `${normalizedEmailLocalPart}@example.com`
 
     setLoading(true)
 
@@ -97,7 +126,7 @@ const Signup = memo(function Signup({
         return
       }
 
-      window.alert(err?.message || 'Registration failed. Please try again.')
+      window.alert(getSignupErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -156,7 +185,7 @@ const Signup = memo(function Signup({
 
   const signupStepOneSx = {
     '&.signup-step-1-view': {
-      background: SIGNUP_UI_TOKENS.OVERLAY_BG,
+      background: 'var(--theme-color, #678293)',
       color: SIGNUP_UI_TOKENS.TITLE_COLOR,
       borderRadius: 0,
       boxShadow: 'none',
@@ -164,44 +193,10 @@ const Signup = memo(function Signup({
     '&.signup-step-1-view .signup-progress': {
       display: 'none',
     },
-    '&.signup-step-1-view .signup-close, &.signup-step-1-view .signup-next': {
-      top: '34px',
-      width: '34px',
-      height: '34px',
-      padding: 0,
-      background: 'transparent !important',
-      boxShadow: 'none !important',
-      borderRadius: 0,
-      border: 'none !important',
-      opacity: 1,
-      transform: 'none',
-    },
-    '&.signup-step-1-view .signup-close': {
-      right: '38px',
-    },
-    '&.signup-step-1-view .signup-next': {
-      right: '96px',
-    },
-    '&.signup-step-1-view .signup-close .signup-close-glyph': {
-      display: 'inline-block',
-      fontSize: `${SIGNUP_UI_TOKENS.CLOSE_NEXT_ICON_SIZE}px`,
-      lineHeight: '34px',
-      color: SIGNUP_UI_TOKENS.TITLE_COLOR,
-      fontWeight: 400,
-      transform: 'translateY(-1px)',
-      userSelect: 'none',
-      pointerEvents: 'none',
-    },
     '&.signup-step-1-view .signup-next.step1-next-hidden': {
       opacity: '0 !important',
       visibility: 'hidden',
       pointerEvents: 'none',
-    },
-    '&.signup-step-1-view .signup-close .material-icons, &.signup-step-1-view .signup-close .signup-close-glyph, &.signup-step-1-view .signup-next .material-icons': {
-      fontSize: `${SIGNUP_UI_TOKENS.CLOSE_NEXT_ICON_SIZE}px !important`,
-      top: '0 !important',
-      lineHeight: '34px',
-      color: SIGNUP_UI_TOKENS.TITLE_COLOR,
     },
     '&.signup-step-1-view #signup1.signup-step1-reference.active': {
       display: 'flex',
@@ -225,21 +220,29 @@ const Signup = memo(function Signup({
       display: 'none !important',
     },
     '&.signup-step-1-view #signup1.password-active #signupPasswordBox, &.signup-step-1-view #signup1.password-active #signupPasswordBox.active': {
-      display: 'flex !important',
+      display: 'block !important',
       width: `min(${SIGNUP_UI_TOKENS.CARD_WIDTH}px, calc(100% - 24px)) !important`,
       maxWidth: `${SIGNUP_UI_TOKENS.CARD_WIDTH}px`,
       margin: '0 auto !important',
-      gap: '16px',
-      alignItems: 'center',
-      justifyContent: 'center',
+      marginLeft: 'auto !important',
+      paddingLeft: '0 !important',
+      position: 'relative',
+      top: 'auto !important',
+      left: '-1px !important',
+      right: 'auto !important',
+      opacity: '1 !important',
+      height: 'auto !important',
+      transform: 'none !important',
+      overflow: 'visible',
     },
     '&.signup-step-1-view #signup1.password-active .signup-auth-row': {
       display: 'none !important',
     },
     '&.signup-step-1-view #signupPasswordBox .upload-link-wrap': {
       float: 'none',
-      width: '100%',
+      width: '100% !important',
       maxWidth: `${SIGNUP_UI_TOKENS.CARD_WIDTH}px`,
+      margin: '0 auto !important',
       position: 'relative',
       background: SIGNUP_UI_TOKENS.CARD_BG,
       border: 'none',
@@ -248,27 +251,33 @@ const Signup = memo(function Signup({
       overflow: 'hidden',
     },
     '&.signup-step-1-view #signupPasswordBox .upload-link-back': {
-      margin: '0 8px 0 0 !important',
-      width: '30px',
-      height: `${SIGNUP_UI_TOKENS.CARD_HEIGHT}px`,
-      lineHeight: `${SIGNUP_UI_TOKENS.CARD_HEIGHT}px`,
+      margin: '0 !important',
+      width: '40px',
+      height: '40px',
+      lineHeight: '40px',
       opacity: 1,
       pointerEvents: 'auto',
-      transform: 'none',
-      borderRadius: 0,
-      background: 'transparent',
-      border: 'none !important',
+      position: 'absolute !important',
+      left: '-50px !important',
+      top: '50% !important',
+      transform: 'translateY(-50%) !important',
+      borderRadius: '999px',
+      background: 'rgba(255, 255, 255, 0.18)',
+      border: '1px solid rgba(255, 255, 255, 0.3) !important',
       color: `${SIGNUP_UI_TOKENS.TITLE_COLOR} !important`,
       display: 'inline-flex !important',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: 'none',
+      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
       appearance: 'none',
       fontSize: 0,
-      flexShrink: 0,
+      zIndex: 7,
+    },
+    '&.signup-step-1-view #signupPasswordBox .upload-link-back:hover': {
+      background: 'rgba(255, 255, 255, 0.28)',
     },
     '&.signup-step-1-view #signupPasswordBox .upload-link-back .material-icons': {
-      fontSize: '34px',
+      fontSize: '30px',
       lineHeight: 1,
       margin: 0,
       padding: 0,
@@ -445,6 +454,7 @@ const Signup = memo(function Signup({
       margin: 0,
       width: '100%',
       padding: 0,
+      fontSize: `${Math.round(SIGNUP_UI_TOKENS.TITLE_FONT_SIZE * 1.6 * 1.3 * 1.3)}px !important`,
       color: SIGNUP_UI_TOKENS.TITLE_COLOR,
       textAlign: 'center',
       lineHeight: SIGNUP_UI_TOKENS.TITLE_LINE_HEIGHT,
@@ -460,7 +470,7 @@ const Signup = memo(function Signup({
       color: SIGNUP_UI_TOKENS.SUBTITLE_COLOR,
       textAlign: 'center',
       lineHeight: SIGNUP_UI_TOKENS.SUBTITLE_LINE_HEIGHT,
-      fontSize: `${SIGNUP_UI_TOKENS.SUBTITLE_FONT_SIZE}px`,
+      fontSize: `${Math.round(SIGNUP_UI_TOKENS.SUBTITLE_FONT_SIZE * 1.5 * 1.3 * 1.3)}px !important`,
       overflow: 'visible !important',
       whiteSpace: 'normal',
       textOverflow: 'clip',
@@ -491,6 +501,12 @@ const Signup = memo(function Signup({
       '&.signup-step-1-view #signupInputName, &.signup-step-1-view #signupInputEmail, &.signup-step-1-view #signupPasswordBox': {
         width: 'min(450px, 100%) !important',
       },
+      '&.signup-step-1-view #signup1.password-active #signupPasswordBox': {
+        left: '0 !important',
+      },
+      '&.signup-step-1-view #signupPasswordBox .upload-link-back': {
+        left: '-48px !important',
+      },
       '&.signup-step-1-view #signupInputName .upload-link-input, &.signup-step-1-view #signupPasswordBox .upload-link-input': {
         fontSize: '22px',
         minHeight: '54px',
@@ -517,17 +533,6 @@ const Signup = memo(function Signup({
         height: '46px',
         margin: '0 10px',
       },
-      '&.signup-step-1-view .signup-close': {
-        top: '12px',
-        right: '12px',
-      },
-      '&.signup-step-1-view .signup-next': {
-        top: '12px',
-        right: '52px',
-      },
-      '&.signup-step-1-view .signup-close .material-icons, &.signup-step-1-view .signup-next .material-icons': {
-        fontSize: '30px !important',
-      },
     },
     '@media (max-width: 520px)': {
       '&.signup-step-1-view #signup1.signup-step1-reference.active': {
@@ -537,6 +542,9 @@ const Signup = memo(function Signup({
       '&.signup-step-1-view #signup1.signup-step1-reference.password-active': {
         paddingTop: '52px',
         gap: '6px',
+      },
+      '&.signup-step-1-view #signup1.password-active #signupPasswordBox': {
+        left: '1px !important',
       },
       '&.signup-step-1-view #signup1 .signup-title': {
         fontSize: 'clamp(1.7rem, 8.6vw, 2.1rem)',
@@ -550,6 +558,12 @@ const Signup = memo(function Signup({
         marginLeft: '42px',
         width: 'calc(100% - 52px)',
         padding: '13px 10px',
+      },
+      '&.signup-step-1-view #signupPasswordBox .upload-link-back': {
+        width: '36px',
+        height: '36px',
+        lineHeight: '36px',
+        left: '-40px !important',
       },
       '&.signup-step-1-view #signupInputName .upload-label, &.signup-step-1-view #signupPasswordBox .upload-label': {
         left: '12px',
@@ -572,12 +586,6 @@ const Signup = memo(function Signup({
       '&.signup-step-1-view .signup-auth-row .upload-link-divide': {
         height: '40px',
         margin: '0 8px',
-      },
-      '&.signup-step-1-view .signup-next': {
-        right: '46px',
-      },
-      '&.signup-step-1-view .signup-close .material-icons, &.signup-step-1-view .signup-next .material-icons': {
-        fontSize: '28px !important',
       },
     },
   }
@@ -609,11 +617,7 @@ const Signup = memo(function Signup({
         disableRipple
         sx={muiButtonResetSx}
       >
-        {isStepOne ? (
-          <span className="signup-close-glyph" aria-hidden="true">×</span>
-        ) : (
-          <i className="material-icons" aria-hidden="true">close</i>
-        )}
+        <i className="material-icons" aria-hidden="true">close</i>
       </Button>
       <Button
         id="signupNext"
@@ -754,6 +758,13 @@ const Signup = memo(function Signup({
               variant="standard"
               hiddenLabel
               fullWidth
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                if (canSubmitPasswordSignup) {
+                  handlePasswordSignup()
+                }
+              }}
               InputProps={{ disableUnderline: true }}
               inputProps={{ className: 'upload-link-input input', 'aria-label': 'Password' }}
             />
@@ -803,7 +814,7 @@ const Signup = memo(function Signup({
               setHasStepOneInteraction(true)
               handleOAuthSignup('google')
             }}
-            disabled={loading}
+            disabled={loading || !isGoogleConfigured}
             style={authButtonInlineStyle}
             type="button"
             variant="text"
@@ -822,7 +833,7 @@ const Signup = memo(function Signup({
               setHasStepOneInteraction(true)
               handleOAuthSignup('facebook')
             }}
-            disabled={loading}
+            disabled={loading || !isFacebookConfigured}
             style={authButtonInlineStyle}
             type="button"
             variant="text"
@@ -841,7 +852,7 @@ const Signup = memo(function Signup({
               setHasStepOneInteraction(true)
               handleOAuthSignup('dropbox')
             }}
-            disabled={loading}
+            disabled={loading || !isDropboxConfigured}
             style={authButtonInlineStyle}
             type="button"
             variant="text"

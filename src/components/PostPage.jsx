@@ -1,10 +1,10 @@
 import { memo, useCallback, useState } from 'react'
 import Upload from './Upload'
 
-const MIN_POST_STEP = 2
+const MIN_POST_STEP = 1
 const MAX_POST_STEP = 3
 
-const PostPage = memo(function PostPage({ onClose }) {
+const PostPage = memo(function PostPage({ onClose, onVideoReady }) {
   const [postStep, setPostStep] = useState(MIN_POST_STEP)
 
   const handleNextPostStep = useCallback(() => {
@@ -30,6 +30,7 @@ const PostPage = memo(function PostPage({ onClose }) {
         onHideUpload={handleClosePost}
         onNextUpload={handleNextPostStep}
         onPrevUpload={handlePrevPostStep}
+        onVideoReady={onVideoReady}
       />
     </section>
   )

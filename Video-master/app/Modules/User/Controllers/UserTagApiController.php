@@ -31,57 +31,69 @@ class UserTagApiController extends ApiBaseController
     
     public function store(Request $request)
     {
-        
-        if(!$request->exists('data'))
+        try
         {
-            return $this->errorWrongArgs(['No Input found']);
+            if(!$request->exists('data'))
+            {
+                return $this->errorWrongArgs(['No Input found']);
+            }
+
+            $data = $request->get('data');
+
+            $validation = $this->userTagValidator->store($data);
+            if($validation)
+            {
+                return $this->errorWrongArgs($validation['errors']);
+            }
+
+            $tag = $this->tagRepo->findWhere(['uuid' => $data['tag_id']])->first();
+            if(!$tag)
+            {
+                return $this->errorWrongArgs(array('Tag Not Found'));
+            }
+
+            $data = $this->helper->clearEmptyValues($data);
+            $data['uuid'] = $this->helper->addUuid();
+            $data['user_id'] = $request->get('id');
+
+            $user = $this->userTag->insertData($data);
+
+            return $this->respondWithBoolean($user);
         }
-        
-        $data = $request->get('data');
-        
-        
-        $validation = $this->userTagValidator->store($data);
-        if($validation)
+        catch (\Throwable $e)
         {
-            return $this->errorWrongArgs($validation['errors']);
+            return $this->errorInternalError(['Unable to save user tag']);
         }
-        
-        $tag = $this->tagRepo->findWhere(['uuid' => $data['tag_id']])->first();
-        if(!$tag)
-        {
-            return $this->errorWrongArgs(array('Tag Not Found'));
-        }
-       
-        $data = $this->helper->clearEmptyValues($data);
-        $data['uuid'] = $this->helper->addUuid();
-        $data['user_id'] = $request->get('id');
-        
-        $user = $this->userTag->insertData($data);
-       
-        return $this->respondWithBoolean($user, new UserTagTransformer());
     }
     
     public function addCustom(Request $request)
     {
-        if(!$request->exists('data'))
+        try
         {
-            return $this->errorWrongArgs(['No Input found']);
+            if(!$request->exists('data'))
+            {
+                return $this->errorWrongArgs(['No Input found']);
+            }
+
+            $data = $request->get('data');
+
+            $validation = $this->userTagValidator->storeCustom($data);
+            if($validation)
+            {
+                return $this->errorWrongArgs($validation['errors']);
+            }
+
+            $data = $this->helper->clearEmptyValues($data);
+            $data['uuid'] = $this->helper->addUuid();
+            $data['user_id'] = $request->get('id');
+            $user = $this->userTag->insertCustomTag($data);
+
+            return $this->respondWithBoolean($user);
         }
-        
-        $data = $request->get('data');
-        
-        $validation = $this->userTagValidator->storeCustom($data);
-        if($validation)
+        catch (\Throwable $e)
         {
-            return $this->errorWrongArgs($validation['errors']);
+            return $this->errorInternalError(['Unable to add custom tag']);
         }
-       
-        $data = $this->helper->clearEmptyValues($data);
-        $data['uuid'] = $this->helper->addUuid();
-        $data['user_id'] = $request->get('id');
-        $user = $this->userTag->insertCustomTag($data);
-       
-        return $this->respondWithBoolean($user, new UserTagTransformer());
     }
     
     public function index(Request $request)
@@ -96,18 +108,24 @@ class UserTagApiController extends ApiBaseController
     
     public function destroy(Request $request, $tagID)
     {
-        //$userTag = $this->userTag->where('user_id', $request->get('id'))->where('tag_id', $tagID)->first();
-        $userTag = $this->userTag->findWhere(['user_id' => $request->get('id'), 'tag_id' => $tagID])->first();
-        
-        if(!$userTag)
+        try
         {
-            return $this->errorInternalError();
+            //$userTag = $this->userTag->where('user_id', $request->get('id'))->where('tag_id', $tagID)->first();
+            $userTag = $this->userTag->findWhere(['user_id' => $request->get('id'), 'tag_id' => $tagID])->first();
+
+            if(!$userTag)
+            {
+                return $this->errorInternalError();
+            }
+
+            $res = $this->userTag->deleteData($tagID);
+            return $this->respondWithBoolean($res);
         }
-       
-        $res = $this->userTag->deleteData($tagID);
-        return $this->respondWithBoolean($res, new UserTagTransformer());
+        catch (\Throwable $e)
+        {
+            return $this->errorInternalError(['Unable to remove tag']);
+        }
     }
     
 }
-
 

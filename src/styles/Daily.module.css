@@ -16,7 +16,7 @@
 	height: 400px;
 	z-index: 4;
 	color: #fafafa;
-	background: #607D8B;
+	background: var(--theme-color, #607D8B);
 	overflow: hidden;
 	-webkit-transform: translateY(-100%);
 	pointer-events: none;
@@ -78,7 +78,7 @@
 	right: 50%;
 	height: 312px;
 	right: calc(50% + 40px);
-	background-color: #607D8B;
+	background-color: var(--theme-color, #607D8B);
 	border-radius: 2px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 	overflow: hidden;

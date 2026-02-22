@@ -9,8 +9,8 @@ use App\Modules\Video\Transformers\VideoTransformer;
 class VideoHistoryTransformer extends TransformerAbstract
 {
 
-    protected $availableIncludes = [];
-    protected $defaultIncludes = ['video'];
+    protected array $availableIncludes = [];
+    protected array $defaultIncludes = ['video'];
     
 
     /**
@@ -33,3 +33,4 @@ class VideoHistoryTransformer extends TransformerAbstract
     }
     
 }
+
