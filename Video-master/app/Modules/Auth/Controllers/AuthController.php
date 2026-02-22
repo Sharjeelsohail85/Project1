@@ -185,6 +185,7 @@ class AuthController extends ApiBaseController
             $data = (array)$request->get('data');
             $provider = strtolower(trim((string)($data['provider'] ?? '')));
             $code = trim((string)($data['code'] ?? ''));
+            $redirectUri = trim((string)($data['redirect_uri'] ?? ''));
 
             if($provider === '')
             {
@@ -201,7 +202,7 @@ class AuthController extends ApiBaseController
                 return $this->errorWrongArgs(['Unsupported oauth provider']);
             }
 
-            $googleUser = $this->fetchGoogleUserFromCode($code);
+            $googleUser = $this->fetchGoogleUserFromCode($code, $redirectUri);
             $email = strtolower(trim((string)($googleUser['email'] ?? '')));
 
             if($email === '')
@@ -302,13 +303,19 @@ class AuthController extends ApiBaseController
         }
     }
 
-    private function fetchGoogleUserFromCode($code)
+    private function fetchGoogleUserFromCode($code, $requestedRedirectUri = null)
     {
         $clientId = trim((string)(env('GOOGLE_CLIENT_ID') ?: env('VITE_GOOGLE_CLIENT_ID') ?: config('services.google.client_id')));
         $clientSecret = trim((string)(env('GOOGLE_CLIENT_SECRET') ?: env('VITE_GOOGLE_CLIENT_SECRET') ?: config('services.google.client_secret')));
-        $redirectUri = trim((string)(env('GOOGLE_REDIRECT_URI') ?: env('VITE_GOOGLE_REDIRECT_URI') ?: 'http://localhost:3000/auth/google/callback'));
+        $configuredRedirectUri = trim((string)(env('GOOGLE_REDIRECT_URI') ?: env('VITE_GOOGLE_REDIRECT_URI') ?: 'http://localhost:3000/auth/google/callback'));
+        $redirectUri = trim((string)$requestedRedirectUri);
 
-        if($clientId === '' || $clientSecret === '')
+        if($redirectUri === '')
+        {
+            $redirectUri = $configuredRedirectUri;
+        }
+
+        if($clientId === '' || $clientSecret === '' || $redirectUri === '')
         {
             throw new \RuntimeException('Google OAuth is not configured on backend');
         }

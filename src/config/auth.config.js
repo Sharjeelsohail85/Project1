@@ -11,6 +11,45 @@ function getOriginSafe() {
   return window.location.origin
 }
 
+function parseUrlSafe(value) {
+  try {
+    return new URL(String(value || '').trim())
+  } catch {
+    return null
+  }
+}
+
+function isLocalhostHost(hostname) {
+  const normalized = String(hostname || '').trim().toLowerCase()
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
+}
+
+function resolveRedirectUri(configuredValue, fallbackPath) {
+  const runtimeOrigin = getOriginSafe()
+  const configured = String(configuredValue || '').trim()
+
+  if (!configured) {
+    return `${runtimeOrigin}${fallbackPath}`
+  }
+
+  const configuredUrl = parseUrlSafe(configured)
+  if (!configuredUrl) {
+    return configured
+  }
+
+  const runtimeUrl = parseUrlSafe(runtimeOrigin)
+  if (!runtimeUrl) {
+    return configured
+  }
+
+  if (isLocalhostHost(configuredUrl.hostname) && !isLocalhostHost(runtimeUrl.hostname)) {
+    const path = configuredUrl.pathname || fallbackPath
+    return `${runtimeUrl.origin}${path}${configuredUrl.search}`
+  }
+
+  return configured
+}
+
 function getSessionStorageSafe() {
   if (typeof window === 'undefined') return null
   return window.sessionStorage || null
@@ -19,19 +58,19 @@ function getSessionStorageSafe() {
 export const authConfig = {
   google: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-    redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${getOriginSafe()}/auth/google/callback`,
+    redirectUri: resolveRedirectUri(import.meta.env.VITE_GOOGLE_REDIRECT_URI, '/auth/google/callback'),
     scope: 'openid profile email',
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   },
   facebook: {
     appId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
-    redirectUri: import.meta.env.VITE_FACEBOOK_REDIRECT_URI || `${getOriginSafe()}/auth/facebook/callback`,
+    redirectUri: resolveRedirectUri(import.meta.env.VITE_FACEBOOK_REDIRECT_URI, '/auth/facebook/callback'),
     scope: 'email public_profile',
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
   },
   dropbox: {
     clientId: import.meta.env.VITE_DROPBOX_CLIENT_ID || '',
-    redirectUri: import.meta.env.VITE_DROPBOX_REDIRECT_URI || `${getOriginSafe()}/auth/dropbox/callback`,
+    redirectUri: resolveRedirectUri(import.meta.env.VITE_DROPBOX_REDIRECT_URI, '/auth/dropbox/callback'),
     scope: 'account_info.read',
     authUrl: 'https://www.dropbox.com/oauth2/authorize',
   },
@@ -57,6 +96,15 @@ export function isOAuthProviderConfigured(provider) {
   }
 
   return !isMissingCredential(config.clientId)
+}
+
+export function getOAuthRedirectUri(provider) {
+  const config = authConfig[provider]
+  if (!config) {
+    throw new Error(`Unknown provider: ${provider}`)
+  }
+
+  return String(config.redirectUri || '').trim()
 }
 
 // Helper to get OAuth URL for each provider

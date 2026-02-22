@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import logoOctopus from '../../resources/logo-octopus.png'
 
 const Titlebar = memo(function Titlebar({
   onToggleSlideout,
@@ -54,7 +55,7 @@ const Titlebar = memo(function Titlebar({
           <Box
             component="img"
             className="titlebar-logo-image"
-            src="/resources/logo-octopus.png"
+            src={logoOctopus}
             alt="Octopussol logo"
             sx={{
               width: 63,

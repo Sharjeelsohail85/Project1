@@ -332,9 +332,10 @@ export const authAPI = {
    * @param {string} provider - 'google', 'facebook', or 'dropbox'
    * @param {string} code - Authorization code from OAuth provider
    * @param {string} state - CSRF state token
+   * @param {string} redirectUri - Redirect URI used in the OAuth authorize step
    * @returns {Promise<Object>} OAuth response with token and user info
    */
-  async oauthCallback(provider, code, state) {
+  async oauthCallback(provider, code, state, redirectUri) {
     const response = await apiRequest(API_CONFIG.endpoints.auth.oauthCallback, {
       method: 'POST',
       body: JSON.stringify({
@@ -342,6 +343,7 @@ export const authAPI = {
           provider,
           code,
           state,
+          redirect_uri: String(redirectUri || '').trim(),
         },
       }),
     })

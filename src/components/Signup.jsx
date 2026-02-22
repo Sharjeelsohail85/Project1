@@ -47,7 +47,8 @@ const Signup = memo(function Signup({
   onHideSignup,
   onNextSignup,
   onPrevSignup,
-  onColorChange
+  onColorChange,
+  onLoginSuccess
 }) {
   const [showPasswordInput, setShowPasswordInput] = useState(false)
   const [hasStepOneInteraction, setHasStepOneInteraction] = useState(false)
@@ -84,14 +85,18 @@ const Signup = memo(function Signup({
         return
       }
 
-      // Continue through the onboarding flow after account creation.
-      onNextSignup?.()
+      // Consider signup as an authenticated session and apply logged-in UI immediately.
+      if (typeof onLoginSuccess === 'function') {
+        onLoginSuccess()
+      } else {
+        onNextSignup?.()
+      }
     } catch (err) {
       window.alert(err?.message || `Failed to sign up with ${provider}. Please try again.`)
     } finally {
       setLoading(false)
     }
-  }, [onNextSignup])
+  }, [onLoginSuccess, onNextSignup])
 
   const handlePasswordSignup = useCallback(async () => {
     const trimmedName = name.trim()
@@ -121,7 +126,11 @@ const Signup = memo(function Signup({
       })
 
       if (response?.data && checkAuth()) {
-        onNextSignup?.()
+        if (typeof onLoginSuccess === 'function') {
+          onLoginSuccess()
+        } else {
+          onNextSignup?.()
+        }
       } else {
         window.alert('Registration failed. Please try again.')
       }
@@ -136,7 +145,7 @@ const Signup = memo(function Signup({
     } finally {
       setLoading(false)
     }
-  }, [email, name, onNextSignup, password])
+  }, [email, name, onLoginSuccess, onNextSignup, password])
   
   const progressWidth = `${((step - 1) / 3) * 100}%`
   const isStepOne = step === 1

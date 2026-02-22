@@ -53,14 +53,6 @@ const Slideout = memo(function Slideout({
       aria-hidden={!visible}
     >
       <nav className="slideout-technical" aria-label="Menu options">
-        <button className="slideout-entry" role="menuitem">
-          Frequent Questions
-          <i className="material-icons" aria-hidden="true">help</i>
-        </button>
-        <button className="slideout-entry" role="menuitem" onClick={handleOpenThemeDesigner}>
-          Theme Designer
-          <i className="material-icons" aria-hidden="true">format_paint</i>
-        </button>
         {isAuthenticated ? (
           <button
             className={`slideout-entry ${isChannelPage ? 'active' : ''}`}
@@ -83,10 +75,21 @@ const Slideout = memo(function Slideout({
         ) : null}
         {isAuthenticated ? (
           <button className="slideout-entry" id="showit" role="menuitem" onClick={handleSignOut}>
-            Sign Out
+            Log Out
             <i className="material-icons" aria-hidden="true">exit_to_app</i>
           </button>
-        ) : null}
+        ) : (
+          <>
+            <button className="slideout-entry" role="menuitem">
+              Frequently Asked Questions
+              <i className="material-icons" aria-hidden="true">help</i>
+            </button>
+            <button className="slideout-entry" role="menuitem" onClick={handleOpenThemeDesigner}>
+              Theme Designer
+              <i className="material-icons" aria-hidden="true">format_paint</i>
+            </button>
+          </>
+        )}
       </nav>
 
       <div className="slideout-bottom">

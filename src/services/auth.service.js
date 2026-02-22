@@ -2,7 +2,7 @@
 // Handles OAuth flows for Google, Facebook, and Dropbox
 // Now integrated with Laravel backend
 
-import { getOAuthUrl, storeOAuthState, verifyOAuthState } from '../config/auth.config'
+import { getOAuthRedirectUri, getOAuthUrl, storeOAuthState, verifyOAuthState } from '../config/auth.config'
 import { authAPI } from './api.service'
 import { getAuthTokens, saveAuthTokens } from '../config/api.config'
 
@@ -250,7 +250,8 @@ export async function handleOAuthCallback(provider, params) {
 
   // Exchange code for tokens via Laravel backend API
   try {
-    const response = await authAPI.oauthCallback(provider, code, state)
+    const redirectUri = getOAuthRedirectUri(provider)
+    const response = await authAPI.oauthCallback(provider, code, state, redirectUri)
     
     if (response.data && response.data.user) {
       return response.data.user

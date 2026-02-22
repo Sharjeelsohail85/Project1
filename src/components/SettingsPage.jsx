@@ -14,6 +14,7 @@ import ChannelPage from './ChannelPage'
 import PosterText from './PosterText'
 import { loginWithOAuth, logout } from '../services/auth.service'
 import { isOAuthProviderConfigured } from '../config/auth.config'
+import logoOctopus from '../../resources/logo-octopus.png'
 import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 import './SettingsPage.css'
 
@@ -70,6 +71,11 @@ export default function SettingsPage({
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [activeNavIndex, setActiveNavIndex] = useState(null)
+  const [accountFields, setAccountFields] = useState({
+    username: '',
+    channelName: '',
+    passwordRetype: '',
+  })
   const [links, setLinks] = useState({
     google: '',
     facebook: '',
@@ -309,9 +315,30 @@ export default function SettingsPage({
         id: 'section1',
         title: 'Account',
         items: [
-          'Change a setting that exists in this box',
-          'Change a setting that exists in this box',
-          'Change a setting that exists in this box',
+          {
+            type: 'accountField',
+            key: 'username',
+            label: 'Change username',
+            placeholder: 'Enter your username',
+            inputType: 'text',
+            autoComplete: 'username',
+          },
+          {
+            type: 'accountField',
+            key: 'channelName',
+            label: 'Change channel name',
+            placeholder: 'Enter your channel name',
+            inputType: 'text',
+            autoComplete: 'organization',
+          },
+          {
+            type: 'accountField',
+            key: 'passwordRetype',
+            label: 'Change password',
+            placeholder: 'Enter new password',
+            inputType: 'password',
+            autoComplete: 'new-password',
+          },
         ],
       },
       {
@@ -528,6 +555,13 @@ export default function SettingsPage({
     animateScrollTop(columnLeftRef.current, 0, 150)
     animateScrollTop(contentMainRef.current, 0, 150)
   }
+
+  const handleAccountFieldChange = useCallback((fieldKey, value) => {
+    setAccountFields((prev) => ({
+      ...prev,
+      [fieldKey]: value,
+    }))
+  }, [])
 
   const onNavItemClick = (index) => {
     const sectionId = navItems[index]?.sectionId
@@ -763,7 +797,7 @@ export default function SettingsPage({
             <Box
               component="img"
               className="titlebar-logo-image"
-              src="/resources/logo-octopus.png"
+              src={logoOctopus}
               alt="Octopussol logo"
               sx={{
                 width: 63,
@@ -822,14 +856,6 @@ export default function SettingsPage({
 
       <div id="slideout" className={`slideout ${slideoutHiddenClass ? 'hidden' : ''}`}>
         <nav className="slideout-technical" aria-label="Menu options">
-          <button className="slideout-entry" role="menuitem">
-            Frequent Questions
-            <i className="material-icons" aria-hidden="true">help</i>
-          </button>
-          <button className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/theme-designer')}>
-            Theme Designer
-            <i className="material-icons" aria-hidden="true">format_paint</i>
-          </button>
           {isAuthenticated ? (
             <button className={`slideout-entry ${isChannelRoute ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/channel')}>
               Channel
@@ -844,10 +870,21 @@ export default function SettingsPage({
           ) : null}
           {isAuthenticated ? (
             <button className="slideout-entry" role="menuitem" onClick={handleSignOut}>
-              Sign Out
+              Log Out
               <i className="material-icons" aria-hidden="true">exit_to_app</i>
             </button>
-          ) : null}
+          ) : (
+            <>
+              <button className="slideout-entry" role="menuitem">
+                Frequently Asked Questions
+                <i className="material-icons" aria-hidden="true">help</i>
+              </button>
+              <button className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/theme-designer')}>
+                Theme Designer
+                <i className="material-icons" aria-hidden="true">format_paint</i>
+              </button>
+            </>
+          )}
         </nav>
 
         <div className="slideout-bottom">
@@ -1041,6 +1078,7 @@ export default function SettingsPage({
                   {section.items.map((item, itemIndex) => {
                     const label = typeof item === 'string' ? item : item.label
                     const personalizationKey = typeof item === 'string' ? null : item.key
+                    const isAccountField = section.id === 'section1' && typeof item !== 'string' && item.type === 'accountField'
                     const isLinkField = section.id === 'section7' && typeof item !== 'string' && item.type === 'link'
                     const isPersonalizationSection = section.id === 'section4' || section.id === 'theme-designer-main'
                     const isPersonalizationToggle = isPersonalizationSection
@@ -1062,6 +1100,23 @@ export default function SettingsPage({
 
                     if (!isDesignerItemVisible) {
                       return null
+                    }
+
+                    if (isAccountField) {
+                      return (
+                        <div key={`${section.id}-${itemIndex}`} className={`section-item section-account-field-item ${itemActive ? 'active' : ''}`}>
+                          <div className="section-account-field-label">{item.label}</div>
+                          <input
+                            type={item.inputType || 'text'}
+                            className="section-account-input input"
+                            value={accountFields[item.key] || ''}
+                            onChange={(e) => handleAccountFieldChange(item.key, e.target.value)}
+                            placeholder={item.placeholder || ''}
+                            autoComplete={item.autoComplete || 'off'}
+                            aria-label={item.label}
+                          />
+                        </div>
+                      )
                     }
 
                     if (isLinkField) {

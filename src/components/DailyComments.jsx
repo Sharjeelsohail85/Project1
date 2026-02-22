@@ -117,7 +117,7 @@ const DailyComments = memo(function DailyComments({ active = false, loading = fa
           </div>
         </header>
 
-        <div className="daily-comments-scroll">
+        <div className={`daily-comments-scroll ${loading ? 'is-loading' : ''}`}>
           {loading ? renderLoading() : (
             <ul className="retro-comments-list" role="list" aria-label="Retro comments list">
               {COMMENT_ITEMS.map((comment, index) => (

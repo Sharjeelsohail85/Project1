@@ -87,6 +87,7 @@ const TopWrap = memo(function TopWrap({
         onNextSignup={onNextSignup}
         onPrevSignup={onPrevSignup}
         onColorChange={onColorChange}
+        onLoginSuccess={onLoginSuccess}
       />
       
       <Login

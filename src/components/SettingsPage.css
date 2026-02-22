@@ -1504,6 +1504,50 @@ html, body {
 	flex-shrink: 0;
 }
 
+.section-account-field-item {
+	display: block;
+	min-height: auto;
+	padding: 14px 20px;
+	cursor: default;
+	background: #fff;
+}
+
+.section-account-field-item:hover {
+	background: #fff;
+}
+
+.section-account-field-label {
+	font-size: 13px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin-bottom: 8px;
+	color: rgba(33, 33, 33, 0.92);
+}
+
+.section-account-input {
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	font-size: 14px;
+	line-height: 1.4;
+	color: #212121;
+	background: #fafafa;
+	border: 1px solid rgba(0, 0, 0, 0.14);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.section-account-input::placeholder {
+	color: rgba(0, 0, 0, 0.45);
+}
+
+.section-account-input:focus {
+	border-color: var(--theme-color, #673AB7);
+	box-shadow: 0 0 0 3px rgba(103, 58, 183, 0.16);
+	outline: none;
+}
+
 .button-toggle-label {
 	display: block;
 	transform: translateY(-1px);
