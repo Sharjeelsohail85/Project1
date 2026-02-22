@@ -5380,6 +5380,38 @@ video.background {
 	font-size: 15px;
 	max-width: 500px;
 	display: block;
+	line-height: 1.6;
+	max-height: 5.1em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: normal;
+}
+
+.daily-info-desc.is-expanded {
+	max-height: none;
+	overflow: visible;
+}
+
+.daily-info-desc a,
+.daily-info-desc-link-row a {
+	color: #ffffff;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	word-break: break-word;
+}
+
+.daily-info-desc a:hover,
+.daily-info-desc-link-row a:hover {
+	text-decoration-thickness: 2px;
+}
+
+.daily-info-desc-link-row {
+	color: #eaeaea;
+	margin-top: 6px;
+	margin-bottom: 10px;
+	font-size: 14px;
+	max-width: 500px;
+	word-break: break-word;
 }
 
 .daily-info-more,

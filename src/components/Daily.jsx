@@ -168,7 +168,7 @@ const Daily = memo(function Daily({
       />
 
       {/* Video Info */}
-      <DailyInfo />
+      <DailyInfo currentVideoSource={currentVideoSource} />
 
       {/* Comments Section */}
       <DailyComments active={commentsOpen} loading={commentsLoading} onClose={handleCloseComments} />

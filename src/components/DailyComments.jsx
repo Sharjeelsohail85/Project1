@@ -46,20 +46,51 @@ const SOCIAL_LINKS = [
 ]
 
 const DailyComments = memo(function DailyComments({ active = false, loading = false, onClose }) {
-  const skeletonRows = [1, 2, 3, 4, 5]
-
   const renderLoading = () => (
-    <div className="comments-loading" role="status" aria-live="polite" aria-label="Loading comments">
-      {skeletonRows.map((item) => (
-        <div key={`comments-loading-${item}`} className="comments-loading-row">
-          <span className="comments-loading-avatar" aria-hidden="true" />
-          <div className="comments-loading-lines" aria-hidden="true">
-            <span className="comments-loading-line comments-loading-line-title" />
-            <span className="comments-loading-line comments-loading-line-meta" />
-            <span className="comments-loading-line comments-loading-line-body" />
-          </div>
+    <div className="comments-loading chat" role="status" aria-live="polite" aria-label="Loading comments">
+      <div className="chat__row fade" aria-hidden="true">
+        <div className="chat__left">
+          <div className="chat__a-icon" />
         </div>
-      ))}
+        <div className="chat__right">
+          <div className="chat__a-name" />
+          <div className="chat__a-line-1" />
+          <div className="chat__a-line-2" />
+        </div>
+      </div>
+
+      <div className="chat__row" aria-hidden="true">
+        <div className="chat__left">
+          <div className="chat__b-icon" />
+        </div>
+        <div className="chat__right">
+          <div className="chat__b-name" />
+          <div className="chat__b-line-1" />
+          <div className="chat__b-line-2" />
+        </div>
+      </div>
+
+      <div className="chat__row" aria-hidden="true">
+        <div className="chat__left">
+          <div className="chat__c-icon" />
+        </div>
+        <div className="chat__right">
+          <div className="chat__c-name" />
+          <div className="chat__c-line-1" />
+          <div className="chat__c-line-2" />
+        </div>
+      </div>
+
+      <div className="chat__row" aria-hidden="true">
+        <div className="chat__left">
+          <div className="chat__a-icon" />
+        </div>
+        <div className="chat__right">
+          <div className="chat__a-name" />
+          <div className="chat__a-line-1" />
+          <div className="chat__a-line-2" />
+        </div>
+      </div>
     </div>
   )
 
@@ -88,43 +119,43 @@ const DailyComments = memo(function DailyComments({ active = false, loading = fa
 
         <div className="daily-comments-scroll">
           {loading ? renderLoading() : (
-          <ul className="retro-comments-list" role="list" aria-label="Retro comments list">
-            {COMMENT_ITEMS.map((comment, index) => (
-              <li key={comment.id} className={`retro-comment-item ${index % 2 === 1 ? 'is-even' : ''}`} role="listitem">
-                <div className="retro-comment-infos">
-                  <img src={comment.avatar} alt={`${comment.name} avatar`} className="retro-comment-avatar" />
+            <ul className="retro-comments-list" role="list" aria-label="Retro comments list">
+              {COMMENT_ITEMS.map((comment, index) => (
+                <li key={comment.id} className={`retro-comment-item ${index % 2 === 1 ? 'is-even' : ''}`} role="listitem">
+                  <div className="retro-comment-infos">
+                    <img src={comment.avatar} alt={`${comment.name} avatar`} className="retro-comment-avatar" />
 
-                  {SOCIAL_LINKS.map((social) => (
-                    <a
-                      key={`${comment.id}-${social.id}`}
-                      href={social.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`retro-social retro-social-${social.id}`}
-                      aria-label={social.label}
-                    >
-                      <i className={social.iconClass} aria-hidden="true" />
-                      <span>{social.label}</span>
-                    </a>
-                  ))}
-                </div>
+                    {SOCIAL_LINKS.map((social) => (
+                      <a
+                        key={`${comment.id}-${social.id}`}
+                        href={social.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`retro-social retro-social-${social.id}`}
+                        aria-label={social.label}
+                      >
+                        <i className={social.iconClass} aria-hidden="true" />
+                        <span>{social.label}</span>
+                      </a>
+                    ))}
+                  </div>
 
-                <div className="retro-comment-content">
-                  <h3>
-                    {comment.name}
-                    <b>{comment.role}</b>
-                  </h3>
+                  <div className="retro-comment-content">
+                    <h3>
+                      {comment.name}
+                      <b>{comment.role}</b>
+                    </h3>
 
-                  <p>
-                    {comment.body}{' '}
-                    <a href={comment.linkHref} target="_blank" rel="noreferrer">
-                      {comment.linkLabel}
-                    </a>
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+                    <p>
+                      {comment.body}{' '}
+                      <a href={comment.linkHref} target="_blank" rel="noreferrer">
+                        {comment.linkLabel}
+                      </a>
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>

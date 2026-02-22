@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
-import { loginWithOAuth } from '../services/auth.service'
+import { loginWithOAuth, isAuthenticated as checkAuth } from '../services/auth.service'
 import { authAPI } from '../services/api.service'
 import { isOAuthProviderConfigured } from '../config/auth.config'
 import styles from '../styles/Login.module.css'
@@ -106,8 +106,15 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
       await loginWithOAuth(provider)
 
       if (!isMountedRef.current) return
+
+      if (checkAuth()) {
+        setLoading(false)
+        onLoginSuccess?.()
+        return
+      }
+
+      setError('Login completed but auth session was not saved. Please try again.')
       setLoading(false)
-      onLoginSuccess?.()
     } catch (err) {
       if (!isMountedRef.current) return
       setError(err.message || `Failed to sign in with ${provider}. Please try again.`)
@@ -125,11 +132,11 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
     setError(null)
 
     try {
-      const response = await authAPI.login(email, password)
+      await authAPI.login(email, password)
 
       if (!isMountedRef.current) return
 
-      if (response?.data?.token) {
+      if (checkAuth()) {
         onLoginSuccess?.()
       } else {
         setError('Login failed. Please check your credentials.')

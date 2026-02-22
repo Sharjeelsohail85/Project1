@@ -7,12 +7,14 @@ const Slideout = memo(function Slideout({
   onColorChange,
   onShowPromo,
   onOpenSettings,
+  onOpenChannel,
   onOpenThemeDesigner,
   onSignOut,
   isAuthenticated = false,
 }) {
   const location = useLocation()
   const isSettingsPage = location.pathname === '/settings'
+  const isChannelPage = location.pathname === '/channel'
 
   const handleShowPromo = useCallback(() => {
     if (typeof onShowPromo === 'function') onShowPromo()
@@ -25,6 +27,10 @@ const Slideout = memo(function Slideout({
   const handleOpenThemeDesigner = useCallback(() => {
     if (typeof onOpenThemeDesigner === 'function') onOpenThemeDesigner()
   }, [onOpenThemeDesigner])
+
+  const handleOpenChannel = useCallback(() => {
+    if (typeof onOpenChannel === 'function') onOpenChannel()
+  }, [onOpenChannel])
 
   const handleSignOut = useCallback(() => {
     if (typeof onSignOut === 'function') {
@@ -57,7 +63,17 @@ const Slideout = memo(function Slideout({
         </button>
         {isAuthenticated ? (
           <button
-            className={`slideout-entry ${isSettingsPage ? 'active' : ''}`}
+            className={`slideout-entry ${isChannelPage ? 'active' : ''}`}
+            role="menuitem"
+            onClick={handleOpenChannel}
+          >
+            Channel
+            <i className="material-icons" aria-hidden="true">podcasts</i>
+          </button>
+        ) : null}
+        {isAuthenticated ? (
+          <button
+            className={`slideout-entry ${isSettingsPage && !isChannelPage ? 'active' : ''}`}
             role="menuitem"
             onClick={handleOpenSettings}
           >

@@ -5,6 +5,7 @@ import Slideout from './components/Slideout'
 import Shadow from './components/Shadow'
 import Content from './components/Content'
 import SettingsPage from './components/SettingsPage'
+import ChannelPage from './components/ChannelPage'
 import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
 import { isAuthenticated as checkAuth, logout } from './services/auth.service'
 import './styles/global.css'
@@ -14,12 +15,16 @@ import './styles/design-system.css'
 const STORAGE_DAILY_VISIBLE = 'dailyVisible'
 const STORAGE_CURRENT_PAGE = 'currentPage'
 const STORAGE_PERSONALIZATION_EFFECTS = 'personalizationEffects'
+const STORAGE_CHANNEL_POSTER_TEXT = 'channelPosterText'
+const STORAGE_CHANNEL_POSTER_ENABLED = 'channelPosterEnabled'
 
 const DEFAULT_PERSONALIZATION_EFFECTS = {
   infiniteGridExplorer: false,
   css2: false,
   mixingItUp: false,
 }
+
+const DEFAULT_CHANNEL_POSTER_TEXT = 'THENEEDLEDROP'
 
 const PERSONALIZATION_EFFECT_CLASS_MAP = {
   infiniteGridExplorer: 'theme-effect-infinite-grid',
@@ -38,7 +43,7 @@ const inlineStyles = `
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel'
   
   // Check authentication status on mount
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -136,6 +141,31 @@ function App() {
 
     return fallback
   })
+  const [channelPosterText, setChannelPosterText] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem(STORAGE_CHANNEL_POSTER_TEXT)
+        if (typeof stored === 'string' && stored.trim() !== '') {
+          return stored.slice(0, 28)
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return DEFAULT_CHANNEL_POSTER_TEXT
+  })
+  const [channelPosterEnabled, setChannelPosterEnabled] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem(STORAGE_CHANNEL_POSTER_ENABLED) === 'true'
+      }
+    } catch {
+      // ignore
+    }
+
+    return false
+  })
 
   // Helper function to darken a hex color
   const darkenColor = useCallback((hex, percent) => {
@@ -219,6 +249,26 @@ function App() {
       // ignore
     }
   }, [personalizationEffects])
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(STORAGE_CHANNEL_POSTER_TEXT, channelPosterText)
+      }
+    } catch {
+      // ignore
+    }
+  }, [channelPosterText])
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(STORAGE_CHANNEL_POSTER_ENABLED, String(channelPosterEnabled))
+      }
+    } catch {
+      // ignore
+    }
+  }, [channelPosterEnabled])
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -410,12 +460,22 @@ function App() {
       handleUnauthorized()
     }
 
+    const onAuthLogin = () => {
+      try {
+        setIsAuthenticated(checkAuth())
+      } catch {
+        setIsAuthenticated(false)
+      }
+    }
+
     window.addEventListener('auth:unauthorized', onUnauthorized)
     window.addEventListener('auth:logout', onUnauthorized)
+    window.addEventListener('auth:login', onAuthLogin)
 
     return () => {
       window.removeEventListener('auth:unauthorized', onUnauthorized)
       window.removeEventListener('auth:logout', onUnauthorized)
+      window.removeEventListener('auth:login', onAuthLogin)
     }
   }, [handleUnauthorized])
 
@@ -531,6 +591,10 @@ function App() {
     navigate('/theme-designer')
   }, [navigate])
 
+  const openChannel = useCallback(() => {
+    navigate('/channel')
+  }, [navigate])
+
   const handlePersonalizationSettingChange = useCallback((settingKey, isEnabled) => {
     if (!(settingKey in DEFAULT_PERSONALIZATION_EFFECTS)) {
       return
@@ -540,6 +604,15 @@ function App() {
       ...prev,
       [settingKey]: Boolean(isEnabled),
     }))
+  }, [])
+
+  const handleChannelPosterTextChange = useCallback((nextText) => {
+    const normalized = String(nextText ?? '').slice(0, 28)
+    setChannelPosterText(normalized)
+  }, [])
+
+  const handleChannelPosterEnabledChange = useCallback((isEnabled) => {
+    setChannelPosterEnabled(Boolean(isEnabled))
   }, [])
 
   // Handle theme color change
@@ -575,6 +648,8 @@ function App() {
       sourceType: String(payload?.sourceType || DEFAULT_VIDEO_SOURCE.sourceType),
       sourceUrl: String(payload?.sourceUrl || DEFAULT_VIDEO_SOURCE.sourceUrl),
       title: String(payload?.title || ''),
+      description: String(payload?.description || ''),
+      discussionLink: String(payload?.discussionLink || ''),
     }
 
     setCurrentVideoSource(nextSource)
@@ -617,6 +692,10 @@ function App() {
                 personalizationSettings={personalizationEffects}
                 onPersonalizationSettingChange={handlePersonalizationSettingChange}
                 onThemeColorChange={handleColorChange}
+                channelPosterText={channelPosterText}
+                channelPosterEnabled={channelPosterEnabled}
+                onChannelPosterTextChange={handleChannelPosterTextChange}
+                onChannelPosterEnabledChange={handleChannelPosterEnabledChange}
               />
             )}
           />
@@ -628,7 +707,39 @@ function App() {
                 personalizationSettings={personalizationEffects}
                 onPersonalizationSettingChange={handlePersonalizationSettingChange}
                 onThemeColorChange={handleColorChange}
+                channelPosterText={channelPosterText}
+                channelPosterEnabled={channelPosterEnabled}
+                onChannelPosterTextChange={handleChannelPosterTextChange}
+                onChannelPosterEnabledChange={handleChannelPosterEnabledChange}
               />
+            )}
+          />
+          <Route
+            path="/channel"
+            element={(
+              isAuthenticated
+                ? (
+                  <SettingsPage
+                    isAuthenticated={isAuthenticated}
+                    personalizationSettings={personalizationEffects}
+                    onPersonalizationSettingChange={handlePersonalizationSettingChange}
+                    onThemeColorChange={handleColorChange}
+                    isChannelPage
+                    channelPosterText={channelPosterText}
+                    channelPosterEnabled={channelPosterEnabled}
+                    onChannelPosterTextChange={handleChannelPosterTextChange}
+                    onChannelPosterEnabledChange={handleChannelPosterEnabledChange}
+                    channelContent={(
+                      <ChannelPage
+                        embedded
+                        onOpenVideo={handleOpenVideo}
+                        posterText={channelPosterText}
+                        posterTextEnabled={channelPosterEnabled}
+                      />
+                    )}
+                  />
+                )
+                : <Navigate to="/" replace />
             )}
           />
           <Route path="*" element={<Navigate to="/settings" replace />} />
@@ -657,6 +768,7 @@ function App() {
         onShowPromo={showPromo}
         onOpenSettings={openSettings}
         onOpenThemeDesigner={openThemeDesigner}
+        onOpenChannel={openChannel}
         onSignOut={handleSignOut}
         isAuthenticated={isAuthenticated}
       />

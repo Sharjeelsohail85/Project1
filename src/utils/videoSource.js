@@ -4,6 +4,8 @@ export const DEFAULT_VIDEO_SOURCE = Object.freeze({
   sourceType: 'uploadLink',
   sourceUrl: DEFAULT_HTML5_URL,
   title: '',
+  description: '',
+  discussionLink: '',
 })
 
 function toStringSafe(value) {

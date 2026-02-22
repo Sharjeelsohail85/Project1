@@ -1,4 +1,7 @@
 import { memo } from 'react'
+import PosterText from './PosterText'
+
+const noop = () => {}
 
 const SERIES = [
   { title: 'Midnight Edits', meta: '12 episodes • Visual Essays' },
@@ -12,15 +15,15 @@ const DROPS = [
   { title: 'The Aesthetic That Never Died', length: '22:03', tag: 'Culture' },
 ]
 
-const ChannelPage = memo(function ChannelPage({ active, onOpenVideo }) {
-  return (
-    <section
-      id="browserContentChannel"
-      className={`browser-content-page channel-page-shell ${active ? '' : 'hidden'}`}
-      role="tabpanel"
-      aria-labelledby="browserNavChannel"
-    >
-      <article className="channel-page">
+const ChannelPage = memo(function ChannelPage({
+  active = true,
+  embedded = false,
+  onOpenVideo = noop,
+  posterText = 'THENEEDLEDROP',
+  posterTextEnabled = false,
+}) {
+  const content = (
+    <article className="channel-page">
         <header className="channel-hero">
           <div className="channel-avatar" aria-hidden="true">
             <i className="material-icons">podcasts</i>
@@ -28,7 +31,11 @@ const ChannelPage = memo(function ChannelPage({ active, onOpenVideo }) {
 
           <div className="channel-hero-copy">
             <p className="channel-kicker">Featured Channel</p>
-            <h2 className="channel-title">Signal / Noise Lab</h2>
+            {posterTextEnabled ? (
+              <PosterText text={posterText} className="channel-title channel-title-poster" ariaLabel="Channel poster title" />
+            ) : (
+              <h2 className="channel-title">Signal / Noise Lab</h2>
+            )}
             <p className="channel-tagline">
               Creative essays, sonic experiments, and internet-culture deep dives curated with your current site theme.
             </p>
@@ -65,6 +72,20 @@ const ChannelPage = memo(function ChannelPage({ active, onOpenVideo }) {
           </section>
         </div>
       </article>
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <section
+      id="channelPage"
+      className={`channel-page-shell ${active ? '' : 'hidden'}`}
+      role="region"
+      aria-label="Channel"
+    >
+      {content}
     </section>
   )
 })

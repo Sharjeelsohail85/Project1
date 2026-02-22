@@ -1616,6 +1616,66 @@ body.theme-effect-mixing .titlebar {
 	color: #222;
 }
 
+.channel-title-poster {
+	margin: 2px 0 0;
+	max-width: min(100%, 760px);
+}
+
+.poster-text-logo {
+	display: block;
+	width: 100%;
+	max-width: 760px;
+	filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.55)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.28));
+}
+
+.poster-text-logo svg {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 210px;
+}
+
+.poster-text-burst {
+	fill: #101010;
+	stroke: #101010;
+	stroke-width: 2.5;
+}
+
+.poster-text-outline,
+.poster-text-fill,
+.poster-text-grain {
+	font-family: "Anton", "Archivo Black", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+	font-weight: 900;
+	font-style: italic;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	paint-order: stroke fill;
+	stroke-linejoin: bevel;
+	dominant-baseline: middle;
+	text-rendering: geometricPrecision;
+	-webkit-font-smoothing: antialiased;
+}
+
+.poster-text-outline {
+	fill: transparent;
+	stroke: #ffffff;
+	stroke-width: 18px;
+	stroke-dasharray: 18 7 9 7;
+	opacity: 0.96;
+}
+
+.poster-text-fill {
+	fill: #f8f8f8;
+	stroke: #ffffff;
+	stroke-width: 2.3px;
+}
+
+.poster-text-grain {
+	fill: rgba(255, 255, 255, 0.33);
+	stroke: none;
+	mix-blend-mode: screen;
+}
+
 .channel-tagline {
 	margin: 8px 0 10px;
 	font-size: 14px;
@@ -1713,6 +1773,14 @@ body.theme-effect-mixing .titlebar {
 	.channel-hero {
 		grid-template-columns: 1fr;
 		gap: 12px;
+	}
+
+	.channel-title-poster {
+		max-width: 100%;
+	}
+
+	.poster-text-logo svg {
+		max-height: 175px;
 	}
 
 	.channel-actions {

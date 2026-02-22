@@ -1,6 +1,5 @@
 import { memo, useRef } from 'react'
 import ContentItem from './ContentItem'
-import ChannelPage from './ChannelPage'
 import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 
 // Sample content items data
@@ -82,8 +81,6 @@ const Browser = memo(function Browser({ activePage, onOpenVideo }) {
         >
           {/* Content would go here */}
         </div>
-
-        <ChannelPage active={activePage === 'browserContentChannel'} onOpenVideo={onOpenVideo} />
       </div>
     </div>
   )

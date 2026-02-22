@@ -10,6 +10,8 @@ import InfiniteGridExact from './personalization/InfiniteGridExact'
 import Css2Exact from './personalization/Css2Exact'
 import MixingExact from './personalization/MixingExact'
 import TagsPage from './tags/TagsPage'
+import ChannelPage from './ChannelPage'
+import PosterText from './PosterText'
 import { loginWithOAuth, logout } from '../services/auth.service'
 import { isOAuthProviderConfigured } from '../config/auth.config'
 import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
@@ -41,10 +43,18 @@ export default function SettingsPage({
   personalizationSettings = {},
   onPersonalizationSettingChange = () => {},
   onThemeColorChange = () => {},
+  channelPosterText = 'THENEEDLEDROP',
+  channelPosterEnabled = false,
+  onChannelPosterTextChange = () => {},
+  onChannelPosterEnabledChange = () => {},
+  isChannelPage = false,
+  channelContent = null,
 }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const isSettingsPage = location.pathname === '/settings'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
+  const isChannelRoute = location.pathname === '/channel' || Boolean(isChannelPage)
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
   const settingsSearchRef = useRef(null)
@@ -180,11 +190,15 @@ export default function SettingsPage({
 
   useEffect(() => {
     const prevTitle = document.title
-    document.title = isThemeDesignerPage ? 'Theme Designer' : 'Settings'
+    document.title = isChannelRoute
+      ? 'Channel'
+      : isThemeDesignerPage
+      ? 'Theme Designer'
+      : 'Settings'
     return () => {
       document.title = prevTitle
     }
-  }, [isThemeDesignerPage])
+  }, [isChannelRoute, isThemeDesignerPage])
 
   // Mirror original script.js slideout timing behavior
   useEffect(() => {
@@ -315,15 +329,6 @@ export default function SettingsPage({
         items: [],
       },
       {
-        id: 'section5',
-        title: 'Channel',
-        items: [
-          'Change a setting that exists in this box',
-          'Change a setting that exists in this box',
-          'Change a setting that exists in this box',
-        ],
-      },
-      {
         id: 'section6',
         title: 'Miscilanious',
         items: [
@@ -352,7 +357,22 @@ export default function SettingsPage({
     [personalizationItems],
   )
 
-  const sections = isThemeDesignerPage ? themeDesignerSections : settingsSections
+  const channelSections = useMemo(
+    () => [
+      {
+        id: 'channel-main',
+        title: 'Channel',
+        items: [],
+      },
+    ],
+    [],
+  )
+
+  const sections = isChannelRoute
+    ? channelSections
+    : isThemeDesignerPage
+    ? themeDesignerSections
+    : settingsSections
 
   const settingsNavItems = useMemo(
     () => [
@@ -360,14 +380,20 @@ export default function SettingsPage({
       { icon: 'fingerprint', label: 'Privacy', sectionId: 'section2' },
       { icon: 'loyalty', label: 'Tags', sectionId: 'section3' },
       { icon: 'format_paint', label: 'Personalization', sectionId: THEME_DESIGNER_ROUTE_TARGET },
-      { icon: 'settings_input_antenna', label: 'Channel', sectionId: 'section5' },
       { icon: 'tune', label: 'Miscilanious', sectionId: 'section6' },
       { icon: 'link', label: 'Links', sectionId: 'section7' },
     ],
     [THEME_DESIGNER_ROUTE_TARGET],
   )
 
-  const navItems = settingsNavItems
+  const channelNavItems = useMemo(
+    () => [
+      { icon: 'podcasts', label: 'Channel', sectionId: 'channel-main' },
+    ],
+    [],
+  )
+
+  const navItems = isChannelRoute ? channelNavItems : settingsNavItems
 
   const normalizedQuery = searchValue.replace(/\s/g, '').toLowerCase()
   const activeDesignerMeta = useMemo(
@@ -418,6 +444,11 @@ export default function SettingsPage({
   }, [navigate])
 
   useEffect(() => {
+    if (isChannelRoute) {
+      setActiveNavIndex(0)
+      return
+    }
+
     if (isThemeDesignerPage) {
       const personalizationIndex = navItems.findIndex((item) => item.sectionId === THEME_DESIGNER_ROUTE_TARGET)
       if (personalizationIndex >= 0) {
@@ -445,7 +476,7 @@ export default function SettingsPage({
     })
 
     return () => cancelAnimationFrame(rafId)
-  }, [isThemeDesignerPage, location.search, navItems, sections, THEME_DESIGNER_ROUTE_TARGET])
+  }, [isChannelRoute, isThemeDesignerPage, location.search, navItems, sections, THEME_DESIGNER_ROUTE_TARGET])
 
   useEffect(() => {
     try {
@@ -525,6 +556,14 @@ export default function SettingsPage({
       [key]: value,
     }))
   }, [])
+
+  const handleChannelPosterTextInputChange = useCallback((e) => {
+    onChannelPosterTextChange(e.target.value)
+  }, [onChannelPosterTextChange])
+
+  const handleChannelPosterEnabledToggleChange = useCallback((e) => {
+    onChannelPosterEnabledChange(e.target.checked)
+  }, [onChannelPosterEnabledChange])
 
   const handleProviderLogin = useCallback(async (providerKey) => {
     const effectiveProvider = providerKey === 'dropbox' ? 'google' : providerKey
@@ -792,7 +831,13 @@ export default function SettingsPage({
             <i className="material-icons" aria-hidden="true">format_paint</i>
           </button>
           {isAuthenticated ? (
-            <button className={`slideout-entry ${isThemeDesignerPage ? '' : 'active'}`} role="menuitem" onClick={() => navigate('/settings')}>
+            <button className={`slideout-entry ${isChannelRoute ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/channel')}>
+              Channel
+              <i className="material-icons" aria-hidden="true">podcasts</i>
+            </button>
+          ) : null}
+          {isAuthenticated ? (
+            <button className={`slideout-entry ${isSettingsPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/settings')}>
               Settings
               <i className="material-icons" aria-hidden="true">settings</i>
             </button>
@@ -888,7 +933,7 @@ export default function SettingsPage({
             return (
               <div key={`${section.id}-${sectionIndex}`} className={`section-wrap ${sectionHidden ? 'hidden' : ''}`} id={section.id}>
                 <div className="section-title">{section.title}</div>
-                <div className={`section ${(section.id === 'section4' || section.id === 'theme-designer-main') ? 'section-personalization' : ''} ${section.id === 'theme-designer-main' ? 'section-theme-designer' : ''} ${section.id === 'section7' ? 'section-links' : ''} ${section.id === 'section3' ? 'section-tags' : ''}`}>
+                <div className={`section ${(section.id === 'section4' || section.id === 'theme-designer-main') ? 'section-personalization' : ''} ${section.id === 'theme-designer-main' ? 'section-theme-designer' : ''} ${section.id === 'section7' ? 'section-links' : ''} ${section.id === 'section3' ? 'section-tags' : ''} ${section.id === 'channel-main' ? 'section-channel' : ''}`}>
                   {isThemeDesignerPage && section.id === 'theme-designer-main' && (
                     <>
                       <div className="theme-designer-category-bar" role="tablist" aria-label="Theme designer categories">
@@ -933,6 +978,65 @@ export default function SettingsPage({
                     <div className="section-tags-embed">
                       <TagsPage embedded inlineFeedback />
                     </div>
+                  )}
+                  {isChannelRoute && section.id === 'channel-main' && (
+                    <>
+                      <div className="channel-settings-panel">
+                        <div className="channel-settings-title">Channel poster text</div>
+                        <div className="channel-settings-subtitle">
+                          Type any text and render it in a poster style like your attached design.
+                        </div>
+
+                        <div className="channel-poster-setting-row channel-poster-setting-row-stack">
+                          <label className="channel-poster-setting-label" htmlFor="channelPosterTextInput">
+                            Poster text variable
+                          </label>
+                          <input
+                            id="channelPosterTextInput"
+                            type="text"
+                            maxLength={28}
+                            className="channel-poster-input input"
+                            value={channelPosterText}
+                            onChange={handleChannelPosterTextInputChange}
+                            placeholder="Type poster text"
+                            aria-label="Poster text variable"
+                          />
+                        </div>
+
+                        <div className="channel-poster-setting-row">
+                          <div className="channel-poster-setting-label">Enable poster title on Channel page</div>
+                          <div className="signup-toggle-parent button-toggle-parent channel-poster-toggle-parent">
+                            <input
+                              id="channelPosterEnabledToggle"
+                              type="checkbox"
+                              className="button-toggle"
+                              checked={Boolean(channelPosterEnabled)}
+                              onChange={handleChannelPosterEnabledToggleChange}
+                            />
+                            <label htmlFor="channelPosterEnabledToggle" />
+                          </div>
+                        </div>
+
+                        <div className="channel-poster-preview" aria-live="polite">
+                          <div className="channel-poster-preview-label">Poster preview</div>
+                          <PosterText
+                            text={channelPosterText || 'THENEEDLEDROP'}
+                            className="channel-poster-preview-logo"
+                            ariaLabel="Channel poster text preview"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="section-channel-embed">
+                        {channelContent || (
+                          <ChannelPage
+                            embedded
+                            posterText={channelPosterText}
+                            posterTextEnabled={channelPosterEnabled}
+                          />
+                        )}
+                      </div>
+                    </>
                   )}
                   {section.items.map((item, itemIndex) => {
                     const label = typeof item === 'string' ? item : item.label

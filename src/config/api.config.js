@@ -110,6 +110,12 @@ export function saveAuthTokens(token, clientId) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('token', token)
     localStorage.setItem('client_id', clientId)
+
+    try {
+      window.dispatchEvent(new CustomEvent('auth:login'))
+    } catch {
+      // ignore event dispatch failures
+    }
   }
 }
 

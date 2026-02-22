@@ -1358,6 +1358,95 @@ html, body {
 	color: #fff;
 }
 
+.channel-settings-panel {
+	padding: 16px 20px 18px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+	background: linear-gradient(180deg, rgba(103, 58, 183, 0.05) 0%, rgba(103, 58, 183, 0.02) 100%);
+}
+
+.channel-settings-title {
+	font-size: 13px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: rgba(33, 33, 33, 0.84);
+}
+
+.channel-settings-subtitle {
+	margin-top: 6px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: rgba(33, 33, 33, 0.7);
+}
+
+.channel-poster-setting-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.channel-poster-setting-row-stack {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.channel-poster-setting-label {
+	font-size: 12px;
+	font-weight: 700;
+	color: rgba(33, 33, 33, 0.82);
+	line-height: 1.4;
+}
+
+.channel-poster-input {
+	width: 100%;
+	min-height: 42px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	font-size: 13px;
+	line-height: 1.3;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	background: #fafafa;
+	border: 1px solid rgba(0, 0, 0, 0.14);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.channel-poster-input:focus {
+	outline: none;
+	border-color: var(--theme-color, #673AB7);
+	box-shadow: 0 0 0 3px rgba(103, 58, 183, 0.16);
+}
+
+.channel-poster-toggle-parent {
+	flex-shrink: 0;
+	min-width: 42px;
+}
+
+.channel-poster-preview {
+	margin-top: 14px;
+	padding: 12px;
+	border-radius: 12px;
+	background: radial-gradient(circle at top, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 240, 0.9) 100%);
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	overflow: hidden;
+}
+
+.channel-poster-preview-label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	margin-bottom: 8px;
+	color: rgba(33, 33, 33, 0.64);
+}
+
+.channel-poster-preview-logo {
+	max-width: 100%;
+}
+
 .section-item {
 	display: flex;
 	align-items: center;

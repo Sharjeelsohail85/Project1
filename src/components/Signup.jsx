@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import ColorPicker from './ColorPicker'
 import TagsPage from './tags/TagsPage'
-import { loginWithOAuth } from '../services/auth.service'
+import { loginWithOAuth, isAuthenticated as checkAuth } from '../services/auth.service'
 import { authAPI } from '../services/api.service'
 import { isOAuthProviderConfigured } from '../config/auth.config'
 import styles from '../styles/Signup.module.css'
@@ -78,6 +78,12 @@ const Signup = memo(function Signup({
 
     try {
       await loginWithOAuth(provider)
+
+      if (!checkAuth()) {
+        window.alert('Signup completed but auth session was not saved. Please try again.')
+        return
+      }
+
       // Continue through the onboarding flow after account creation.
       onNextSignup?.()
     } catch (err) {
@@ -114,7 +120,7 @@ const Signup = memo(function Signup({
         password_confirmation: password,
       })
 
-      if (response?.data) {
+      if (response?.data && checkAuth()) {
         onNextSignup?.()
       } else {
         window.alert('Registration failed. Please try again.')

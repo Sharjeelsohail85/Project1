@@ -103,6 +103,29 @@ function getLoginClientMetadata() {
   }
 }
 
+function extractAuthPayload(response) {
+  const directData = response?.data
+  const nestedData = response?.data?.data
+  const source =
+    (directData && typeof directData === 'object' && 'token' in directData ? directData : null)
+    || (nestedData && typeof nestedData === 'object' && 'token' in nestedData ? nestedData : null)
+    || (response && typeof response === 'object' && 'token' in response ? response : null)
+
+  if (!source?.token || !source?.client_id) {
+    return null
+  }
+
+  return {
+    token: source.token,
+    client_id: source.client_id,
+    user:
+      source.user
+      || directData?.user
+      || nestedData?.user
+      || null,
+  }
+}
+
 /**
  * Main API request function
  * @param {string} endpoint - API endpoint (e.g., '/auth/login')
@@ -254,12 +277,13 @@ export const authAPI = {
       }),
     })
     
-    if (response.data && response.data.token && response.data.client_id) {
-      saveAuthTokens(response.data.token, response.data.client_id)
-      
+    const authPayload = extractAuthPayload(response)
+    if (authPayload) {
+      saveAuthTokens(authPayload.token, authPayload.client_id)
+
       // Also store user info if available
-      if (response.data.user) {
-        setStorageItemSafe('user_info', JSON.stringify(response.data.user))
+      if (authPayload.user) {
+        setStorageItemSafe('user_info', JSON.stringify(authPayload.user))
       }
     }
     
@@ -291,6 +315,15 @@ export const authAPI = {
       }),
     })
     
+    const authPayload = extractAuthPayload(response)
+    if (authPayload) {
+      saveAuthTokens(authPayload.token, authPayload.client_id)
+
+      if (authPayload.user) {
+        setStorageItemSafe('user_info', JSON.stringify(authPayload.user))
+      }
+    }
+
     return response
   },
   
@@ -313,13 +346,15 @@ export const authAPI = {
       }),
     })
     
-    if (response.data && response.data.token && response.data.client_id) {
-      saveAuthTokens(response.data.token, response.data.client_id)
-      
-      if (response.data.user) {
-        setStorageItemSafe('user_info', JSON.stringify(response.data.user))
-        setStorageItemSafe('auth_provider', provider)
+    const authPayload = extractAuthPayload(response)
+    if (authPayload) {
+      saveAuthTokens(authPayload.token, authPayload.client_id)
+
+      if (authPayload.user) {
+        setStorageItemSafe('user_info', JSON.stringify(authPayload.user))
       }
+
+      setStorageItemSafe('auth_provider', provider)
     }
     
     return response

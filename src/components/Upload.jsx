@@ -143,6 +143,8 @@ const Upload = memo(function Upload({
           sourceType: selectedSource,
           sourceUrl: sourceInputValue.trim(),
           title: formValues.title.trim(),
+          description: formValues.description.trim(),
+          discussionLink: formValues.discussion_link.trim(),
           uploadResponse: result,
         })
         return
