@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import VideoPlayer from './VideoPlayer'
 import DailyInfo from './DailyInfo'
 import DailyComments from './DailyComments'
@@ -14,6 +14,8 @@ const Daily = memo(function Daily({
   themeColor
 }) {
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [commentsLoading, setCommentsLoading] = useState(false)
+  const commentsLoadingTimerRef = useRef(null)
   const dailyClasses = `daily ${active ? 'active' : ''} profile ${theaterMode ? 'alternate' : ''} ${commentsOpen ? 'comments-open' : ''}`
 
   const handleToggleDaily = useCallback(() => {
@@ -24,19 +26,51 @@ const Daily = memo(function Daily({
     onGoTheater?.()
   }, [onGoTheater])
 
-  const handleToggleComments = useCallback(() => {
-    setCommentsOpen((previous) => !previous)
+  const clearCommentsLoadingTimer = useCallback(() => {
+    if (commentsLoadingTimerRef.current) {
+      clearTimeout(commentsLoadingTimerRef.current)
+      commentsLoadingTimerRef.current = null
+    }
   }, [])
 
+  const startCommentsLoading = useCallback(() => {
+    clearCommentsLoadingTimer()
+    setCommentsLoading(true)
+
+    commentsLoadingTimerRef.current = setTimeout(() => {
+      setCommentsLoading(false)
+      commentsLoadingTimerRef.current = null
+    }, 1400)
+  }, [clearCommentsLoadingTimer])
+
+  const handleToggleComments = useCallback(() => {
+    setCommentsOpen((previous) => {
+      const next = !previous
+
+      if (next) {
+        startCommentsLoading()
+      } else {
+        clearCommentsLoadingTimer()
+        setCommentsLoading(false)
+      }
+
+      return next
+    })
+  }, [clearCommentsLoadingTimer, startCommentsLoading])
+
   const handleCloseComments = useCallback(() => {
+    clearCommentsLoadingTimer()
     setCommentsOpen(false)
-  }, [])
+    setCommentsLoading(false)
+  }, [clearCommentsLoadingTimer])
 
   useEffect(() => {
     if (!active) {
+      clearCommentsLoadingTimer()
       setCommentsOpen(false)
+      setCommentsLoading(false)
     }
-  }, [active])
+  }, [active, clearCommentsLoadingTimer])
 
   useEffect(() => {
     onCommentsToggle?.(commentsOpen)
@@ -44,9 +78,10 @@ const Daily = memo(function Daily({
 
   useEffect(() => {
     return () => {
+      clearCommentsLoadingTimer()
       onCommentsToggle?.(false)
     }
-  }, [onCommentsToggle])
+  }, [clearCommentsLoadingTimer, onCommentsToggle])
 
   return (
     <section
@@ -87,7 +122,7 @@ const Daily = memo(function Daily({
         aria-pressed={theaterMode}
       >
         <i className="material-icons" aria-hidden="true">
-          {theaterMode ? 'close_fullscreen' : 'panorama_horizontal'}
+          panorama_horizontal
         </i>
       </button>
 
@@ -136,7 +171,7 @@ const Daily = memo(function Daily({
       <DailyInfo />
 
       {/* Comments Section */}
-      <DailyComments active={commentsOpen} onClose={handleCloseComments} />
+      <DailyComments active={commentsOpen} loading={commentsLoading} onClose={handleCloseComments} />
     </section>
   )
 })

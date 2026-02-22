@@ -38,6 +38,10 @@ const Slideout = memo(function Slideout({
     <aside
       id="slideout"
       className={`slideout ${visible ? '' : 'hidden'}`}
+      style={{
+        transform: visible ? 'translateX(0)' : 'translateX(100%)',
+        pointerEvents: visible ? 'auto' : 'none',
+      }}
       role="complementary"
       aria-label="Side menu"
       aria-hidden={!visible}

@@ -62,20 +62,7 @@ li {
 } */
 
 [title]:hover::after {
-	display: block;
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	content: attr(title);
-	padding: 0.25em;
-	margin: 0 auto;
-	text-align: center;
-	width: 100%;
-	color: white;
-	z-index: 9999999;
-	background-color: white;
-	color: black;
-	padding: 5px;
+	display: none;
 }
 
 h1 {

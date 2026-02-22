@@ -574,7 +574,8 @@ const VideoPlayer = memo(function VideoPlayer({
               type="button"
               className="player-button material-icons"
               onClick={handleTheater}
-              aria-label="Theater mode"
+              aria-label={theaterMode ? 'Exit theater mode' : 'Enter theater mode'}
+              aria-pressed={theaterMode}
             >
               swap_horizontal
             </button>

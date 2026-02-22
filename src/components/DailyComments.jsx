@@ -45,7 +45,24 @@ const SOCIAL_LINKS = [
   { id: 'github', label: '@arbaoui-mehdi', href: 'https://github.com/arbaoui-mehdi', iconClass: 'zmdi zmdi-github' },
 ]
 
-const DailyComments = memo(function DailyComments({ active = false, onClose }) {
+const DailyComments = memo(function DailyComments({ active = false, loading = false, onClose }) {
+  const skeletonRows = [1, 2, 3, 4, 5]
+
+  const renderLoading = () => (
+    <div className="comments-loading" role="status" aria-live="polite" aria-label="Loading comments">
+      {skeletonRows.map((item) => (
+        <div key={`comments-loading-${item}`} className="comments-loading-row">
+          <span className="comments-loading-avatar" aria-hidden="true" />
+          <div className="comments-loading-lines" aria-hidden="true">
+            <span className="comments-loading-line comments-loading-line-title" />
+            <span className="comments-loading-line comments-loading-line-meta" />
+            <span className="comments-loading-line comments-loading-line-body" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <section
       className={`daily-comments ${active ? 'active' : ''}`}
@@ -70,6 +87,7 @@ const DailyComments = memo(function DailyComments({ active = false, onClose }) {
         </header>
 
         <div className="daily-comments-scroll">
+          {loading ? renderLoading() : (
           <ul className="retro-comments-list" role="list" aria-label="Retro comments list">
             {COMMENT_ITEMS.map((comment, index) => (
               <li key={comment.id} className={`retro-comment-item ${index % 2 === 1 ? 'is-even' : ''}`} role="listitem">
@@ -107,6 +125,7 @@ const DailyComments = memo(function DailyComments({ active = false, onClose }) {
               </li>
             ))}
           </ul>
+          )}
         </div>
       </div>
     </section>

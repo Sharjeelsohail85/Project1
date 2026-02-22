@@ -5,7 +5,8 @@ const NAV_ITEMS = [
   { id: 'browserContentPop', icon: 'trending_up', label: 'Popular' },
   { id: 'browserContentSubs', icon: 'notifications_active', label: 'Subscriptions' },
   { id: 'browserContentRec', icon: 'loyalty', label: 'Recommended' },
-  { id: 'browserContentRand', icon: 'gesture', label: 'Random' }
+  { id: 'browserContentRand', icon: 'gesture', label: 'Random' },
+  { id: 'browserContentChannel', icon: 'podcasts', label: 'Channel' }
 ]
 
 const BrowserNav = memo(function BrowserNav({ activePage, onSwitchPage }) {

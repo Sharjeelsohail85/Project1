@@ -262,7 +262,13 @@ function App() {
 
   // Toggle daily/video player
   const toggleDaily = useCallback(() => {
-    setDailyActive(prev => !prev)
+    setDailyActive((prev) => {
+      const next = !prev
+      if (!next) {
+        setTheaterMode(false)
+      }
+      return next
+    })
   }, [])
 
   // Show/hide promo overlay
@@ -438,7 +444,20 @@ function App() {
 
   // Toggle theater mode
   const goTheater = useCallback(() => {
-    setTheaterMode(prev => !prev)
+    setTheaterMode((prev) => {
+      const next = !prev
+
+      if (next) {
+        // Entering theater should always surface the player area.
+        setDailyActive(true)
+        setPromoActive(false)
+        setSignupActive(false)
+        setLoginActive(false)
+        setUploadActive(false)
+      }
+
+      return next
+    })
   }, [])
 
   // Single callback for player fullscreen/theater: hide all overlays (replaces calls in original goTheater/fullscreen)
