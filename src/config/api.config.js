@@ -5,30 +5,73 @@ function stripTrailingSlashes(value) {
   return String(value || '').trim().replace(/\/+$/, '')
 }
 
+function isLocalhostHost(hostname) {
+  const normalized = String(hostname || '').trim().toLowerCase()
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
+}
+
+function getOriginSafe() {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return ''
+  }
+
+  return stripTrailingSlashes(window.location.origin)
+}
+
+function normalizeApiPath(pathname) {
+  const path = String(pathname || '').trim()
+  if (!path) return '/api/v1'
+  return path.startsWith('/') ? stripTrailingSlashes(path) : `/${stripTrailingSlashes(path)}`
+}
+
+function buildAbsoluteApiBase(origin, pathname) {
+  const normalizedOrigin = stripTrailingSlashes(origin)
+  const normalizedPath = normalizeApiPath(pathname)
+  return `${normalizedOrigin}${normalizedPath}`
+}
+
 function resolveApiBaseURL() {
   const configuredBaseURL = stripTrailingSlashes(import.meta.env.VITE_API_BASE_URL)
 
   if (!configuredBaseURL) {
-    return import.meta.env.DEV ? '/api/v1' : 'http://localhost:8000/api/v1'
+    return '/api/v1'
   }
 
-  if (!import.meta.env.DEV) {
+  if (configuredBaseURL.startsWith('/')) {
     return configuredBaseURL
   }
 
   try {
     const parsedURL = new URL(configuredBaseURL)
-    const isLocalhostBackend = parsedURL.hostname === 'localhost' || parsedURL.hostname === '127.0.0.1'
+    const isLocalhostBackend = isLocalhostHost(parsedURL.hostname)
+    const configuredPath = normalizeApiPath(parsedURL.pathname)
 
-    if (isLocalhostBackend) {
-      const localPath = stripTrailingSlashes(parsedURL.pathname)
-      return localPath || '/api/v1'
+    if (isLocalhostBackend && import.meta.env.DEV) {
+      return configuredPath
     }
-  } catch {
-    // If configuredBaseURL is already a relative path, keep it as-is.
-  }
 
-  return configuredBaseURL
+    if (isLocalhostBackend && !import.meta.env.DEV) {
+      const runtimeOrigin = getOriginSafe()
+      if (runtimeOrigin) {
+        return buildAbsoluteApiBase(runtimeOrigin, configuredPath)
+      }
+
+      return configuredPath
+    }
+
+    const secureOrigin = !import.meta.env.DEV && parsedURL.protocol !== 'https:'
+      ? `https://${parsedURL.host}`
+      : parsedURL.origin
+
+    return buildAbsoluteApiBase(secureOrigin, configuredPath)
+  } catch {
+    const normalizedMaybePath = normalizeApiPath(configuredBaseURL)
+    if (configuredBaseURL.startsWith('/')) {
+      return normalizedMaybePath
+    }
+
+    return configuredBaseURL
+  }
 }
 
 const RESOLVED_API_BASE_URL = resolveApiBaseURL()
