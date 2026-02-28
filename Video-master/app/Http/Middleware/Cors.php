@@ -15,16 +15,22 @@ class Cors
      */
     public function handle($request, Closure $next)
     {
+        $headers = $this->getHeaders($request);
+
         // Handle preflight OPTIONS request
         if ($request->getMethod() === "OPTIONS") {
-            return response()->json([], 200, $this->getHeaders());
+            return response()->json([], 200, $headers);
         }
 
         $response = $next($request);
 
-        // Add CORS headers to the response
-        foreach ($this->getHeaders() as $key => $value) {
-            $response->header($key, $value);
+        // Add CORS headers to the response (StreamedResponse-safe)
+        foreach ($headers as $key => $value) {
+            if (method_exists($response, 'header')) {
+                $response->header($key, $value);
+            } else {
+                $response->headers->set($key, $value);
+            }
         }
 
         return $response;
@@ -35,7 +41,7 @@ class Cors
      *
      * @return array
      */
-    private function getHeaders()
+    private function getHeaders($request)
     {
         // NUCLEAR OPTION: Explicit origin configuration for credentialed requests
         $allowedOrigins = env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000');
@@ -44,7 +50,7 @@ class Cors
         $maxAge = env('CORS_MAX_AGE', '3600');
 
         // CRITICAL: Extract the actual origin from the request
-        $currentOrigin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+        $currentOrigin = (string)($request->headers->get('Origin') ?: $request->headers->get('Referer') ?: '');
         
         // Handle comma-separated origins - find exact match
         $origin = '*';
