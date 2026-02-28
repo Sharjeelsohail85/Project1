@@ -55,6 +55,7 @@ export default function SettingsPage({
   const location = useLocation()
   const isSettingsPage = location.pathname === '/settings'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
+  const isFaqPage = location.pathname === '/faq'
   const isChannelRoute = location.pathname === '/channel' || Boolean(isChannelPage)
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
@@ -470,6 +471,15 @@ export default function SettingsPage({
     navigate('/')
   }, [navigate])
 
+  const handleOpenTerms = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
+    setSlideoutVisible(false)
+  }, [])
+
   useEffect(() => {
     if (isChannelRoute) {
       setActiveNavIndex(0)
@@ -868,6 +878,14 @@ export default function SettingsPage({
               <i className="material-icons" aria-hidden="true">settings</i>
             </button>
           ) : null}
+          <button className={`slideout-entry ${isFaqPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/faq')}>
+            Frequently Asked Questions
+            <i className="material-icons" aria-hidden="true">help</i>
+          </button>
+          <button className="slideout-entry" role="menuitem" onClick={handleOpenTerms}>
+            Terms &amp; Conditions
+            <i className="material-icons" aria-hidden="true">gavel</i>
+          </button>
           {isAuthenticated ? (
             <button className="slideout-entry" role="menuitem" onClick={handleSignOut}>
               Log Out
@@ -875,9 +893,13 @@ export default function SettingsPage({
             </button>
           ) : (
             <>
-              <button className="slideout-entry" role="menuitem">
-                Frequently Asked Questions
-                <i className="material-icons" aria-hidden="true">help</i>
+              <button className="slideout-entry" role="menuitem" onClick={() => navigate('/')}>
+                Sign Up
+                <i className="material-icons" aria-hidden="true">person_add</i>
+              </button>
+              <button className="slideout-entry" role="menuitem" onClick={() => navigate('/')}>
+                Log In
+                <i className="material-icons" aria-hidden="true">exit_to_app</i>
               </button>
               <button className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/theme-designer')}>
                 Theme Designer

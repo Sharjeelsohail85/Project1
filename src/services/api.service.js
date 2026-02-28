@@ -487,6 +487,10 @@ export const videoAPI = {
   dislike(id) {
     return apiRequest(API_CONFIG.endpoints.video.dislike(id))
   },
+
+  streamUrl(id) {
+    return apiRequest(API_CONFIG.endpoints.video.streamUrl(id))
+  },
 }
 
 /**

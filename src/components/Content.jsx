@@ -3,6 +3,7 @@ import TopWrap from './TopWrap'
 import BrowserNav from './BrowserNav'
 import Browser from './Browser'
 import PostPage from './PostPage'
+import MigratePostPage from '../pages/Studio/MigratePostPage'
 import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 
 const Content = memo(function Content({
@@ -44,6 +45,8 @@ const Content = memo(function Content({
   const contentRef = useRef(null)
   const isModalOpen = signupActive || loginActive || uploadActive
   const isPostRoute = currentPath === '/post'
+  const isStudioMigrateRoute = currentPath === '/studio/migrate'
+  const isCenterPageRoute = isPostRoute || isStudioMigrateRoute
   const contentClass = `content ${!dailyActive ? 'alternate' : ''} ${isModalOpen ? 'modal-open' : ''}`
 
   useSmoothWheelScroll(contentRef, {
@@ -85,8 +88,10 @@ const Content = memo(function Content({
   role="main"
 >
 
-      {isPostRoute ? (
-        <PostPage onClose={onCloseCenterPage} onVideoReady={onVideoReadyFromPost} />
+      {isCenterPageRoute ? (
+        isStudioMigrateRoute
+          ? <MigratePostPage />
+          : <PostPage onClose={onCloseCenterPage} onVideoReady={onVideoReadyFromPost} />
       ) : (
         <TopWrap
           currentVideoSource={currentVideoSource}
@@ -126,7 +131,7 @@ const Content = memo(function Content({
         onSwitchPage={onSwitchPage}
       />
 
-      {!isPostRoute && !isModalOpen && (
+      {!isCenterPageRoute && !isModalOpen && (
         <Browser
           activePage={activeBrowserPage}
           onOpenVideo={onOpenVideo}

@@ -11,6 +11,61 @@ import { isOAuthProviderConfigured } from '../config/auth.config'
 import styles from '../styles/Signup.module.css'
 import { SIGNUP_UI_TOKENS } from '../theme/signupTheme'
 
+function isBackendUnavailableError(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network error') ||
+    message.includes('request timeout') ||
+    message.includes('expected json response') ||
+    message.includes('404') ||
+    message.includes('backend server may be offline')
+  )
+}
+
+function shouldAllowOfflineSignupFallback(error) {
+  if (!isBackendUnavailableError(error)) {
+    return false
+  }
+
+  if (import.meta.env.DEV) {
+    return true
+  }
+
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const hostname = String(window.location?.hostname || '').toLowerCase()
+  return hostname === 'localhost' || hostname === '127.0.0.1'
+}
+
+function createDemoSignupSession({ name, email, provider = 'password' }) {
+  const timestamp = Date.now()
+  const demoToken = `demo-token-${provider}-${timestamp}`
+  const demoClientId = `demo-client-${provider}-${timestamp}`
+  const normalizedName = String(name || '').trim() || `${provider} User`
+  const normalizedEmail = String(email || '').trim() || `${provider}.user.${timestamp}@demo.local`
+
+  localStorage.setItem('token', demoToken)
+  localStorage.setItem('client_id', demoClientId)
+  localStorage.setItem('auth_provider', provider)
+  localStorage.setItem('user_info', JSON.stringify({
+    uuid: `demo-${provider}-${timestamp}`,
+    first_name: normalizedName,
+    last_name: '',
+    email: normalizedEmail,
+    registration_type: provider,
+    active: 1,
+  }))
+
+  try {
+    window.dispatchEvent(new CustomEvent('auth:login'))
+  } catch {
+    // ignore event dispatch failures
+  }
+}
+
 function isRecoverableSignupError(error) {
   const message = String(error?.message || '').toLowerCase()
   return (
@@ -85,13 +140,24 @@ const Signup = memo(function Signup({
         return
       }
 
-      // Consider signup as an authenticated session and apply logged-in UI immediately.
-      if (typeof onLoginSuccess === 'function') {
-        onLoginSuccess()
-      } else {
-        onNextSignup?.()
-      }
+      onLoginSuccess?.()
+
+      // Keep signup flow inside modal sequence:
+      // Step 1 (account) -> Step 2 (tags) -> Step 3 (theme).
+      onNextSignup?.()
     } catch (err) {
+      if (shouldAllowOfflineSignupFallback(err)) {
+        const fallbackEmail = `${provider}.user.${Date.now()}@demo.local`
+        createDemoSignupSession({
+          name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+          email: fallbackEmail,
+          provider,
+        })
+        onLoginSuccess?.()
+        onNextSignup?.()
+        return
+      }
+
       window.alert(err?.message || `Failed to sign up with ${provider}. Please try again.`)
     } finally {
       setLoading(false)
@@ -128,13 +194,27 @@ const Signup = memo(function Signup({
       if (response?.data && checkAuth()) {
         if (typeof onLoginSuccess === 'function') {
           onLoginSuccess()
-        } else {
-          onNextSignup?.()
         }
+
+        // Keep signup flow inside modal sequence:
+        // Step 1 (account) -> Step 2 (tags) -> Step 3 (theme).
+        onNextSignup?.()
       } else {
         window.alert('Registration failed. Please try again.')
       }
     } catch (err) {
+      if (shouldAllowOfflineSignupFallback(err)) {
+        createDemoSignupSession({
+          name: trimmedName,
+          email: signupEmail,
+          provider: 'password',
+        })
+
+        onLoginSuccess?.()
+        onNextSignup?.()
+        return
+      }
+
       if (isRecoverableSignupError(err)) {
         // Keep onboarding functional when backend is unavailable in local/dev.
         onNextSignup?.()
@@ -146,8 +226,8 @@ const Signup = memo(function Signup({
       setLoading(false)
     }
   }, [email, name, onLoginSuccess, onNextSignup, password])
-  
-  const progressWidth = `${((step - 1) / 3) * 100}%`
+  const totalSteps = 3
+  const progressWidth = `${((step - 1) / (totalSteps - 1)) * 100}%`
   const isStepOne = step === 1
   const shouldHideStepOneNext = isStepOne && !hasStepOneInteraction
   const canSubmitPasswordSignup = name.trim().length > 0 && password.length > 0 && !loading

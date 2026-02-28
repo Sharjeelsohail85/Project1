@@ -8,6 +8,7 @@ const Slideout = memo(function Slideout({
   onShowPromo,
   onOpenSettings,
   onOpenChannel,
+  onOpenFaq,
   onOpenThemeDesigner,
   onSignOut,
   isAuthenticated = false,
@@ -15,6 +16,8 @@ const Slideout = memo(function Slideout({
   const location = useLocation()
   const isSettingsPage = location.pathname === '/settings'
   const isChannelPage = location.pathname === '/channel'
+  const isFaqPage = location.pathname === '/faq'
+  const isThemeDesignerPage = location.pathname === '/theme-designer'
 
   const handleShowPromo = useCallback(() => {
     if (typeof onShowPromo === 'function') onShowPromo()
@@ -31,6 +34,20 @@ const Slideout = memo(function Slideout({
   const handleOpenChannel = useCallback(() => {
     if (typeof onOpenChannel === 'function') onOpenChannel()
   }, [onOpenChannel])
+
+  const handleOpenFaq = useCallback(() => {
+    if (typeof onOpenFaq === 'function') {
+      onOpenFaq()
+      return
+    }
+    if (typeof window === 'undefined') return
+    window.location.assign('/faq')
+  }, [onOpenFaq])
+
+  const handleOpenTerms = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
+  }, [])
 
   const handleSignOut = useCallback(() => {
     if (typeof onSignOut === 'function') {
@@ -73,22 +90,30 @@ const Slideout = memo(function Slideout({
             <i className="material-icons" aria-hidden="true">settings</i>
           </button>
         ) : null}
+
+        <button className={`slideout-entry ${isFaqPage ? 'active' : ''}`} role="menuitem" onClick={handleOpenFaq}>
+          Frequently Asked Questions
+          <i className="material-icons" aria-hidden="true">help</i>
+        </button>
+        <button className="slideout-entry" role="menuitem" onClick={handleOpenTerms}>
+          Terms &amp; Conditions
+          <i className="material-icons" aria-hidden="true">gavel</i>
+        </button>
+
         {isAuthenticated ? (
           <button className="slideout-entry" id="showit" role="menuitem" onClick={handleSignOut}>
             Log Out
             <i className="material-icons" aria-hidden="true">exit_to_app</i>
           </button>
         ) : (
-          <>
-            <button className="slideout-entry" role="menuitem">
-              Frequently Asked Questions
-              <i className="material-icons" aria-hidden="true">help</i>
-            </button>
-            <button className="slideout-entry" role="menuitem" onClick={handleOpenThemeDesigner}>
-              Theme Designer
-              <i className="material-icons" aria-hidden="true">format_paint</i>
-            </button>
-          </>
+          <button
+            className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
+            role="menuitem"
+            onClick={handleOpenThemeDesigner}
+          >
+            Theme Designer
+            <i className="material-icons" aria-hidden="true">format_paint</i>
+          </button>
         )}
       </nav>
 

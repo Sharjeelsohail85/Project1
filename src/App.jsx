@@ -6,6 +6,7 @@ import Shadow from './components/Shadow'
 import Content from './components/Content'
 import SettingsPage from './components/SettingsPage'
 import ChannelPage from './components/ChannelPage'
+import PageFaq from './pages/PageFaq'
 import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
 import { isAuthenticated as checkAuth, logout } from './services/auth.service'
 import './styles/global.css'
@@ -43,7 +44,7 @@ const inlineStyles = `
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname === '/faq'
   
   // Check authentication status on mount
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -378,7 +379,7 @@ function App() {
     setDailyActive(false)
     setSignupStep(1)
     setUploadStep(1)
-    navigate('/post')
+    navigate('/studio/migrate')
   }, [navigate])
 
   const hideSignup = useCallback(() => {
@@ -595,6 +596,11 @@ function App() {
     navigate('/channel')
   }, [navigate])
 
+  const openFaq = useCallback(() => {
+    setSlideoutVisible(false)
+    navigate('/faq')
+  }, [navigate])
+
   const handlePersonalizationSettingChange = useCallback((settingKey, isEnabled) => {
     if (!(settingKey in DEFAULT_PERSONALIZATION_EFFECTS)) {
       return
@@ -660,6 +666,106 @@ function App() {
     setDailyActive(true)
     navigate('/')
   }, [navigate])
+
+  const buildFallbackMigrationStreamUrl = useCallback((videoId) => {
+    const resolvedVideoId = String(videoId || '').trim()
+    if (!resolvedVideoId) return ''
+
+    let streamUrl = `/api/v1/video/migration/stream/${encodeURIComponent(resolvedVideoId)}`
+
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+        const clientId = String(localStorage.getItem('client_id') || '').trim()
+
+        if (token && clientId) {
+          streamUrl += `?token=${encodeURIComponent(token)}&client_id=${encodeURIComponent(clientId)}`
+        }
+      }
+    } catch {
+      // ignore fallback stream URL token serialization errors
+    }
+
+    return streamUrl
+  }, [])
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/watch/')) {
+      return undefined
+    }
+
+    const pathParts = String(location.pathname || '').split('/').filter(Boolean)
+    const rawVideoId = pathParts.length >= 2 ? pathParts[1] : ''
+    if (!rawVideoId) {
+      return undefined
+    }
+
+    let decodedVideoId = ''
+    try {
+      decodedVideoId = decodeURIComponent(rawVideoId)
+    } catch {
+      decodedVideoId = rawVideoId
+    }
+
+    const applyWatchSource = (streamUrl) => {
+      const resolvedStreamUrl = String(streamUrl || '').trim()
+      if (!resolvedStreamUrl) {
+        return
+      }
+
+      setCurrentVideoSource({
+        sourceType: 'creator_migrated',
+        sourceUrl: resolvedStreamUrl,
+        title: `Migrated video ${decodedVideoId}`,
+        description: '',
+        discussionLink: '',
+      })
+      setPromoActive(false)
+      setSignupActive(false)
+      setLoginActive(false)
+      setUploadActive(false)
+      setDailyActive(true)
+      setActiveBrowserPage('browserContentPicks')
+    }
+
+    const searchParams = new URLSearchParams(String(location.search || ''))
+    const srcFromQuery = String(searchParams.get('src') || '').trim()
+    if (srcFromQuery) {
+      applyWatchSource(srcFromQuery)
+      return undefined
+    }
+
+    let cancelled = false
+
+    videoAPI.streamUrl(decodedVideoId)
+      .then((response) => {
+        if (cancelled) return
+
+        const payload = response?.data || response || {}
+        const resolvedStreamUrl = String(payload?.streamUrl || payload?.playbackUrl || '').trim()
+        if (resolvedStreamUrl) {
+          applyWatchSource(resolvedStreamUrl)
+          return
+        }
+
+        const fallback = buildFallbackMigrationStreamUrl(decodedVideoId)
+        if (fallback) {
+          applyWatchSource(fallback)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+
+        const fallback = buildFallbackMigrationStreamUrl(decodedVideoId)
+        if (fallback) {
+          applyWatchSource(fallback)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [buildFallbackMigrationStreamUrl, location.pathname, location.search])
 
   const handleCloseCenterPage = useCallback(() => {
     setPromoActive(false)
@@ -742,6 +848,12 @@ function App() {
                 : <Navigate to="/" replace />
             )}
           />
+          <Route
+            path="/faq"
+            element={(
+              <PageFaq isAuthenticated={isAuthenticated} />
+            )}
+          />
           <Route path="*" element={<Navigate to="/settings" replace />} />
         </Routes>
       </>
@@ -769,6 +881,7 @@ function App() {
         onOpenSettings={openSettings}
         onOpenThemeDesigner={openThemeDesigner}
         onOpenChannel={openChannel}
+        onOpenFaq={openFaq}
         onSignOut={handleSignOut}
         isAuthenticated={isAuthenticated}
       />
@@ -817,7 +930,9 @@ function App() {
       />
 
       <Routes>
-        <Route path="/post" element={null} />
+        <Route path="/post" element={<Navigate to="/studio/migrate" replace />} />
+        <Route path="/studio/migrate" element={null} />
+        <Route path="/watch/:videoId" element={null} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

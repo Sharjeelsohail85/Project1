@@ -61,6 +61,7 @@ export const API_CONFIG = {
       search: (name, results) => `/video/search/${name}/${results}`,
       like: (id) => `/video/${id}/like`,
       dislike: (id) => `/video/${id}/dislike`,
+      streamUrl: (id) => `/videos/${id}/stream-url`,
     },
     channel: {
       list: '/channel',
