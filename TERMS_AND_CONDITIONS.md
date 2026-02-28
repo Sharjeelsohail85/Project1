@@ -4,8 +4,6 @@
 **Platform:** octopussol  
 **Operator:** octopus
 
-> This is a practical template and should be reviewed by qualified legal counsel before production use.
-
 ## 1) Acceptance of Terms
 
 By accessing or using the Platform, you agree to these Terms and Conditions ("Terms"). If you do not agree, do not use the Platform.

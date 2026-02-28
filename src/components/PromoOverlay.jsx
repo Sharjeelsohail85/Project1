@@ -3,19 +3,19 @@ import { memo } from 'react'
 const PROMO_SLIDES = [
   {
     id: 'promoverlay1',
-    content: '[Sitename] collects videos from all around the<br/>internet and sorts them a managable way.'
+    content: 'Octopussol is a video platform to upload, migrate,<br/>organize, and stream creator content in one place.'
   },
   {
     id: 'promoverlay3',
-    content: "[Sitename] won't censor or demonotize<br/>you. Only international law is enforced."
+    content: 'Discover new videos, follow channels,<br/>and watch content from creators worldwide.'
   },
   {
     id: 'promoverlay4',
-    content: "[Sitename] makes dual-citizenship easy. Login<br/>with YouTube, and we'll post here for you."
+    content: 'Sign in to publish videos, manage your channel,<br/>and handle your content from one dashboard.'
   },
   {
     id: 'promoverlay2',
-    content: '[Sitename] gives 100% of ad revenue<br/>to creators -- <a href="#">learn how it works</a>.'
+    content: 'Built for creators: keep control of your uploads,<br/>metadata, and distribution settings.'
   }
 ]
 
@@ -93,14 +93,33 @@ const PromoOverlay = memo(function PromoOverlay({
             Log In
           </button>
         </div>
+        <div className="promoverlay-legal-links" role="navigation" aria-label="Legal links">
+          <a
+            href="/PRIVACY_POLICY.md"
+            className="promoverlay-legal-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+          <span className="promoverlay-legal-separator" aria-hidden="true">•</span>
+          <a
+            href="/TERMS_AND_CONDITIONS.md"
+            className="promoverlay-legal-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms &amp; Conditions
+          </a>
+        </div>
       </div>
 
       {/* Left-side tagline under the SVG title */}
       <div className="promoverlay-tagline">
         <strong className="promoverlay-tagline-bold">
-          We don't own the content, you do.
+          Octopussol helps creators upload, migrate, and stream videos.
         </strong>
-        <span className="promoverlay-tagline-sub">Things are nicer that way.</span>
+        <span className="promoverlay-tagline-sub">Use Search to discover videos and Post to publish your own content.</span>
       </div>
 
       {/* User Attribution */}

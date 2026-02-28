@@ -704,7 +704,7 @@ select:disabled {
 	top: 60px;
 	right: 0;
 	bottom: 0;
-	width: 250px;
+	width: 300px;
 	height: calc(100vh - 60px);
 	box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2), -1px 0 4px rgba(0, 0, 0, 0.14);
 	background: #fafafa;
@@ -1866,6 +1866,37 @@ select:disabled {
 	align-items: center;
 	width: 100%;
 	gap: 12px;
+}
+
+.promoverlay-legal-links {
+	position: absolute;
+	right: 0;
+	top: 160px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	width: 100%;
+	font-size: 12px;
+	line-height: 1.4;
+	color: rgba(255, 255, 255, 0.92);
+	z-index: 3;
+}
+
+.promoverlay-legal-link {
+	color: rgba(255, 255, 255, 0.95) !important;
+	text-decoration: none;
+	border-bottom: 1px dotted rgba(255, 255, 255, 0.88) !important;
+	cursor: pointer !important;
+}
+
+.promoverlay-legal-link:hover {
+	color: #fff !important;
+	border-bottom-style: solid !important;
+}
+
+.promoverlay-legal-separator {
+	opacity: 0.82;
 }
 
 .promoverlay-tagline .promoverlay-button-row {
@@ -3242,6 +3273,15 @@ select:disabled {
 		right: auto;
 		justify-content: flex-start;
 		margin-top: 12px;
+	}
+
+	.promoverlay-legal-links {
+		position: relative;
+		top: auto;
+		right: auto;
+		margin-top: 10px;
+		justify-content: flex-start;
+		width: auto;
 	}
 
 	.promoverlay-tagline {

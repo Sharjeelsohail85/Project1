@@ -6,7 +6,6 @@ const Slideout = memo(function Slideout({
   visible,
   onColorChange,
   onShowPromo,
-  onShowSignup,
   onShowLogin,
   onOpenSettings,
   onOpenChannel,
@@ -28,15 +27,6 @@ const Slideout = memo(function Slideout({
   const handleOpenSettings = useCallback(() => {
     if (typeof onOpenSettings === 'function') onOpenSettings()
   }, [onOpenSettings])
-
-  const handleShowSignup = useCallback(() => {
-    if (typeof onShowSignup === 'function') {
-      onShowSignup()
-      return
-    }
-
-    handleShowPromo()
-  }, [handleShowPromo, onShowSignup])
 
   const handleShowLogin = useCallback(() => {
     if (typeof onShowLogin === 'function') {
@@ -69,11 +59,6 @@ const Slideout = memo(function Slideout({
     window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
   }, [])
 
-  const handleOpenPrivacy = useCallback(() => {
-    if (typeof window === 'undefined') return
-    window.open('/PRIVACY_POLICY.md', '_blank', 'noopener,noreferrer')
-  }, [])
-
   const handleSignOut = useCallback(() => {
     if (typeof onSignOut === 'function') {
       onSignOut()
@@ -97,10 +82,6 @@ const Slideout = memo(function Slideout({
       <nav className="slideout-technical" aria-label="Menu options">
         {!isAuthenticated ? (
           <>
-            <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
-              Sign Up
-              <i className="material-icons" aria-hidden="true">person_add</i>
-            </button>
             <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>
               Log In
               <i className="material-icons" aria-hidden="true">exit_to_app</i>
@@ -137,11 +118,6 @@ const Slideout = memo(function Slideout({
           Terms &amp; Conditions
           <i className="material-icons" aria-hidden="true">gavel</i>
         </button>
-        <button className="slideout-entry" role="menuitem" onClick={handleOpenPrivacy}>
-          Privacy Policy
-          <i className="material-icons" aria-hidden="true">policy</i>
-        </button>
-
         {isAuthenticated ? (
           <button className="slideout-entry" id="showit" role="menuitem" onClick={handleSignOut}>
             Log Out
