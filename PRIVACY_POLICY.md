@@ -4,8 +4,6 @@
 **Platform:** octopussol  
 **Operator:** octopus
 
-> This is a practical template and should be reviewed by qualified legal counsel before production use.
-
 ## 1) Scope
 
 This Privacy Policy explains how octopussol (the "Platform") collects, uses, stores, and shares personal data when you use our decentralized video streaming and channel tools.
