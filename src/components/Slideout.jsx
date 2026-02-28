@@ -54,11 +54,6 @@ const Slideout = memo(function Slideout({
     window.location.assign('/faq')
   }, [onOpenFaq])
 
-  const handleOpenTerms = useCallback(() => {
-    if (typeof window === 'undefined') return
-    window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
-  }, [])
-
   const handleSignOut = useCallback(() => {
     if (typeof onSignOut === 'function') {
       onSignOut()
@@ -114,27 +109,20 @@ const Slideout = memo(function Slideout({
           Frequently Asked Questions
           <i className="material-icons" aria-hidden="true">help</i>
         </button>
-        <button className="slideout-entry" role="menuitem" onClick={handleOpenTerms}>
-          Terms &amp; Conditions
-          <i className="material-icons" aria-hidden="true">gavel</i>
+        <button
+          className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
+          role="menuitem"
+          onClick={handleOpenThemeDesigner}
+        >
+          Theme Designer
+          <i className="material-icons" aria-hidden="true">format_paint</i>
         </button>
         {isAuthenticated ? (
           <button className="slideout-entry" id="showit" role="menuitem" onClick={handleSignOut}>
             Log Out
             <i className="material-icons" aria-hidden="true">exit_to_app</i>
           </button>
-        ) : (
-          <>
-            <button
-              className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
-              role="menuitem"
-              onClick={handleOpenThemeDesigner}
-            >
-              Theme Designer
-              <i className="material-icons" aria-hidden="true">format_paint</i>
-            </button>
-          </>
-        )}
+        ) : null}
       </nav>
 
       <div className="slideout-bottom">

@@ -699,7 +699,8 @@ select:disabled {
 }
 
 .slideout {
-	display: block;
+	display: flex;
+	flex-direction: column;
 	position: fixed;
 	top: 60px;
 	right: 0;
@@ -709,7 +710,7 @@ select:disabled {
 	box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2), -1px 0 4px rgba(0, 0, 0, 0.14);
 	background: #fafafa;
 	z-index: 600; /* above #content so slideout opens on top */
-	overflow: visible;
+	overflow: hidden;
 }
 
 .slideout.hidden {
@@ -727,25 +728,27 @@ select:disabled {
 .slideout-technical {
 	margin-top: var(--spacing-lg);
 	padding: 0 var(--spacing-xs);
-	overflow: visible;
+	overflow-y: auto;
+	overflow-x: hidden;
+	flex: 1 1 auto;
+	min-height: 0;
 }
 
 .slideout-bottom {
-	position: absolute;
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	background: #fafafa;
-	bottom: 0;
-	left: 0;
-	right: 0;
+	margin-top: auto;
 	width: 100%;
 	height: auto;
-	min-height: 120px;
-	padding: var(--spacing-md);
+	min-height: 96px;
+	padding: 10px 8px;
 	box-sizing: border-box;
 	border-top: 1px solid rgba(0, 0, 0, 0.08);
+	flex: 0 0 auto;
 }
 
 .slideout-entry:last-child {
@@ -3674,16 +3677,17 @@ select:disabled {
 	justify-content: center;
 	align-items: center;
 	flex-wrap: wrap;
-	padding: 8px;
+	padding: 4px 2px;
+	gap: 6px;
 	box-sizing: border-box;
 }
 
 .slideout-bottom .signup-color-picker-item {
-	margin: 2px;
-	width: calc((100% / 6) - 12px);
-	max-width: 40px;
-	min-width: 36px;
-	height: 40px;
+	margin: 1px;
+	width: 34px;
+	max-width: 34px;
+	min-width: 34px;
+	height: 34px;
 }
 
 .signup-color-picker-item {

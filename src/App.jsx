@@ -640,14 +640,25 @@ function App() {
   }, [darkenColor, getThemeContrast])
 
   // Open the video player from content cards (Editors' Picks / etc.)
-  const handleOpenVideo = useCallback(() => {
+  const handleOpenVideo = useCallback((payload = {}) => {
+    const requestedVideoId = String(payload?.videoId || payload?.id || '').trim()
+    if (requestedVideoId) {
+      navigate(`/watch/${encodeURIComponent(requestedVideoId)}`)
+      setPromoActive(false)
+      setSignupActive(false)
+      setLoginActive(false)
+      setUploadActive(false)
+      setDailyActive(true)
+      return
+    }
+
     setCurrentVideoSource({ ...DEFAULT_VIDEO_SOURCE })
     setPromoActive(false)
     setSignupActive(false)
     setLoginActive(false)
     setUploadActive(false)
     setDailyActive(true)
-  }, [])
+  }, [navigate])
 
   const handleVideoReadyFromPost = useCallback((payload) => {
     const nextSource = {

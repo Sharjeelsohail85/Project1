@@ -375,7 +375,8 @@ html, body {
 }
 
 .slideout {
-	display: block;
+	display: flex;
+	flex-direction: column;
 	position: fixed;
 	top: 60px;
 	right: 0; /* Fixed: Position on right side instead of left */
@@ -387,7 +388,7 @@ html, body {
 	background: #fafafa;
 	z-index: 7;
 	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	overflow-y: auto;
+	overflow: hidden;
 }
 
 .slideout.hidden {
@@ -421,30 +422,51 @@ html, body {
 
 .slideout-technical {
 	margin-top: 25px;
-	overflow: visible;
+	overflow-y: auto;
+	overflow-x: hidden;
+	flex: 1 1 auto;
+	min-height: 0;
 	padding: 0 4px;
 }
 
 .slideout-bottom {
-	position: absolute;
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	background: #fafafa;
-	bottom: 0;
-	left: 0;
-	right: 0;
+	margin-top: auto;
 	width: 100%;
 	height: auto;
-	min-height: 120px;
-	padding: 12px 8px;
+	min-height: 96px;
+	padding: 10px 8px;
 	box-sizing: border-box;
 	border-top: 1px solid rgba(0, 0, 0, 0.1);
+	flex: 0 0 auto;
 }
 
 .slideout.hidden .slideout-bottom {
 	display: none;
+}
+
+.slideout-bottom .signup-color-picker {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	padding: 4px 2px;
+	gap: 6px;
+	box-sizing: border-box;
+}
+
+.slideout-bottom .signup-color-picker-item {
+	margin: 1px;
+	width: 34px;
+	max-width: 34px;
+	min-width: 34px;
+	height: 34px;
 }
 
 .slideout-entry {

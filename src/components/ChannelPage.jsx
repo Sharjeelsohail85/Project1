@@ -1,19 +1,41 @@
-import { memo } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import PosterText from './PosterText'
+import { videoAPI } from '../services/api.service'
 
 const noop = () => {}
 
-const SERIES = [
-  { title: 'Midnight Edits', meta: '12 episodes • Visual Essays' },
-  { title: 'Signal Breakdowns', meta: '9 episodes • Sound Lab' },
-  { title: 'Archive Dives', meta: '27 episodes • Culture Analysis' },
-]
+function normalizeVideoRows(response) {
+  const payload = response?.data || response || {}
+  const rows = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload)
+      ? payload
+      : []
 
-const DROPS = [
-  { title: 'How Texture Changes Pacing', length: '18:42', tag: 'Essay' },
-  { title: 'Sampling Rain Into a Lead Synth', length: '11:09', tag: 'Breakdown' },
-  { title: 'The Aesthetic That Never Died', length: '22:03', tag: 'Culture' },
-]
+  return rows
+    .map((item, index) => {
+      const uuid = String(item?.uuid || item?.id || '').trim()
+      if (!uuid) {
+        return null
+      }
+
+      const channelName = String(
+        item?.channel?.data?.name
+          || item?.channel?.name
+          || item?.channel_name
+          || 'General'
+      ).trim()
+
+      return {
+        id: uuid,
+        title: String(item?.name || `Video ${index + 1}`).trim() || `Video ${index + 1}`,
+        type: String(item?.type || 'Upload').trim() || 'Upload',
+        channelName: channelName || 'General',
+        privacy: String(item?.privacyOption?.data?.name || item?.privacy_option || 'Public').trim() || 'Public',
+      }
+    })
+    .filter(Boolean)
+}
 
 const ChannelPage = memo(function ChannelPage({
   active = true,
@@ -22,6 +44,53 @@ const ChannelPage = memo(function ChannelPage({
   posterText = 'THENEEDLEDROP',
   posterTextEnabled = false,
 }) {
+  const [videos, setVideos] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    setIsLoading(true)
+    setLoadError('')
+
+    videoAPI.my()
+      .then((response) => {
+        if (cancelled) return
+        setVideos(normalizeVideoRows(response))
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setVideos([])
+        setLoadError(String(error?.message || 'Unable to load channel uploads.'))
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const recentVideos = useMemo(() => videos.slice(0, 8), [videos])
+  const channelSummary = useMemo(() => {
+    const counts = new Map()
+    videos.forEach((video) => {
+      const key = String(video?.channelName || 'General').trim() || 'General'
+      counts.set(key, (counts.get(key) || 0) + 1)
+    })
+
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  }, [videos])
+
   const content = (
     <article className="channel-page">
         <header className="channel-hero">
@@ -37,11 +106,11 @@ const ChannelPage = memo(function ChannelPage({
               <h2 className="channel-title">Signal / Noise Lab</h2>
             )}
             <p className="channel-tagline">
-              Creative essays, sonic experiments, and internet-culture deep dives curated with your current site theme.
+              Uploaded and migrated videos linked to your account channels appear here.
             </p>
             <div className="channel-stats" role="list" aria-label="Channel stats">
               <span role="listitem"><strong>1.3M</strong> subscribers</span>
-              <span role="listitem"><strong>312</strong> uploads</span>
+              <span role="listitem"><strong>{videos.length}</strong> uploads</span>
               <span role="listitem"><strong>89h</strong> weekly watch time</span>
             </div>
           </div>
@@ -54,21 +123,50 @@ const ChannelPage = memo(function ChannelPage({
 
         <div className="channel-grid">
           <section className="channel-card">
-            <h3>Live Series</h3>
-            <ul>
-              {SERIES.map((item) => (
-                <li key={item.title}><span>{item.title}</span><small>{item.meta}</small></li>
-              ))}
-            </ul>
+            <h3>Channel Allocation</h3>
+            {isLoading ? <p className="channel-status">Loading channels…</p> : null}
+            {!isLoading && loadError ? <p className="channel-status channel-status-error">{loadError}</p> : null}
+            {!isLoading && !loadError && channelSummary.length === 0 ? (
+              <p className="channel-status">No channel uploads found yet.</p>
+            ) : null}
+
+            {!isLoading && !loadError && channelSummary.length > 0 ? (
+              <ul>
+                {channelSummary.map((item) => (
+                  <li key={item.name}>
+                    <span>{item.name}</span>
+                    <small>{item.count} videos</small>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
 
           <section className="channel-card">
-            <h3>Recent Drops</h3>
-            <ul>
-              {DROPS.map((drop) => (
-                <li key={drop.title}><span>{drop.title}</span><small>{drop.length} • {drop.tag}</small></li>
-              ))}
-            </ul>
+            <h3>Recent Uploads</h3>
+            {isLoading ? <p className="channel-status">Loading uploads…</p> : null}
+            {!isLoading && loadError ? <p className="channel-status channel-status-error">{loadError}</p> : null}
+            {!isLoading && !loadError && recentVideos.length === 0 ? (
+              <p className="channel-status">No uploads available yet.</p>
+            ) : null}
+
+            {!isLoading && !loadError && recentVideos.length > 0 ? (
+              <ul>
+                {recentVideos.map((video) => (
+                  <li key={video.id}>
+                    <span>{video.title}</span>
+                    <small>{video.channelName} • {video.privacy}</small>
+                    <button
+                      type="button"
+                      className="channel-item-action"
+                      onClick={() => onOpenVideo({ videoId: video.id })}
+                    >
+                      Play
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
         </div>
       </article>

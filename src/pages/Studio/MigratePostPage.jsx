@@ -8,7 +8,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import MigrationForm from '../../components/migration/MigrationForm'
 import { storageProviders } from '../../config/storageProviders'
-import { beginProviderOAuth } from '../../services/multiCloudMigrationService'
+import { beginProviderOAuth, waitForProviderOAuthResult } from '../../services/multiCloudMigrationService'
 import { videoAPI } from '../../services/api.service'
 
 function hasAuthSession() {
@@ -99,6 +99,19 @@ const MigratePostPage = memo(function MigratePostPage() {
           setConnectionError(`Popup blocked for ${provider?.name || normalized}. Please allow popups and try again.`)
           return
         }
+
+        const oauthResult = await waitForProviderOAuthResult()
+        const oauthMessage = String(oauthResult?.message || '').trim()
+
+        if (!oauthMessage) {
+          setConnectionInfo(`${provider?.name || normalized} connected.`)
+        } else {
+          setConnectionInfo(oauthMessage)
+        }
+
+        setConnectedById((prev) => ({ ...prev, [normalized]: true }))
+        setConnectionError('')
+        return
       }
 
       if (!result?.connected) {

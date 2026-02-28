@@ -39,6 +39,7 @@ use Google_Service_YouTube_Video;
 use Google_Http_MediaFileUpload;
 
 const MIGRATION_JOB_CACHE_TTL_SECONDS = 3600;
+const OAUTH_PROVIDER_STATE_CACHE_TTL_SECONDS = 600;
 
 //tyyJR1VDZKAAAAAAAAAE99P1cxgDW-uEBEJn3myW0mDCfXNEDhDsh55_uDBuIpTL
 
@@ -588,7 +589,13 @@ class VideoApiController extends ApiBaseController
         ]);
 
         $provider = $this->normalizeMigrationProvider($job['provider'] ?? '');
-        $storageProvider = $this->resolvePreferredMigrationStorageProvider($provider);
+        $ownerUser = null;
+        if($ownerUserId != '')
+        {
+            $ownerUser = $this->user->find($ownerUserId);
+        }
+
+        $storageProvider = $this->resolvePreferredMigrationStorageProvider($provider, $ownerUser);
         $extension = strtolower((string)pathinfo($downloadedPath, PATHINFO_EXTENSION));
         if($extension == '')
         {
@@ -628,6 +635,21 @@ class VideoApiController extends ApiBaseController
                 if($videoUrl == '')
                 {
                     throw new \RuntimeException('Hetzner upload did not return storage URL.');
+                }
+                $playbackUrl = trim((string)($providerUpload['playbackUrl'] ?? ''));
+            }
+            elseif($storageProvider == 'dropbox')
+            {
+                $providerUpload = $this->uploadFileToDropboxStorage($downloadedPath, $ownerUser);
+                if(!$providerUpload['success'])
+                {
+                    throw new \RuntimeException(trim((string)($providerUpload['error'] ?? 'Dropbox upload failed.')));
+                }
+
+                $videoUrl = trim((string)($providerUpload['storageUrl'] ?? ''));
+                if($videoUrl == '')
+                {
+                    throw new \RuntimeException('Dropbox upload did not return storage URL.');
                 }
                 $playbackUrl = trim((string)($providerUpload['playbackUrl'] ?? ''));
             }
@@ -1248,15 +1270,25 @@ class VideoApiController extends ApiBaseController
         public function dropboxFileUpload(Request $request)
         {
             $user = $this->user->find($request->get('id'));
+            if(!$user)
+            {
+                return $this->errorWrongArgs(['User not found']);
+            }
+
+            $dropboxCredentials = $this->resolveDropboxCredentials($user);
             
             $errors = array();
-            if($user->dropbox_key == '')
+            if($dropboxCredentials['client_id'] == '')
             {
                 $errors[] = 'DropBox Key Not Found for this user';
             }
-            if($user->dropbox_secret == '')
+            if($dropboxCredentials['client_secret'] == '')
             {
                 $errors[] = 'DropBox Secret Not Found  for this user';
+            }
+            if($dropboxCredentials['access_token'] == '')
+            {
+                $errors[] = 'DropBox Access Token Not Found for this user';
             }
             
             if(!empty($errors))
@@ -1289,33 +1321,57 @@ class VideoApiController extends ApiBaseController
             
             $pathToLocalFile = $filename;
             
-            $app = new DropboxApp($user->dropbox_key, $user->dropbox_secret, $user->dropbox_access_token);
+            $app = new DropboxApp($dropboxCredentials['client_id'], $dropboxCredentials['client_secret'], $dropboxCredentials['access_token']);
             $dropbox = new Dropbox($app);
             
             $dropboxFile = new DropboxFile($pathToLocalFile);
             $file = $dropbox->upload($dropboxFile, "/" . $imageName, ['autorename' => true]);
 
             //Uploaded File
-            $name = $file->getName();
+            $name = trim((string)$file->getName());
+            $remotePath = '/' . ltrim($name != '' ? $name : $imageName, '/');
 
             $dropbox = new Dropbox($app);
 
             $response = $dropbox->postToAPI("/sharing/create_shared_link_with_settings", [
-                "path" => "/" . $imageName
+                "path" => $remotePath
             ]);
 
             $data1 = $response->getDecodedBody();
+            $dropboxSharedUrl = trim((string)($data1['url'] ?? ''));
+            $dropboxPlaybackUrl = $this->buildDropboxDirectPlaybackUrl($dropboxSharedUrl);
+            if($dropboxPlaybackUrl == '')
+            {
+                $dropboxPlaybackUrl = $dropboxSharedUrl;
+            }
 
-            $privacyOption = $this->privacyOptions->findWhere(['name' => 'Public'])->first();
-            $channel = $this->channel->findWhere(['name' => 'General'])->first();
+            $resolvedDefaults = $this->resolveDefaultPrivacyAndChannel((string)$request->get('id', ''));
+            $privacyOption = $resolvedDefaults['privacyOption'];
+            $channel = $resolvedDefaults['channel'];
+            if(!$privacyOption || !$channel)
+            {
+                return redirect()->back()->withErrors(['Unable to resolve channel/privacy for upload']);
+            }
                 
             $data['uuid'] = $this->helper->addUuid();;
             $data['type'] = 'DropBox';
-            $data['url'] = $data1['url'];
+            $data['url'] = $dropboxPlaybackUrl;
             $data['user_id'] = $request->get('id');
-          //  $data['channel_id'] = $channel->uuid;
-          //  $data['privacy_option_id'] = $privacyOption->uuid;
+            $data['channel_id'] = $this->resolveChannelUuid($data['channel_id'] ?? '', $channel);
+            $data['privacy_option_id'] = $this->resolvePrivacyOptionUuid($data['privacy_option_id'] ?? '', $privacyOption);
             $data['active'] = 1;
+            $data['admin_active'] = 1;
+
+            if($data['channel_id'] == '' || $data['privacy_option_id'] == '')
+            {
+                return redirect()->back()->withErrors(['Unable to resolve channel/privacy for upload']);
+            }
+
+            if(File::exists($pathToLocalFile))
+            {
+                File::delete($pathToLocalFile);
+            }
+
             $upload = $this->video->create($data);
             if($upload)
             {
@@ -1353,15 +1409,16 @@ class VideoApiController extends ApiBaseController
             }
 
             $errors = array();
-            if($user->dropbox_key == '')
+            $dropboxCredentials = $this->resolveDropboxCredentials($user);
+            if($dropboxCredentials['client_id'] == '')
             {
                 $errors[] = 'DropBox Key Not Found for this user';
             }
-            if($user->dropbox_secret == '')
+            if($dropboxCredentials['client_secret'] == '')
             {
                 $errors[] = 'DropBox Secret Not Found for this user';
             }
-            if($user->dropbox_access_token == '')
+            if($dropboxCredentials['access_token'] == '')
             {
                 $errors[] = 'DropBox Access Token Not Found for this user';
             }
@@ -1398,18 +1455,32 @@ class VideoApiController extends ApiBaseController
                 $publicPath = public_path('video/' . $storedFilename);
                 File::copy($downloadedPath, $publicPath);
 
-                $app = new DropboxApp($user->dropbox_key, $user->dropbox_secret, $user->dropbox_access_token);
+                $app = new DropboxApp($dropboxCredentials['client_id'], $dropboxCredentials['client_secret'], $dropboxCredentials['access_token']);
                 $dropbox = new Dropbox($app);
                 $dropboxFile = new DropboxFile($publicPath);
-                $dropbox->upload($dropboxFile, '/' . $storedFilename, ['autorename' => true]);
+                $uploaded = $dropbox->upload($dropboxFile, '/' . $storedFilename, ['autorename' => true]);
+
+                $uploadedName = trim((string)($uploaded ? $uploaded->getName() : ''));
+                $remotePath = '/' . ltrim($uploadedName != '' ? $uploadedName : $storedFilename, '/');
 
                 $response = $dropbox->postToAPI('/sharing/create_shared_link_with_settings', [
-                    'path' => '/' . $storedFilename
+                    'path' => $remotePath
                 ]);
                 $sharedLinkData = $response->getDecodedBody();
+                $dropboxSharedUrl = trim((string)($sharedLinkData['url'] ?? ''));
+                $dropboxPlaybackUrl = $this->buildDropboxDirectPlaybackUrl($dropboxSharedUrl);
+                if($dropboxPlaybackUrl == '')
+                {
+                    $dropboxPlaybackUrl = $dropboxSharedUrl;
+                }
 
-                $privacyOption = $this->privacyOptions->findWhere(['name' => 'Public'])->first();
-                $channel = $this->channel->findWhere(['name' => 'General'])->first();
+                $resolvedDefaults = $this->resolveDefaultPrivacyAndChannel((string)$request->get('id', ''));
+                $privacyOption = $resolvedDefaults['privacyOption'];
+                $channel = $resolvedDefaults['channel'];
+                if(!$privacyOption || !$channel)
+                {
+                    return $this->errorWrongArgs(['Unable to resolve channel/privacy options for ingest upload']);
+                }
 
                 $videoData = is_array($payload) ? $payload : array();
                 $videoData = $this->helper->clearEmptyValues($videoData);
@@ -1422,11 +1493,12 @@ class VideoApiController extends ApiBaseController
 
                 $videoData['uuid'] = $this->helper->addUuid();
                 $videoData['type'] = 'DropBox';
-                $videoData['url'] = $sharedLinkData['url'] ?? '';
+                $videoData['url'] = $dropboxPlaybackUrl;
                 $videoData['user_id'] = $request->get('id');
                 $videoData['channel_id'] = $this->resolveChannelUuid($videoData['channel_id'] ?? '', $channel);
                 $videoData['privacy_option_id'] = $this->resolvePrivacyOptionUuid($videoData['privacy_option_id'] ?? '', $privacyOption);
                 $videoData['active'] = 1;
+                $videoData['admin_active'] = 1;
 
                 if($videoData['channel_id'] == '' || $videoData['privacy_option_id'] == '')
                 {
@@ -1616,6 +1688,166 @@ class VideoApiController extends ApiBaseController
             }
 
             return $defaultChannel ? (string)$defaultChannel->uuid : '';
+        }
+
+        private function resolveDropboxCredentials($user = null)
+        {
+            $userClientId = '';
+            $userClientSecret = '';
+            $userAccessToken = '';
+
+            if($user)
+            {
+                $userClientId = trim((string)($user->dropbox_key ?? ''));
+                $userClientSecret = trim((string)($user->dropbox_secret ?? ''));
+                $userAccessToken = trim((string)($user->dropbox_access_token ?? ''));
+            }
+
+            return [
+                'client_id' => $userClientId != ''
+                    ? $userClientId
+                    : trim((string)env('DROPBOX_CLIENT_ID', '')),
+                'client_secret' => $userClientSecret != ''
+                    ? $userClientSecret
+                    : trim((string)env('DROPBOX_CLIENT_SECRET', '')),
+                'access_token' => $userAccessToken != ''
+                    ? $userAccessToken
+                    : trim((string)env('DROPBOX_ACCESS_TOKEN', '')),
+            ];
+        }
+
+        private function buildDropboxDirectPlaybackUrl($sharedUrl)
+        {
+            $url = trim((string)$sharedUrl);
+            if($url == '')
+            {
+                return '';
+            }
+
+            $parsed = parse_url($url);
+            if(!is_array($parsed))
+            {
+                return $url;
+            }
+
+            $host = strtolower(trim((string)($parsed['host'] ?? '')));
+            $scheme = trim((string)($parsed['scheme'] ?? 'https'));
+            $path = trim((string)($parsed['path'] ?? ''));
+            if($path == '')
+            {
+                return $url;
+            }
+
+            if($host == 'dl.dropboxusercontent.com')
+            {
+                return $url;
+            }
+
+            if($host == '' || strpos($host, 'dropbox.com') === false)
+            {
+                return $url;
+            }
+
+            $query = [];
+            parse_str((string)($parsed['query'] ?? ''), $query);
+            if(!is_array($query))
+            {
+                $query = [];
+            }
+
+            unset($query['dl']);
+            $query['raw'] = '1';
+
+            $queryString = http_build_query($query);
+
+            return $scheme
+                . '://dl.dropboxusercontent.com'
+                . $path
+                . ($queryString != '' ? ('?' . $queryString) : '');
+        }
+
+        private function uploadFileToDropboxStorage($localFilePath, $user = null)
+        {
+            $filePath = trim((string)$localFilePath);
+            if($filePath == '' || !File::exists($filePath))
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Invalid local file for Dropbox upload',
+                ];
+            }
+
+            $dropboxCredentials = $this->resolveDropboxCredentials($user);
+            if($dropboxCredentials['client_id'] == ''
+                || $dropboxCredentials['client_secret'] == ''
+                || $dropboxCredentials['access_token'] == '')
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Missing Dropbox client/app credentials',
+                ];
+            }
+
+            $filename = trim((string)pathinfo($filePath, PATHINFO_BASENAME));
+            if($filename == '')
+            {
+                $filename = date('YmdHis') . '_' . str_replace('-', '', $this->helper->addUuid()) . '.mp4';
+            }
+
+            try {
+                $app = new DropboxApp(
+                    $dropboxCredentials['client_id'],
+                    $dropboxCredentials['client_secret'],
+                    $dropboxCredentials['access_token']
+                );
+                $dropbox = new Dropbox($app);
+
+                $dropboxFile = new DropboxFile($filePath);
+                $uploaded = $dropbox->upload($dropboxFile, '/' . ltrim($filename, '/'), ['autorename' => true]);
+
+                $uploadedName = trim((string)($uploaded ? $uploaded->getName() : ''));
+                $remotePath = '/' . ltrim($uploadedName != '' ? $uploadedName : $filename, '/');
+
+                $dropboxSharedUrl = '';
+                try {
+                    $response = $dropbox->postToAPI('/sharing/create_shared_link_with_settings', [
+                        'path' => $remotePath,
+                    ]);
+
+                    $decoded = $response->getDecodedBody();
+                    $dropboxSharedUrl = trim((string)($decoded['url'] ?? ''));
+                }
+                catch (\Throwable $ignoredSharedLinkException)
+                {
+                    $dropboxSharedUrl = '';
+                }
+
+                $dropboxPlaybackUrl = $this->buildDropboxDirectPlaybackUrl($dropboxSharedUrl);
+                if($dropboxPlaybackUrl == '')
+                {
+                    $dropboxPlaybackUrl = $dropboxSharedUrl;
+                }
+
+                return [
+                    'success' => ($dropboxPlaybackUrl != '' || $dropboxSharedUrl != ''),
+                    'storageUrl' => $dropboxPlaybackUrl != '' ? $dropboxPlaybackUrl : $dropboxSharedUrl,
+                    'playbackUrl' => $dropboxPlaybackUrl != '' ? $dropboxPlaybackUrl : $dropboxSharedUrl,
+                    'error' => '',
+                ];
+            }
+            catch (\Throwable $e)
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => $e->getMessage(),
+                ];
+            }
         }
 
         private function downloadDirectVideoUrl($sourceUrl)
@@ -1992,7 +2224,8 @@ class VideoApiController extends ApiBaseController
             $token = (string)$request->get('token', '');
             $clientId = (string)$request->get('client_id', '');
             $connectionState = $this->resolveMigrationProviderConnectionState($user, $normalizedProvider);
-            $oauthUrl = $this->buildProviderOAuthUrl($normalizedProvider, $user);
+            $oauthState = $this->generateProviderOAuthState($request->get('id'), $normalizedProvider, $token, $clientId);
+            $oauthUrl = $this->buildProviderOAuthUrl($normalizedProvider, $user, $oauthState);
             $requiresOAuthWindow = ($oauthUrl != '' && (!$connectionState['connected'] || $normalizedProvider == 'hetzner'));
 
             return $this->respondWithData([
@@ -2009,6 +2242,142 @@ class VideoApiController extends ApiBaseController
                     : null,
                 'oauthUrl' => $oauthUrl,
                 'message' => $connectionState['message'],
+            ]);
+        }
+
+        public function oauthProviderCallback(Request $request, $provider)
+        {
+            $normalizedProvider = strtolower(trim((string)$provider));
+            $supportedProviders = ['dropbox'];
+            if(!in_array($normalizedProvider, $supportedProviders, true))
+            {
+                return $this->errorWrongArgs(['Unsupported storage provider callback']);
+            }
+
+            $oauthCode = trim((string)$request->get('code', ''));
+            $oauthState = trim((string)$request->get('state', ''));
+            $oauthError = trim((string)$request->get('error', ''));
+            if($oauthError != '')
+            {
+                return $this->redirectOAuthPopupResult(false, 'OAuth provider returned error: ' . $oauthError, [
+                    'provider' => $normalizedProvider,
+                ]);
+            }
+
+            if($oauthCode == '')
+            {
+                return $this->redirectOAuthPopupResult(false, 'Authorization code is required', [
+                    'provider' => $normalizedProvider,
+                ]);
+            }
+
+            $statePayload = $this->consumeProviderOAuthState($oauthState, $normalizedProvider);
+            if(!$statePayload)
+            {
+                return $this->redirectOAuthPopupResult(false, 'OAuth state is invalid or expired. Please try connecting again.', [
+                    'provider' => $normalizedProvider,
+                ]);
+            }
+
+            $userId = trim((string)($statePayload['user_id'] ?? ''));
+            if($userId == '')
+            {
+                return $this->redirectOAuthPopupResult(false, 'Unable to resolve user from OAuth state.', [
+                    'provider' => $normalizedProvider,
+                ]);
+            }
+
+            $user = $this->user->find($userId);
+            if(!$user)
+            {
+                return $this->redirectOAuthPopupResult(false, 'User not found for OAuth callback.', [
+                    'provider' => $normalizedProvider,
+                ]);
+            }
+
+            if($normalizedProvider == 'dropbox')
+            {
+                try {
+                    $dropboxClientId = trim((string)($user->dropbox_key ?? env('DROPBOX_CLIENT_ID', '')));
+                    $dropboxClientSecret = trim((string)($user->dropbox_secret ?? env('DROPBOX_CLIENT_SECRET', '')));
+                    $dropboxRedirectUri = trim((string)env('DROPBOX_REDIRECT_URI', ''));
+
+                    if($dropboxClientId == '' || $dropboxClientSecret == '' || $dropboxRedirectUri == '')
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Dropbox OAuth is not fully configured. Missing client id/secret/redirect URI.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    $tokenResponse = Http::asForm()
+                        ->acceptJson()
+                        ->timeout(20)
+                        ->post('https://api.dropboxapi.com/oauth2/token', [
+                            'code' => $oauthCode,
+                            'grant_type' => 'authorization_code',
+                            'client_id' => $dropboxClientId,
+                            'client_secret' => $dropboxClientSecret,
+                            'redirect_uri' => $dropboxRedirectUri,
+                        ]);
+
+                    if(!$tokenResponse->successful())
+                    {
+                        $errorPayload = $tokenResponse->json();
+                        $errorMessage = '';
+                        if(is_array($errorPayload))
+                        {
+                            $errorMessage = trim((string)($errorPayload['error_description'] ?? $errorPayload['error_summary'] ?? $errorPayload['error'] ?? ''));
+                        }
+                        if($errorMessage == '')
+                        {
+                            $errorMessage = 'Dropbox token exchange failed with HTTP ' . $tokenResponse->status();
+                        }
+
+                        return $this->redirectOAuthPopupResult(false, $errorMessage, [
+                            'provider' => $normalizedProvider,
+                            'status' => (int)$tokenResponse->status(),
+                        ]);
+                    }
+
+                    $tokenPayload = $tokenResponse->json();
+                    $accessToken = is_array($tokenPayload) ? trim((string)($tokenPayload['access_token'] ?? '')) : '';
+                    $refreshToken = is_array($tokenPayload) ? trim((string)($tokenPayload['refresh_token'] ?? '')) : '';
+                    if($accessToken == '' && $refreshToken != '')
+                    {
+                        $accessToken = $refreshToken;
+                    }
+                    if($accessToken == '')
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Dropbox did not return an access token.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    $updated = $this->user->updateData([
+                        'dropbox_access_token' => $accessToken,
+                    ], $userId);
+
+                    if(!$updated)
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Unable to save Dropbox token for this user.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    return $this->redirectOAuthPopupResult(true, 'Dropbox connected successfully.', [
+                        'provider' => $normalizedProvider,
+                    ]);
+                }
+                catch (\Throwable $e)
+                {
+                    return $this->redirectOAuthPopupResult(false, 'Dropbox OAuth callback failed: ' . $e->getMessage(), [
+                        'provider' => $normalizedProvider,
+                    ]);
+                }
+            }
+
+            return $this->redirectOAuthPopupResult(false, 'Unsupported provider callback flow.', [
+                'provider' => $normalizedProvider,
             ]);
         }
 
@@ -2192,8 +2561,6 @@ class VideoApiController extends ApiBaseController
                 return $this->errorWrongArgs(['At least one video file is required']);
             }
 
-            $preferredProvider = $this->resolvePreferredMigrationStorageProvider((string)$request->get('targetProvider', ''));
-
             $ownerUserId = trim((string)$request->get('id'));
             $resolvedDefaults = $this->resolveDefaultPrivacyAndChannel($ownerUserId);
             $privacyOption = $resolvedDefaults['privacyOption'];
@@ -2208,6 +2575,9 @@ class VideoApiController extends ApiBaseController
             {
                 return $this->errorWrongArgs(['Required privacy/channel configuration is missing']);
             }
+
+            $ownerUser = $this->user->find($ownerUserId);
+            $preferredProvider = $this->resolvePreferredMigrationStorageProvider((string)$request->get('targetProvider', ''), $ownerUser);
 
             $allowedMimePrefixes = ['video/', 'application/octet-stream'];
             $maxBytes = 5 * 1024 * 1024 * 1024;
@@ -2343,6 +2713,39 @@ class VideoApiController extends ApiBaseController
                         if($hetznerUpload['playbackUrl'] != '')
                         {
                             $playbackUrl = $hetznerUpload['playbackUrl'];
+                        }
+
+                        if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                        {
+                            File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                        }
+                    }
+                    elseif($preferredProvider == 'dropbox')
+                    {
+                        $dropboxUpload = $this->uploadFileToDropboxStorage($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename, $ownerUser);
+                        if(!$dropboxUpload['success'])
+                        {
+                            if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                            {
+                                File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                            }
+
+                            $message = trim((string)($dropboxUpload['error'] ?? ''));
+                            if($message == '')
+                            {
+                                $message = 'Dropbox upload failed. Video was not persisted locally because cloud storage is required.';
+                            }
+
+                            return $this->errorWrongArgs([$message]);
+                        }
+
+                        if($dropboxUpload['storageUrl'] != '')
+                        {
+                            $videoUrl = $dropboxUpload['storageUrl'];
+                        }
+                        if($dropboxUpload['playbackUrl'] != '')
+                        {
+                            $playbackUrl = $dropboxUpload['playbackUrl'];
                         }
 
                         if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
@@ -2508,7 +2911,6 @@ class VideoApiController extends ApiBaseController
             $totalChunks = max(1, (int)($meta['totalChunks'] ?? 1));
             $filename = trim((string)($meta['filename'] ?? 'video.bin'));
             $mimeType = trim((string)($meta['mimeType'] ?? 'application/octet-stream'));
-            $preferredProvider = $this->resolvePreferredMigrationStorageProvider((string)$request->get('targetProvider', (string)($meta['targetProvider'] ?? '')));
 
             $ownerUserId = trim((string)$request->get('id'));
             if($ownerUserId == '')
@@ -2529,6 +2931,12 @@ class VideoApiController extends ApiBaseController
             {
                 return $this->errorWrongArgs(['Required privacy/channel configuration is missing']);
             }
+
+            $ownerUser = $this->user->find($ownerUserId);
+            $preferredProvider = $this->resolvePreferredMigrationStorageProvider(
+                (string)$request->get('targetProvider', (string)($meta['targetProvider'] ?? '')),
+                $ownerUser
+            );
 
             $extension = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
             if($extension == '')
@@ -2642,6 +3050,40 @@ class VideoApiController extends ApiBaseController
                 if($hetznerUpload['playbackUrl'] != '')
                 {
                     $playbackUrl = $hetznerUpload['playbackUrl'];
+                }
+
+                if(File::exists($targetPath))
+                {
+                    File::delete($targetPath);
+                }
+            }
+            elseif($preferredProvider == 'dropbox')
+            {
+                $dropboxUpload = $this->uploadFileToDropboxStorage($targetPath, $ownerUser);
+                if(!$dropboxUpload['success'])
+                {
+                    if(File::exists($targetPath))
+                    {
+                        File::delete($targetPath);
+                    }
+                    File::deleteDirectory($chunkDir);
+
+                    $message = trim((string)($dropboxUpload['error'] ?? ''));
+                    if($message == '')
+                    {
+                        $message = 'Dropbox upload failed. Video was not persisted locally because cloud storage is required.';
+                    }
+
+                    return $this->errorWrongArgs([$message]);
+                }
+
+                if($dropboxUpload['storageUrl'] != '')
+                {
+                    $videoUrl = $dropboxUpload['storageUrl'];
+                }
+                if($dropboxUpload['playbackUrl'] != '')
+                {
+                    $playbackUrl = $dropboxUpload['playbackUrl'];
                 }
 
                 if(File::exists($targetPath))
@@ -2853,12 +3295,23 @@ class VideoApiController extends ApiBaseController
             ]);
         }
 
-        private function resolvePreferredMigrationStorageProvider($rawProvider = '')
+        private function resolvePreferredMigrationStorageProvider($rawProvider = '', $user = null)
         {
             $provider = strtolower(trim((string)$rawProvider));
             if($provider == '')
             {
                 $provider = strtolower(trim((string)env('MIGRATION_UPLOAD_PROVIDER', 'hetzner')));
+            }
+
+            if($provider == 'dropbox')
+            {
+                $credentials = $this->resolveDropboxCredentials($user);
+                if($credentials['client_id'] != '' && $credentials['client_secret'] != '' && $credentials['access_token'] != '')
+                {
+                    return 'dropbox';
+                }
+
+                return 'local';
             }
 
             if($provider == 'hetzner')
@@ -2924,6 +3377,17 @@ class VideoApiController extends ApiBaseController
 
                 $nodeId = trim((string)substr($resolvedPath, strlen('mega://')));
                 return $nodeId != '' ? $this->fetchMegaDownloadLinkViaNodeBridge($nodeId) : '';
+            }
+
+            if(stripos($resolvedPath, 'https://dl.dropboxusercontent.com/') === 0
+                || stripos($resolvedPath, 'http://dl.dropboxusercontent.com/') === 0)
+            {
+                if($proxyUrl != '')
+                {
+                    return $proxyUrl;
+                }
+
+                return $resolvedPath;
             }
 
             if(stripos($resolvedPath, 'hetzner://') === 0)
@@ -3632,6 +4096,40 @@ class VideoApiController extends ApiBaseController
         {
             $provider = strtolower(trim((string)$provider));
 
+            if($provider == 'dropbox')
+            {
+                $credentials = $this->resolveDropboxCredentials($user);
+                $missingFields = [];
+
+                if($credentials['client_id'] == '')
+                {
+                    $missingFields[] = 'dropbox_key_or_DROPBOX_CLIENT_ID';
+                }
+                if($credentials['client_secret'] == '')
+                {
+                    $missingFields[] = 'dropbox_secret_or_DROPBOX_CLIENT_SECRET';
+                }
+                if($credentials['access_token'] == '')
+                {
+                    $missingFields[] = 'dropbox_access_token';
+                }
+
+                if(!empty($missingFields))
+                {
+                    return [
+                        'connected' => false,
+                        'missing_fields' => $missingFields,
+                        'message' => 'Provider is not configured for this integration. Missing: ' . implode(', ', $missingFields),
+                    ];
+                }
+
+                return [
+                    'connected' => true,
+                    'missing_fields' => [],
+                    'message' => 'Provider credentials found. Connection ready.',
+                ];
+            }
+
             $providerRules = [
                 'gdrive' => [
                     'scope' => 'user',
@@ -3722,7 +4220,7 @@ class VideoApiController extends ApiBaseController
             ];
         }
 
-        private function buildProviderOAuthUrl($provider, $user)
+        private function buildProviderOAuthUrl($provider, $user, $state = '')
         {
             $provider = strtolower(trim((string)$provider));
 
@@ -3742,6 +4240,7 @@ class VideoApiController extends ApiBaseController
                     'scope' => 'https://www.googleapis.com/auth/drive.readonly',
                     'access_type' => 'offline',
                     'prompt' => 'consent',
+                    'state' => trim((string)$state),
                 ]);
             }
 
@@ -3759,6 +4258,7 @@ class VideoApiController extends ApiBaseController
                     'redirect_uri' => $redirectUri,
                     'response_type' => 'code',
                     'token_access_type' => 'offline',
+                    'state' => trim((string)$state),
                 ]);
             }
 
@@ -3797,6 +4297,86 @@ class VideoApiController extends ApiBaseController
             }
 
             return isset($fallbackMap[$provider]) ? $fallbackMap[$provider] : '';
+        }
+
+        private function providerOAuthStateCacheKey($state)
+        {
+            return 'oauth:provider:state:' . trim((string)$state);
+        }
+
+        private function generateProviderOAuthState($userId, $provider, $token = '', $clientId = '')
+        {
+            $provider = strtolower(trim((string)$provider));
+            $normalizedUserId = trim((string)$userId);
+            $normalizedToken = trim((string)$token);
+            $normalizedClientId = trim((string)$clientId);
+
+            $state = '';
+            try {
+                $state = bin2hex(random_bytes(24));
+            }
+            catch (\Throwable $e)
+            {
+                $state = md5($this->helper->addUuid() . microtime(true) . $normalizedUserId . $provider);
+            }
+
+            $cachePayload = [
+                'user_id' => $normalizedUserId,
+                'provider' => $provider,
+                'token' => $normalizedToken,
+                'client_id' => $normalizedClientId,
+                'created_at' => date('c'),
+            ];
+
+            Cache::put(
+                $this->providerOAuthStateCacheKey($state),
+                $cachePayload,
+                now()->addSeconds(OAUTH_PROVIDER_STATE_CACHE_TTL_SECONDS)
+            );
+
+            return $state;
+        }
+
+        private function consumeProviderOAuthState($state, $provider)
+        {
+            $resolvedState = trim((string)$state);
+            $resolvedProvider = strtolower(trim((string)$provider));
+            if($resolvedState == '' || $resolvedProvider == '')
+            {
+                return null;
+            }
+
+            $key = $this->providerOAuthStateCacheKey($resolvedState);
+            $payload = Cache::get($key);
+            Cache::forget($key);
+
+            if(!is_array($payload))
+            {
+                return null;
+            }
+
+            if(strtolower(trim((string)($payload['provider'] ?? ''))) !== $resolvedProvider)
+            {
+                return null;
+            }
+
+            return $payload;
+        }
+
+        private function redirectOAuthPopupResult($success, $message, array $payload = [])
+        {
+            $safeSuccess = $success ? 'true' : 'false';
+            $safeMessage = json_encode(trim((string)$message));
+            $safePayload = json_encode($payload);
+            $html = '<!doctype html><html><head><meta charset="utf-8"><title>OAuth Result</title></head><body>'
+                . '<script>(function(){'
+                . 'var msg={type:"provider-oauth-result",success:' . $safeSuccess . ',message:' . $safeMessage . ',payload:' . $safePayload . '};'
+                . 'try{if(window.opener&&window.opener!==window){window.opener.postMessage(msg,"*");}}catch(e){}'
+                . 'window.close();'
+                . '})();</script>'
+                . '</body></html>';
+
+            return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
         }
 
         private function fetchExternalProviderFiles($provider, $providerLabel)

@@ -471,15 +471,6 @@ export default function SettingsPage({
     navigate('/')
   }, [navigate])
 
-  const handleOpenTerms = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
-    setSlideoutVisible(false)
-  }, [])
-
   useEffect(() => {
     if (isChannelRoute) {
       setActiveNavIndex(0)
@@ -882,9 +873,9 @@ export default function SettingsPage({
             Frequently Asked Questions
             <i className="material-icons" aria-hidden="true">help</i>
           </button>
-          <button className="slideout-entry" role="menuitem" onClick={handleOpenTerms}>
-            Terms &amp; Conditions
-            <i className="material-icons" aria-hidden="true">gavel</i>
+          <button className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/theme-designer')}>
+            Theme Designer
+            <i className="material-icons" aria-hidden="true">format_paint</i>
           </button>
           {isAuthenticated ? (
             <button className="slideout-entry" role="menuitem" onClick={handleSignOut}>
@@ -900,10 +891,6 @@ export default function SettingsPage({
               <button className="slideout-entry" role="menuitem" onClick={() => navigate('/')}>
                 Log In
                 <i className="material-icons" aria-hidden="true">exit_to_app</i>
-              </button>
-              <button className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/theme-designer')}>
-                Theme Designer
-                <i className="material-icons" aria-hidden="true">format_paint</i>
               </button>
             </>
           )}

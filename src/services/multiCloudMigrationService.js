@@ -62,6 +62,68 @@ export async function beginProviderOAuth(providerId) {
   }
 }
 
+export function waitForProviderOAuthResult({ timeoutMs = 180000 } = {}) {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('OAuth result listener requires a browser environment.'))
+  }
+
+  return new Promise((resolve, reject) => {
+    let finished = false
+    let timeoutId = null
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+
+      window.removeEventListener('message', onMessage)
+    }
+
+    const resolveOnce = (payload) => {
+      if (finished) return
+      finished = true
+      cleanup()
+      resolve(payload)
+    }
+
+    const rejectOnce = (error) => {
+      if (finished) return
+      finished = true
+      cleanup()
+      reject(error)
+    }
+
+    const onMessage = (event) => {
+      const data = event?.data || {}
+      if (data?.type !== 'provider-oauth-result') {
+        return
+      }
+
+      const success = Boolean(data?.success)
+      const message = String(data?.message || '').trim()
+      const payload = data?.payload && typeof data.payload === 'object' ? data.payload : {}
+
+      if (!success) {
+        rejectOnce(new Error(message || 'Provider OAuth failed.'))
+        return
+      }
+
+      resolveOnce({
+        success,
+        message,
+        payload,
+      })
+    }
+
+    window.addEventListener('message', onMessage)
+    timeoutId = setTimeout(() => {
+      rejectOnce(new Error('Provider OAuth timed out. Please try connecting again.'))
+    }, Math.max(1000, Number(timeoutMs) || 180000))
+  })
+}
+
 export default {
   beginProviderOAuth,
+  waitForProviderOAuthResult,
 }

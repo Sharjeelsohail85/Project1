@@ -34,6 +34,7 @@ Route::group(['middleware' => ['web', 'general-access'], 'prefix' => 'api/v1', '
 });
 
 Route::group(['middleware' => ['web'], 'prefix' => 'api/v1', 'namespace' => 'App\Modules\Video\Controllers'], function(){
+    Route::get('oauth/{provider}/callback', 'VideoApiController@oauthProviderCallback');
     Route::get('/video/google/drive/upload',array('as'=>'glogin','uses'=>'VideoApiController@googleLogin'));
     Route::get('/video/google/user/list', array('as'=>'user.glist','uses' => 'VideoApiController@listGoogleUser'));
     
