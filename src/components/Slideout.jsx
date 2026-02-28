@@ -69,6 +69,11 @@ const Slideout = memo(function Slideout({
     window.open('/TERMS_AND_CONDITIONS.md', '_blank', 'noopener,noreferrer')
   }, [])
 
+  const handleOpenPrivacy = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.open('/PRIVACY_POLICY.md', '_blank', 'noopener,noreferrer')
+  }, [])
+
   const handleSignOut = useCallback(() => {
     if (typeof onSignOut === 'function') {
       onSignOut()
@@ -90,6 +95,19 @@ const Slideout = memo(function Slideout({
       aria-hidden={!visible}
     >
       <nav className="slideout-technical" aria-label="Menu options">
+        {!isAuthenticated ? (
+          <>
+            <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
+              Sign Up
+              <i className="material-icons" aria-hidden="true">person_add</i>
+            </button>
+            <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>
+              Log In
+              <i className="material-icons" aria-hidden="true">exit_to_app</i>
+            </button>
+          </>
+        ) : null}
+
         {isAuthenticated ? (
           <button
             className={`slideout-entry ${isChannelPage ? 'active' : ''}`}
@@ -119,6 +137,10 @@ const Slideout = memo(function Slideout({
           Terms &amp; Conditions
           <i className="material-icons" aria-hidden="true">gavel</i>
         </button>
+        <button className="slideout-entry" role="menuitem" onClick={handleOpenPrivacy}>
+          Privacy Policy
+          <i className="material-icons" aria-hidden="true">policy</i>
+        </button>
 
         {isAuthenticated ? (
           <button className="slideout-entry" id="showit" role="menuitem" onClick={handleSignOut}>
@@ -127,14 +149,6 @@ const Slideout = memo(function Slideout({
           </button>
         ) : (
           <>
-            <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
-              Sign Up
-              <i className="material-icons" aria-hidden="true">person_add</i>
-            </button>
-            <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>
-              Log In
-              <i className="material-icons" aria-hidden="true">exit_to_app</i>
-            </button>
             <button
               className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
               role="menuitem"
