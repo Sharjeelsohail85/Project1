@@ -1,10 +1,7 @@
 import axios from 'axios'
-import { clearAuthTokens } from '../config/api.config'
+import { API_CONFIG, clearAuthTokens } from '../config/api.config'
 
-const API_BASE_URL =
-  import.meta.env.REACT_APP_API_BASE_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  ''
+const API_BASE_URL = String(API_CONFIG?.baseURL || '').trim()
 
 const AUTH_TOKEN_KEY = 'auth_token'
 const IS_DEV = import.meta.env.DEV
