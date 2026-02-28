@@ -372,6 +372,16 @@ function App() {
   }, [navigate])
 
   const openPostPage = useCallback(() => {
+    if (!isAuthenticated) {
+      setPromoActive(false)
+      setSignupActive(false)
+      setLoginActive(true)
+      setUploadActive(false)
+      setDailyActive(false)
+      navigate('/login')
+      return
+    }
+
     setPromoActive(false)
     setSignupActive(false)
     setLoginActive(false)
@@ -380,7 +390,7 @@ function App() {
     setSignupStep(1)
     setUploadStep(1)
     navigate('/studio/migrate')
-  }, [navigate])
+  }, [isAuthenticated, navigate])
 
   const hideSignup = useCallback(() => {
     setSignupActive(false)
@@ -407,7 +417,10 @@ function App() {
     setPromoActive(false)
     setLoginActive(true)
     setSignupActive(false)
-  }, [])
+    setUploadActive(false)
+    setDailyActive(false)
+    navigate('/login')
+  }, [navigate])
 
   // Handle main-page "Log In" button: either show login prompt or go straight to Post page
   const handleRequestLogin = useCallback(() => {
@@ -543,8 +556,26 @@ function App() {
     } catch {
       // ignore
     }
-    navigate('/post')
+    navigate('/studio/migrate')
   }, [navigate])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return
+    }
+
+    const isPostRoute = location.pathname === '/post' || location.pathname === '/studio/migrate'
+    if (!isPostRoute) {
+      return
+    }
+
+    setPromoActive(false)
+    setSignupActive(false)
+    setUploadActive(false)
+    setDailyActive(false)
+    setLoginActive(true)
+    navigate('/login', { replace: true })
+  }, [isAuthenticated, location.pathname, navigate])
   
   // Check authentication status on mount and route changes
   useEffect(() => {
@@ -906,6 +937,7 @@ function App() {
 
       {/* Always render main content; it will manage overlays internally */}
       <Content
+        isAuthenticated={isAuthenticated}
         currentPath={location.pathname}
         currentVideoSource={currentVideoSource}
         dailyActive={dailyActive}
@@ -943,8 +975,15 @@ function App() {
       />
 
       <Routes>
-        <Route path="/post" element={<Navigate to="/studio/migrate" replace />} />
-        <Route path="/studio/migrate" element={null} />
+        <Route
+          path="/post"
+          element={<Navigate to={isAuthenticated ? '/studio/migrate' : '/login'} replace />}
+        />
+        <Route
+          path="/studio/migrate"
+          element={isAuthenticated ? null : <Navigate to="/login" replace />}
+        />
+        <Route path="/login" element={null} />
         <Route path="/watch/:videoId" element={null} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

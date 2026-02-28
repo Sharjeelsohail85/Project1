@@ -6,6 +6,7 @@ const Slideout = memo(function Slideout({
   visible,
   onColorChange,
   onShowPromo,
+  onShowSignup,
   onShowLogin,
   onOpenSettings,
   onOpenChannel,
@@ -36,6 +37,15 @@ const Slideout = memo(function Slideout({
 
     handleShowPromo()
   }, [handleShowPromo, onShowLogin])
+
+  const handleShowSignup = useCallback(() => {
+    if (typeof onShowSignup === 'function') {
+      onShowSignup()
+      return
+    }
+
+    handleShowPromo()
+  }, [handleShowPromo, onShowSignup])
 
   const handleOpenThemeDesigner = useCallback(() => {
     if (typeof onOpenThemeDesigner === 'function') onOpenThemeDesigner()
@@ -75,6 +85,11 @@ const Slideout = memo(function Slideout({
       aria-hidden={!visible}
     >
       <nav className="slideout-technical" aria-label="Menu options">
+        <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
+          Sign Up
+          <i className="material-icons" aria-hidden="true">person_add</i>
+        </button>
+
         {!isAuthenticated ? (
           <>
             <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>

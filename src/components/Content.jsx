@@ -8,6 +8,7 @@ import useSmoothWheelScroll from '../hooks/useSmoothWheelScroll'
 
 const Content = memo(function Content({
   currentPath,
+  isAuthenticated,
   currentVideoSource,
   dailyActive,
   promoActive,
@@ -47,6 +48,7 @@ const Content = memo(function Content({
   const isPostRoute = currentPath === '/post'
   const isStudioMigrateRoute = currentPath === '/studio/migrate'
   const isCenterPageRoute = isPostRoute || isStudioMigrateRoute
+  const canAccessCenterPage = isCenterPageRoute && isAuthenticated
   const contentClass = `content ${!dailyActive ? 'alternate' : ''} ${isModalOpen ? 'modal-open' : ''}`
 
   useSmoothWheelScroll(contentRef, {
@@ -88,7 +90,7 @@ const Content = memo(function Content({
   role="main"
 >
 
-      {isCenterPageRoute ? (
+      {canAccessCenterPage ? (
         isStudioMigrateRoute
           ? <MigratePostPage />
           : <PostPage onClose={onCloseCenterPage} onVideoReady={onVideoReadyFromPost} />
