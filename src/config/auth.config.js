@@ -24,12 +24,37 @@ function isLocalhostHost(hostname) {
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
 }
 
+function enforceHttpsForPublicOrigin(origin) {
+  const parsed = parseUrlSafe(origin)
+  if (!parsed) {
+    return origin
+  }
+
+  if (!isLocalhostHost(parsed.hostname) && parsed.protocol !== 'https:') {
+    parsed.protocol = 'https:'
+  }
+
+  return parsed.origin
+}
+
+function normalizePath(pathname, fallbackPath) {
+  const preferredPath = String(pathname || '').trim() || String(fallbackPath || '').trim() || '/'
+  return preferredPath.startsWith('/') ? preferredPath : `/${preferredPath}`
+}
+
+function buildAbsoluteRedirect(origin, pathname, search = '') {
+  const normalizedOrigin = String(origin || '').trim().replace(/\/$/, '')
+  const normalizedPath = normalizePath(pathname, '/auth/google/callback')
+  const normalizedSearch = String(search || '').trim()
+  return `${normalizedOrigin}${normalizedPath}${normalizedSearch}`
+}
+
 function resolveRedirectUri(configuredValue, fallbackPath) {
-  const runtimeOrigin = getOriginSafe()
+  const runtimeOrigin = enforceHttpsForPublicOrigin(getOriginSafe())
   const configured = String(configuredValue || '').trim()
 
   if (!configured) {
-    return `${runtimeOrigin}${fallbackPath}`
+    return buildAbsoluteRedirect(runtimeOrigin, fallbackPath)
   }
 
   const configuredUrl = parseUrlSafe(configured)
@@ -42,12 +67,18 @@ function resolveRedirectUri(configuredValue, fallbackPath) {
     return configured
   }
 
-  if (isLocalhostHost(configuredUrl.hostname) && !isLocalhostHost(runtimeUrl.hostname)) {
-    const path = configuredUrl.pathname || fallbackPath
-    return `${runtimeUrl.origin}${path}${configuredUrl.search}`
+  const configuredIsLocal = isLocalhostHost(configuredUrl.hostname)
+  const runtimeIsLocal = isLocalhostHost(runtimeUrl.hostname)
+
+  if (configuredIsLocal !== runtimeIsLocal) {
+    return buildAbsoluteRedirect(runtimeUrl.origin, configuredUrl.pathname || fallbackPath, configuredUrl.search)
   }
 
-  return configured
+  if (!configuredIsLocal && configuredUrl.protocol !== 'https:') {
+    return buildAbsoluteRedirect(`https://${configuredUrl.host}`, configuredUrl.pathname || fallbackPath, configuredUrl.search)
+  }
+
+  return buildAbsoluteRedirect(configuredUrl.origin, configuredUrl.pathname || fallbackPath, configuredUrl.search)
 }
 
 function getSessionStorageSafe() {
