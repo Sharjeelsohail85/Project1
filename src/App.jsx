@@ -878,6 +878,8 @@ function App() {
         visible={slideoutVisible}
         onColorChange={handleColorChange}
         onShowPromo={showPromo}
+        onShowSignup={showSignup}
+        onShowLogin={showLogin}
         onOpenSettings={openSettings}
         onOpenThemeDesigner={openThemeDesigner}
         onOpenChannel={openChannel}

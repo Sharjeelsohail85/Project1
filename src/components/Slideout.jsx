@@ -6,6 +6,8 @@ const Slideout = memo(function Slideout({
   visible,
   onColorChange,
   onShowPromo,
+  onShowSignup,
+  onShowLogin,
   onOpenSettings,
   onOpenChannel,
   onOpenFaq,
@@ -26,6 +28,24 @@ const Slideout = memo(function Slideout({
   const handleOpenSettings = useCallback(() => {
     if (typeof onOpenSettings === 'function') onOpenSettings()
   }, [onOpenSettings])
+
+  const handleShowSignup = useCallback(() => {
+    if (typeof onShowSignup === 'function') {
+      onShowSignup()
+      return
+    }
+
+    handleShowPromo()
+  }, [handleShowPromo, onShowSignup])
+
+  const handleShowLogin = useCallback(() => {
+    if (typeof onShowLogin === 'function') {
+      onShowLogin()
+      return
+    }
+
+    handleShowPromo()
+  }, [handleShowPromo, onShowLogin])
 
   const handleOpenThemeDesigner = useCallback(() => {
     if (typeof onOpenThemeDesigner === 'function') onOpenThemeDesigner()
@@ -106,14 +126,24 @@ const Slideout = memo(function Slideout({
             <i className="material-icons" aria-hidden="true">exit_to_app</i>
           </button>
         ) : (
-          <button
-            className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
-            role="menuitem"
-            onClick={handleOpenThemeDesigner}
-          >
-            Theme Designer
-            <i className="material-icons" aria-hidden="true">format_paint</i>
-          </button>
+          <>
+            <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
+              Sign Up
+              <i className="material-icons" aria-hidden="true">person_add</i>
+            </button>
+            <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>
+              Log In
+              <i className="material-icons" aria-hidden="true">exit_to_app</i>
+            </button>
+            <button
+              className={`slideout-entry ${isThemeDesignerPage ? 'active' : ''}`}
+              role="menuitem"
+              onClick={handleOpenThemeDesigner}
+            >
+              Theme Designer
+              <i className="material-icons" aria-hidden="true">format_paint</i>
+            </button>
+          </>
         )}
       </nav>
 
