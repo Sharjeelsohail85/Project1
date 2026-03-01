@@ -85,13 +85,13 @@ const Slideout = memo(function Slideout({
       aria-hidden={!visible}
     >
       <nav className="slideout-technical" aria-label="Menu options">
-        <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
-          Sign Up
-          <i className="material-icons" aria-hidden="true">person_add</i>
-        </button>
-
         {!isAuthenticated ? (
           <>
+            <button className="slideout-entry" role="menuitem" onClick={handleShowSignup}>
+              Sign Up
+              <i className="material-icons" aria-hidden="true">person_add</i>
+            </button>
+
             <button className="slideout-entry" role="menuitem" onClick={handleShowLogin}>
               Log In
               <i className="material-icons" aria-hidden="true">exit_to_app</i>

@@ -7,6 +7,7 @@ import Login from './Login'
 
 const TopWrap = memo(function TopWrap({
   currentVideoSource,
+  isAuthenticated,
   dailyActive,
   promoActive,
   signupActive,
@@ -65,6 +66,7 @@ const TopWrap = memo(function TopWrap({
       
       <PromoOverlay
         active={promoActive}
+        isAuthenticated={isAuthenticated}
         currentSlide={currentPromoSlide}
         onHidePromo={onCloseCenterPage || onHidePromo}
         onNextPromo={onNextPromo}

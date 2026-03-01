@@ -33,6 +33,119 @@ const PERSONALIZATION_EFFECT_CLASS_MAP = {
   mixingItUp: 'theme-effect-mixing',
 }
 
+const DEFAULT_AUTH_SUBSCRIBER_COUNT = 304
+
+function canUseLocalStorage() {
+  return typeof window !== 'undefined' && !!window.localStorage
+}
+
+function parseSubscriberCountValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+    return Math.round(value)
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value.trim().replace(/,/g, '')
+  if (!normalized) {
+    return null
+  }
+
+  const compactMatch = normalized.match(/^(\d+(?:\.\d+)?)([kmb])$/i)
+  if (compactMatch) {
+    const numericPart = Number(compactMatch[1])
+    const suffix = compactMatch[2].toLowerCase()
+    if (!Number.isFinite(numericPart) || numericPart < 0) {
+      return null
+    }
+
+    const multiplier = suffix === 'k'
+      ? 1000
+      : suffix === 'm'
+        ? 1000000
+        : 1000000000
+
+    return Math.round(numericPart * multiplier)
+  }
+
+  const parsed = Number.parseInt(normalized, 10)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null
+  }
+
+  return parsed
+}
+
+function resolveSubscriberCountFromUserInfo(userInfo) {
+  if (!userInfo || typeof userInfo !== 'object') {
+    return null
+  }
+
+  const candidates = [
+    userInfo.subscriber_count,
+    userInfo.subscriberCount,
+    userInfo.subscribers,
+    userInfo.followers,
+    userInfo.follower_count,
+    userInfo.followers_count,
+    userInfo.followersCount,
+    userInfo.stats?.subscriber_count,
+    userInfo.stats?.subscriberCount,
+    userInfo.stats?.subscribers,
+    userInfo.metrics?.subscriber_count,
+    userInfo.metrics?.subscriberCount,
+    userInfo.metrics?.subscribers,
+    userInfo.metrics?.followers,
+  ]
+
+  for (const candidate of candidates) {
+    const parsed = parseSubscriberCountValue(candidate)
+    if (parsed !== null) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+function getStoredSubscriberCount() {
+  try {
+    if (!canUseLocalStorage()) {
+      return null
+    }
+
+    const raw = localStorage.getItem('user_info')
+    if (!raw) {
+      return null
+    }
+
+    const parsed = JSON.parse(raw)
+    return resolveSubscriberCountFromUserInfo(parsed)
+  } catch {
+    return null
+  }
+}
+
+function formatSubscriberCountLabel(value) {
+  if (!Number.isFinite(value) || value < 0) {
+    return '0'
+  }
+
+  if (value >= 1000000) {
+    const compact = value >= 10000000 ? (value / 1000000).toFixed(0) : (value / 1000000).toFixed(1)
+    return `${compact.replace(/\.0$/, '')}M`
+  }
+
+  if (value >= 1000) {
+    const compact = value >= 100000 ? (value / 1000).toFixed(0) : (value / 1000).toFixed(1)
+    return `${compact.replace(/\.0$/, '')}K`
+  }
+
+  return String(value)
+}
+
 // Keep runtime-injected styles minimal.
 // Responsive layout behavior is centralized in css/style.css.
 const inlineStyles = `
@@ -54,6 +167,21 @@ function App() {
       return false
     }
   })
+  const [subscriberCount, setSubscriberCount] = useState(() => {
+    let auth = false
+    try {
+      auth = checkAuth()
+    } catch {
+      auth = false
+    }
+
+    if (!auth) {
+      return null
+    }
+
+    return getStoredSubscriberCount() ?? DEFAULT_AUTH_SUBSCRIBER_COUNT
+  })
+  const subscriberCountLabel = formatSubscriberCountLabel(subscriberCount ?? DEFAULT_AUTH_SUBSCRIBER_COUNT)
   
   // State management - initialize from localStorage when available (replaces Cookies.get from original)
   const [slideoutVisible, setSlideoutVisible] = useState(false)
@@ -439,6 +567,7 @@ function App() {
 
   const handleUnauthorized = useCallback(() => {
     setIsAuthenticated(false)
+    setSubscriberCount(null)
     setSignupActive(false)
     setUploadActive(false)
     setDailyActive(false)
@@ -457,6 +586,7 @@ function App() {
 
     setSlideoutVisible(false)
     setIsAuthenticated(false)
+    setSubscriberCount(null)
     setSignupActive(false)
     setUploadActive(false)
     setDailyActive(false)
@@ -476,9 +606,12 @@ function App() {
 
     const onAuthLogin = () => {
       try {
-        setIsAuthenticated(checkAuth())
+        const auth = checkAuth()
+        setIsAuthenticated(auth)
+        setSubscriberCount(auth ? (getStoredSubscriberCount() ?? DEFAULT_AUTH_SUBSCRIBER_COUNT) : null)
       } catch {
         setIsAuthenticated(false)
+        setSubscriberCount(null)
       }
     }
 
@@ -545,6 +678,7 @@ function App() {
   // Successful login: mark authenticated, hide login, and go to Post page
   const handleLoginSuccess = useCallback(() => {
     setIsAuthenticated(true)
+    setSubscriberCount(getStoredSubscriberCount() ?? DEFAULT_AUTH_SUBSCRIBER_COUNT)
     setLoginActive(false)
     setSignupActive(false)
     setPromoActive(false)
@@ -587,6 +721,7 @@ function App() {
     }
 
     setIsAuthenticated(auth)
+    setSubscriberCount(auth ? (getStoredSubscriberCount() ?? DEFAULT_AUTH_SUBSCRIBER_COUNT) : null)
     
     // Keep home defaulting to the promo/content page.
     // Only auto-open daily when promo is not active.
@@ -823,9 +958,9 @@ function App() {
     setLoginActive(false)
     setUploadActive(false)
     setDailyActive(false)
-    setPromoActive(true)
+    setPromoActive(!isAuthenticated)
     navigate('/')
-  }, [navigate])
+  }, [isAuthenticated, navigate])
 
   if (isSettingsRoute) {
     return (
@@ -912,6 +1047,8 @@ function App() {
         onToggleDaily={toggleDaily}
         onShowUpload={openPostPage}
         onLogoHome={handleLogoHome}
+        isAuthenticated={isAuthenticated}
+        subscriberCount={subscriberCountLabel}
         searchVisible={searchVisible}
         dailyActive={dailyActive}
       />

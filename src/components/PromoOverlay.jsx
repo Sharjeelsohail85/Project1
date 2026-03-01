@@ -21,6 +21,7 @@ const PROMO_SLIDES = [
 
 const PromoOverlay = memo(function PromoOverlay({
   active,
+  isAuthenticated = false,
   currentSlide,
   onHidePromo,
   onNextPromo,
@@ -75,43 +76,26 @@ const PromoOverlay = memo(function PromoOverlay({
             />
           </div>
         ))}
-        <div className="promoverlay-button-row" role="group" aria-label="Authentication actions">
-          <button
-            id="promoverlaySignup"
-            className="promoverlay-signup promoverlay-button button-flat"
-            onClick={() => onShowSignup?.()}
-          >
-            <i className="material-icons" aria-hidden="true">person_add</i>
-            Sign Up
-          </button>
-          <button
-            id="promoverlayLogin"
-            className="promoverlay-login promoverlay-button button-flat"
-            onClick={() => onShowLogin?.()}
-          >
-            <i className="material-icons" aria-hidden="true">exit_to_app</i>
-            Log In
-          </button>
-        </div>
-        <div className="promoverlay-legal-links" role="navigation" aria-label="Legal links">
-          <a
-            href="/PRIVACY_POLICY.md"
-            className="promoverlay-legal-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-          <span className="promoverlay-legal-separator" aria-hidden="true">•</span>
-          <a
-            href="/TERMS_AND_CONDITIONS.md"
-            className="promoverlay-legal-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms &amp; Conditions
-          </a>
-        </div>
+        {!isAuthenticated ? (
+          <div className="promoverlay-button-row" role="group" aria-label="Authentication actions">
+            <button
+              id="promoverlaySignup"
+              className="promoverlay-signup promoverlay-button button-flat"
+              onClick={() => onShowSignup?.()}
+            >
+              <i className="material-icons" aria-hidden="true">person_add</i>
+              Sign Up
+            </button>
+            <button
+              id="promoverlayLogin"
+              className="promoverlay-login promoverlay-button button-flat"
+              onClick={() => onShowLogin?.()}
+            >
+              <i className="material-icons" aria-hidden="true">exit_to_app</i>
+              Log In
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Left-side tagline under the SVG title */}

@@ -97,6 +97,7 @@ const Content = memo(function Content({
       ) : (
         <TopWrap
           currentVideoSource={currentVideoSource}
+          isAuthenticated={isAuthenticated}
           dailyActive={dailyActive}
           promoActive={promoActive}
           signupActive={signupActive}

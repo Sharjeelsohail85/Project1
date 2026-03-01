@@ -10,6 +10,8 @@ const Titlebar = memo(function Titlebar({
   onToggleDaily,
   onShowUpload,
   onLogoHome,
+  isAuthenticated = false,
+  subscriberCount = '0',
   searchVisible,
   dailyActive
 }) {
@@ -162,6 +164,17 @@ const Titlebar = memo(function Titlebar({
 
       {/* Account/Menu Section */}
       <div id="accountBox" className="titlebar-box titlebar-right">
+        {isAuthenticated ? (
+          <div
+            id="titlebarSubs"
+            className="titlebar-item titlebar-right-item titlebar-subs"
+            aria-label={`${subscriberCount} subscribers`}
+            title={`${subscriberCount} subscribers`}
+          >
+            {subscriberCount}
+            <i className="material-icons" aria-hidden="true">wc</i>
+          </div>
+        ) : null}
         <button
           id="titlebarMenu"
           className="titlebar-item titlebar-left-item titlebar-menu"
