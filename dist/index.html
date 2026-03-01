@@ -14,102 +14,7 @@
     />
 
 
-    <script>
-      (function () {
-        if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
-          return;
-        }
-
-        var originalFetch = window.fetch.bind(window);
-
-        function parseRequestUrl(input) {
-          try {
-            if (typeof input === 'string') {
-              return new URL(input, window.location.href);
-            }
-
-            if (input && typeof input.url === 'string') {
-              return new URL(input.url, window.location.href);
-            }
-          } catch {
-            return null;
-          }
-
-          return null;
-        }
-
-        function normalizeProvider(value) {
-          var provider = String(value || 'google').trim().toLowerCase();
-          return provider || 'google';
-        }
-
-        function getProviderFromBody(body) {
-          if (typeof body !== 'string') {
-            return 'google';
-          }
-
-          try {
-            var parsed = JSON.parse(body);
-            return normalizeProvider(parsed && parsed.data && parsed.data.provider);
-          } catch {
-            return 'google';
-          }
-        }
-
-        function buildFallbackPayload(provider) {
-          var normalizedProvider = normalizeProvider(provider);
-          var providerLabel = normalizedProvider.charAt(0).toUpperCase() + normalizedProvider.slice(1);
-          var now = Date.now();
-          var id = now + '-' + Math.random().toString(36).slice(2, 10);
-
-          return {
-            status: 200,
-            data: {
-              token: 'oauth-demo-token-' + id,
-              client_id: 'web_oauth_client',
-              device: 'web-browser',
-              os: 'web',
-              user: {
-                uuid: 'oauth-demo-user-' + id,
-                first_name: providerLabel,
-                last_name: 'User',
-                email: normalizedProvider + '.' + now + '@octopussol.local',
-                registration_type: normalizedProvider,
-                active: 1,
-                color: null
-              },
-              fallback_mode: true
-            }
-          };
-        }
-
-        window.fetch = function (input, init) {
-          try {
-            var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-            var parsedUrl = parseRequestUrl(input);
-
-            if (method === 'POST' && parsedUrl && parsedUrl.pathname === '/api/v1/auth/oauth/callback') {
-              var provider = getProviderFromBody(init && init.body);
-              var payload = buildFallbackPayload(provider);
-
-              return Promise.resolve(new Response(JSON.stringify(payload), {
-                status: 200,
-                headers: {
-                  'Content-Type': 'application/json; charset=utf-8',
-                  'Cache-Control': 'no-store'
-                }
-              }));
-            }
-          } catch {
-            // ignore shim errors and fall through to native fetch
-          }
-
-          return originalFetch(input, init);
-        };
-      })();
-    </script>
-
-    <script type="module" crossorigin src="/assets/index-Drx4PhDu.js"></script>
+    <script type="module" crossorigin src="/assets/index-C6vZJbTT.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DCiPwIi-.css">
   </head>
   <body>
@@ -249,7 +154,7 @@
               return rawUrl
             }
 
-            if (!parsedUrl.pathname.startsWith('/api/v1')) {
+            if (parsedUrl.pathname !== '/api/v1/auth/oauth/callback') {
               return rawUrl
             }
 
