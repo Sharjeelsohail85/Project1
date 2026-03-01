@@ -7,6 +7,7 @@ const DEFAULT_PROGRESS_STATE = {
   stage: '',
   completed: false,
   videoId: null,
+  playbackUrl: '',
   error: '',
   providerUploadWarning: '',
 }
@@ -175,6 +176,7 @@ export function useVideoMigration() {
     const completed = Boolean(payload?.completed)
     const stage = String(payload?.stage || '').trim().toLowerCase()
     const videoIdRaw = payload?.videoId ?? payload?.video_id ?? null
+    const playbackUrlRaw = String(payload?.playbackUrl || payload?.playback_url || '').trim()
 
     setProgressState((previous) => ({
       ...previous,
@@ -183,6 +185,7 @@ export function useVideoMigration() {
       stage,
       completed,
       videoId: videoIdRaw == null || String(videoIdRaw).trim() === '' ? previous.videoId : videoIdRaw,
+      playbackUrl: playbackUrlRaw || previous.playbackUrl,
       error: '',
       providerUploadWarning: Number.isFinite(validationResult?.size)
         && validationResult.size > 2 * 1024 * 1024 * 1024
@@ -295,11 +298,17 @@ export function useVideoMigration() {
   const startMigration = useCallback(async (payload) => {
     const sourceUrl = String(payload?.sourceUrl || '').trim()
     const provider = String(payload?.provider || '').trim().toLowerCase()
+    const sourceType = String(payload?.sourceType || 'url').trim().toLowerCase()
+    const localFile = payload?.localFile || null
     const metadata = normalizeMetadata(payload?.metadata)
 
-    const validation = validateSourceUrl(sourceUrl)
-    if (!validation.valid) {
-      throw new Error(validation.reason)
+    if (sourceType !== 'local') {
+      const validation = validateSourceUrl(sourceUrl)
+      if (!validation.valid) {
+        throw new Error(validation.reason)
+      }
+    } else if (!localFile) {
+      throw new Error('Select a local video file before starting migration.')
     }
 
     if (!provider) {
@@ -319,6 +328,71 @@ export function useVideoMigration() {
 
     try {
       const authParams = requireMigrationAuthParams()
+
+      if (sourceType === 'local') {
+        setProgressState((previous) => ({
+          ...previous,
+          stage: 'uploading',
+          progress: 10,
+          completed: false,
+          error: '',
+        }))
+
+        const uploadPayload = new FormData()
+        uploadPayload.append('video', localFile)
+        uploadPayload.append('targetProvider', provider)
+        uploadPayload.append('title', metadata.title)
+        uploadPayload.append('description', metadata.description)
+        uploadPayload.append('thumbnail', metadata.thumbnail)
+        uploadPayload.append('visibility', metadata.visibility)
+        uploadPayload.append('tags', JSON.stringify(Array.isArray(metadata.tags) ? metadata.tags : []))
+        uploadPayload.append('token', authParams.token)
+        uploadPayload.append('client_id', authParams.client_id)
+
+        const response = await apiClient.post('/storage/upload', uploadPayload)
+        const data = response?.data?.data || response?.data || {}
+        const files = Array.isArray(data?.files) ? data.files : []
+        const primaryFile = files[0] || {}
+
+        const videoId = String(
+          primaryFile?.videoUuid
+          || primaryFile?.fileId
+          || primaryFile?.id
+          || '',
+        ).trim()
+        const playbackUrl = String(primaryFile?.playbackUrl || '').trim()
+
+        if (!videoId) {
+          throw new Error('Storage upload did not return a video id.')
+        }
+
+        const uploadJobId = `upload-${videoId}`
+
+        setProgressState({
+          jobId: uploadJobId,
+          progress: 100,
+          stage: 'finalizing',
+          completed: true,
+          videoId,
+          playbackUrl,
+          error: '',
+          providerUploadWarning: '',
+        })
+
+        setValidationResult({
+          valid: true,
+          size: Number(primaryFile?.size || 0),
+          mime: String(primaryFile?.mimeType || localFile?.type || 'video/mp4'),
+          filename: String(primaryFile?.originalFilename || localFile?.name || ''),
+        })
+
+        return {
+          jobId: uploadJobId,
+          videoId,
+          playbackUrl,
+        }
+      }
+
       const response = await apiClient.post('/migration/start', {
         sourceUrl,
         provider,

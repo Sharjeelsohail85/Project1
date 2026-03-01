@@ -27,6 +27,7 @@ use Symfony\Component\Process\Process;
 use App\Jobs\MigrateVideoJob;
 
 use Google_Service_Drive_Permission;
+use Google_Service_Drive_DriveFile;
 use Kunnu\Dropbox\DropboxFile;
 use Kunnu\Dropbox\DropboxApp;
 use Kunnu\Dropbox\Dropbox;
@@ -37,6 +38,7 @@ use Google_Service_YouTube_VideoStatus;
 use Google_Service_YouTube_VideoSnippet;
 use Google_Service_YouTube_Video;
 use Google_Http_MediaFileUpload;
+use Aws\S3\S3Client;
 
 const MIGRATION_JOB_CACHE_TTL_SECONDS = 3600;
 const OAUTH_PROVIDER_STATE_CACHE_TTL_SECONDS = 600;
@@ -608,7 +610,52 @@ class VideoApiController extends ApiBaseController
         $tempPublicPath = '';
 
         try {
-            if($storageProvider == 'terabox')
+            if($storageProvider == 'gdrive')
+            {
+                $providerUpload = $this->uploadFileToGoogleDriveStorage($downloadedPath, $ownerUser);
+                if(!$providerUpload['success'])
+                {
+                    throw new \RuntimeException(trim((string)($providerUpload['error'] ?? 'Google Drive upload failed.')));
+                }
+
+                $videoUrl = trim((string)($providerUpload['storageUrl'] ?? ''));
+                if($videoUrl == '')
+                {
+                    throw new \RuntimeException('Google Drive upload did not return storage URL.');
+                }
+                $playbackUrl = trim((string)($providerUpload['playbackUrl'] ?? ''));
+            }
+            elseif($storageProvider == 's3')
+            {
+                $providerUpload = $this->uploadFileToS3Storage($downloadedPath, $storedFilename);
+                if(!$providerUpload['success'])
+                {
+                    throw new \RuntimeException(trim((string)($providerUpload['error'] ?? 'S3 upload failed.')));
+                }
+
+                $videoUrl = trim((string)($providerUpload['storageUrl'] ?? ''));
+                if($videoUrl == '')
+                {
+                    throw new \RuntimeException('S3 upload did not return storage URL.');
+                }
+                $playbackUrl = trim((string)($providerUpload['playbackUrl'] ?? ''));
+            }
+            elseif($storageProvider == 'idrive')
+            {
+                $providerUpload = $this->uploadFileToIdriveStorage($downloadedPath, $storedFilename);
+                if(!$providerUpload['success'])
+                {
+                    throw new \RuntimeException(trim((string)($providerUpload['error'] ?? 'IDrive upload failed.')));
+                }
+
+                $videoUrl = trim((string)($providerUpload['storageUrl'] ?? ''));
+                if($videoUrl == '')
+                {
+                    throw new \RuntimeException('IDrive upload did not return storage URL.');
+                }
+                $playbackUrl = trim((string)($providerUpload['playbackUrl'] ?? ''));
+            }
+            elseif($storageProvider == 'terabox')
             {
                 $providerUpload = $this->uploadFileToTeraboxViaNodeBridge($downloadedPath);
                 if(!$providerUpload['success'])
@@ -1716,6 +1763,1123 @@ class VideoApiController extends ApiBaseController
             ];
         }
 
+        private function resolveGoogleCredentials($user = null)
+        {
+            $userClientId = '';
+            $userClientSecret = '';
+            $userApiKey = '';
+            $userAccessToken = '';
+            $userRefreshToken = '';
+            $userTokenExpiresAt = '';
+            $userFolderId = '';
+
+            if($user)
+            {
+                $userClientId = trim((string)($user->google_client_id ?? ''));
+                $userClientSecret = trim((string)($user->google_client_secret ?? ''));
+                $userApiKey = trim((string)($user->google_api_key ?? ''));
+                $userAccessToken = trim((string)($user->google_access_token ?? ''));
+                $userRefreshToken = trim((string)($user->google_refresh_token ?? ''));
+                $userTokenExpiresAt = trim((string)($user->google_token_expires_at ?? ''));
+                $userFolderId = trim((string)($user->google_folder_id ?? ''));
+            }
+
+            return [
+                'client_id' => $userClientId != ''
+                    ? $userClientId
+                    : trim((string)env('GOOGLE_CLIENT_ID', '')),
+                'client_secret' => $userClientSecret != ''
+                    ? $userClientSecret
+                    : trim((string)env('GOOGLE_CLIENT_SECRET', '')),
+                'api_key' => $userApiKey != ''
+                    ? $userApiKey
+                    : trim((string)env('GOOGLE_API_KEY', '')),
+                'access_token' => $userAccessToken != ''
+                    ? $userAccessToken
+                    : trim((string)env('GOOGLE_ACCESS_TOKEN', '')),
+                'refresh_token' => $userRefreshToken != ''
+                    ? $userRefreshToken
+                    : trim((string)env('GOOGLE_REFRESH_TOKEN', '')),
+                'token_expires_at' => $userTokenExpiresAt != ''
+                    ? $userTokenExpiresAt
+                    : trim((string)env('GOOGLE_TOKEN_EXPIRES_AT', '')),
+                'folder_id' => $userFolderId != ''
+                    ? $userFolderId
+                    : trim((string)env('GOOGLE_FOLDER_ID', '')),
+            ];
+        }
+
+        private function buildGoogleDriveDirectPlaybackUrl($fileId)
+        {
+            $resolvedFileId = trim((string)$fileId);
+            if($resolvedFileId == '')
+            {
+                return '';
+            }
+
+            return 'https://drive.google.com/uc?export=download&id=' . rawurlencode($resolvedFileId);
+        }
+
+        private function resolveS3Credentials()
+        {
+            return [
+                'key' => trim((string)env('AWS_KEY', '')),
+                'secret' => trim((string)env('AWS_SECRET', '')),
+                'region' => trim((string)env('AWS_REGION', '')),
+                'bucket' => trim((string)env('AWS_BUCKET', '')),
+                'endpoint' => trim((string)env('AWS_ENDPOINT', '')),
+                'use_path_style_endpoint' => in_array(strtolower(trim((string)env('AWS_USE_PATH_STYLE_ENDPOINT', 'false'))), ['1', 'true', 'yes', 'on'], true),
+                'session_token' => trim((string)env('AWS_SESSION_TOKEN', '')),
+                'upload_prefix' => trim((string)env('S3_UPLOAD_PREFIX', 'video')),
+                'public_base_url' => trim((string)env('S3_PUBLIC_BASE_URL', '')),
+                'object_acl' => trim((string)env('S3_OBJECT_ACL', 'private')),
+            ];
+        }
+
+        private function resolveIdriveS3Credentials()
+        {
+            return [
+                'key' => trim((string)env('IDRIVE_S3_ACCESS_KEY', '')),
+                'secret' => trim((string)env('IDRIVE_S3_SECRET_KEY', '')),
+                'region' => trim((string)env('IDRIVE_S3_REGION', 'us-east-1')),
+                'bucket' => trim((string)env('IDRIVE_S3_BUCKET', '')),
+                'endpoint' => trim((string)env('IDRIVE_S3_ENDPOINT', '')),
+                'use_path_style_endpoint' => in_array(strtolower(trim((string)env('IDRIVE_S3_USE_PATH_STYLE_ENDPOINT', 'true'))), ['1', 'true', 'yes', 'on'], true),
+                'session_token' => trim((string)env('IDRIVE_S3_SESSION_TOKEN', '')),
+                'upload_prefix' => trim((string)env('IDRIVE_S3_UPLOAD_PREFIX', 'video')),
+                'public_base_url' => trim((string)env('IDRIVE_S3_PUBLIC_BASE_URL', '')),
+                'object_acl' => trim((string)env('IDRIVE_S3_OBJECT_ACL', 'private')),
+                'upload_endpoint' => trim((string)env('IDRIVE_UPLOAD_ENDPOINT', '')),
+                'access_token' => trim((string)env('IDRIVE_ACCESS_TOKEN', '')),
+            ];
+        }
+
+        private function encodeS3PathSegments($rawPath = '')
+        {
+            $path = trim((string)$rawPath);
+            if($path == '')
+            {
+                return '';
+            }
+
+            $parts = explode('/', trim($path, '/'));
+            $encodedParts = [];
+            foreach($parts as $part)
+            {
+                $segment = trim((string)$part);
+                if($segment != '')
+                {
+                    $encodedParts[] = rawurlencode($segment);
+                }
+            }
+
+            return implode('/', $encodedParts);
+        }
+
+        private function buildS3RequestTarget($objectKey, array $credentials)
+        {
+            $resolvedObjectKey = ltrim(trim((string)$objectKey), '/');
+            if($resolvedObjectKey == '')
+            {
+                return [
+                    'success' => false,
+                    'requestUrl' => '',
+                    'canonicalUri' => '',
+                    'host' => '',
+                    'error' => 'Invalid S3 object key',
+                ];
+            }
+
+            $bucket = trim((string)($credentials['bucket'] ?? ''));
+            $region = trim((string)($credentials['region'] ?? ''));
+            if($bucket == '' || $region == '')
+            {
+                return [
+                    'success' => false,
+                    'requestUrl' => '',
+                    'canonicalUri' => '',
+                    'host' => '',
+                    'error' => 'Missing S3 bucket or region',
+                ];
+            }
+
+            $usePathStyle = (bool)($credentials['use_path_style_endpoint'] ?? false);
+            $endpoint = trim((string)($credentials['endpoint'] ?? ''));
+            $encodedObjectKey = $this->encodeS3PathSegments($resolvedObjectKey);
+
+            $scheme = 'https';
+            $baseHost = '';
+            $basePort = 0;
+            $basePath = '';
+
+            if($endpoint != '')
+            {
+                $normalizedEndpoint = preg_match('/^https?:\/\//i', $endpoint)
+                    ? $endpoint
+                    : ('https://' . $endpoint);
+
+                $endpointParts = parse_url($normalizedEndpoint);
+                if(!is_array($endpointParts) || !isset($endpointParts['host']))
+                {
+                    return [
+                        'success' => false,
+                        'requestUrl' => '',
+                        'canonicalUri' => '',
+                        'host' => '',
+                        'error' => 'Invalid S3 endpoint value',
+                    ];
+                }
+
+                $parsedScheme = strtolower(trim((string)($endpointParts['scheme'] ?? 'https')));
+                if(in_array($parsedScheme, ['http', 'https'], true))
+                {
+                    $scheme = $parsedScheme;
+                }
+
+                $baseHost = trim((string)$endpointParts['host']);
+                $basePort = (int)($endpointParts['port'] ?? 0);
+                $basePath = $this->encodeS3PathSegments(trim((string)($endpointParts['path'] ?? ''), '/'));
+            }
+            else
+            {
+                $baseHost = 's3.' . $region . '.amazonaws.com';
+            }
+
+            $authorityHost = $baseHost;
+            if(!$usePathStyle)
+            {
+                if($endpoint != '')
+                {
+                    $authorityHost = $bucket . '.' . $baseHost;
+                }
+                else
+                {
+                    $authorityHost = $bucket . '.s3.' . $region . '.amazonaws.com';
+                }
+            }
+
+            $portSuffix = '';
+            if($basePort > 0)
+            {
+                $isDefaultPort = ($scheme == 'https' && $basePort == 443)
+                    || ($scheme == 'http' && $basePort == 80);
+                if(!$isDefaultPort)
+                {
+                    $portSuffix = ':' . $basePort;
+                }
+            }
+
+            $authority = $authorityHost . $portSuffix;
+
+            $uriSegments = [];
+            if($basePath != '')
+            {
+                $uriSegments[] = $basePath;
+            }
+            if($usePathStyle)
+            {
+                $uriSegments[] = rawurlencode($bucket);
+            }
+            if($encodedObjectKey != '')
+            {
+                $uriSegments[] = $encodedObjectKey;
+            }
+
+            $canonicalUri = '/' . implode('/', array_values(array_filter($uriSegments, function($segment) {
+                return trim((string)$segment) != '';
+            })));
+            if($canonicalUri == '')
+            {
+                $canonicalUri = '/';
+            }
+
+            return [
+                'success' => true,
+                'requestUrl' => $scheme . '://' . $authority . $canonicalUri,
+                'canonicalUri' => $canonicalUri,
+                'host' => $authority,
+                'error' => '',
+            ];
+        }
+
+        private function buildAwsCanonicalQueryString(array $params)
+        {
+            if(empty($params))
+            {
+                return '';
+            }
+
+            ksort($params);
+            $pairs = [];
+            foreach($params as $name => $value)
+            {
+                $pairs[] = rawurlencode((string)$name) . '=' . rawurlencode((string)$value);
+            }
+
+            return implode('&', $pairs);
+        }
+
+        private function buildAwsCanonicalHeaders(array $headers)
+        {
+            $normalizedHeaders = [];
+            foreach($headers as $name => $value)
+            {
+                $headerName = strtolower(trim((string)$name));
+                if($headerName == '')
+                {
+                    continue;
+                }
+
+                $headerValue = trim((string)preg_replace('/\s+/', ' ', (string)$value));
+                if(array_key_exists($headerName, $normalizedHeaders))
+                {
+                    $normalizedHeaders[$headerName] .= ',' . $headerValue;
+                }
+                else
+                {
+                    $normalizedHeaders[$headerName] = $headerValue;
+                }
+            }
+
+            ksort($normalizedHeaders);
+
+            $canonicalHeaders = '';
+            foreach($normalizedHeaders as $name => $value)
+            {
+                $canonicalHeaders .= $name . ':' . $value . "\n";
+            }
+
+            return [
+                'canonicalHeaders' => $canonicalHeaders,
+                'signedHeaders' => implode(';', array_keys($normalizedHeaders)),
+                'headers' => $normalizedHeaders,
+            ];
+        }
+
+        private function buildAwsV4SigningKey($secretKey, $dateStamp, $region, $service = 's3')
+        {
+            $kDate = hash_hmac('sha256', (string)$dateStamp, 'AWS4' . (string)$secretKey, true);
+            $kRegion = hash_hmac('sha256', (string)$region, $kDate, true);
+            $kService = hash_hmac('sha256', (string)$service, $kRegion, true);
+
+            return hash_hmac('sha256', 'aws4_request', $kService, true);
+        }
+
+        private function buildS3AuthorizationHeader($method, $canonicalUri, $canonicalQueryString, array $headers, $payloadHash, array $credentials, $amzDate, $dateStamp)
+        {
+            $accessKey = trim((string)($credentials['key'] ?? ''));
+            $secretKey = trim((string)($credentials['secret'] ?? ''));
+            $region = trim((string)($credentials['region'] ?? ''));
+            if($accessKey == '' || $secretKey == '' || $region == '')
+            {
+                return [
+                    'authorization' => '',
+                    'signedHeaders' => '',
+                    'signature' => '',
+                    'credentialScope' => '',
+                ];
+            }
+
+            $canonicalHeaderPayload = $this->buildAwsCanonicalHeaders($headers);
+            $canonicalHeaders = $canonicalHeaderPayload['canonicalHeaders'];
+            $signedHeaders = $canonicalHeaderPayload['signedHeaders'];
+
+            $canonicalRequest = strtoupper(trim((string)$method))
+                . "\n" . $canonicalUri
+                . "\n" . $canonicalQueryString
+                . "\n" . $canonicalHeaders
+                . "\n" . $signedHeaders
+                . "\n" . $payloadHash;
+
+            $credentialScope = $dateStamp . '/' . $region . '/s3/aws4_request';
+            $stringToSign = 'AWS4-HMAC-SHA256'
+                . "\n" . $amzDate
+                . "\n" . $credentialScope
+                . "\n" . hash('sha256', $canonicalRequest);
+
+            $signingKey = $this->buildAwsV4SigningKey($secretKey, $dateStamp, $region, 's3');
+            $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+
+            return [
+                'authorization' => 'AWS4-HMAC-SHA256 Credential=' . $accessKey . '/' . $credentialScope
+                    . ', SignedHeaders=' . $signedHeaders
+                    . ', Signature=' . $signature,
+                'signedHeaders' => $signedHeaders,
+                'signature' => $signature,
+                'credentialScope' => $credentialScope,
+            ];
+        }
+
+        private function buildS3SignedPlaybackUrlWithoutSdk($objectKey, array $credentials, $ttlSeconds = 1200)
+        {
+            $target = $this->buildS3RequestTarget($objectKey, $credentials);
+            if(!$target['success'])
+            {
+                return '';
+            }
+
+            $accessKey = trim((string)($credentials['key'] ?? ''));
+            $secretKey = trim((string)($credentials['secret'] ?? ''));
+            $region = trim((string)($credentials['region'] ?? ''));
+            if($accessKey == '' || $secretKey == '' || $region == '')
+            {
+                return '';
+            }
+
+            $expires = (int)$ttlSeconds;
+            if($expires <= 0)
+            {
+                $expires = 1200;
+            }
+            if($expires > 604800)
+            {
+                $expires = 604800;
+            }
+
+            $amzDate = gmdate('Ymd\THis\Z');
+            $dateStamp = gmdate('Ymd');
+            $credentialScope = $dateStamp . '/' . $region . '/s3/aws4_request';
+
+            $queryParams = [
+                'X-Amz-Algorithm' => 'AWS4-HMAC-SHA256',
+                'X-Amz-Credential' => $accessKey . '/' . $credentialScope,
+                'X-Amz-Date' => $amzDate,
+                'X-Amz-Expires' => (string)$expires,
+                'X-Amz-SignedHeaders' => 'host',
+            ];
+
+            $sessionToken = trim((string)($credentials['session_token'] ?? ''));
+            if($sessionToken != '')
+            {
+                $queryParams['X-Amz-Security-Token'] = $sessionToken;
+            }
+
+            $canonicalQueryString = $this->buildAwsCanonicalQueryString($queryParams);
+
+            $canonicalRequest = 'GET'
+                . "\n" . $target['canonicalUri']
+                . "\n" . $canonicalQueryString
+                . "\n" . 'host:' . $target['host'] . "\n"
+                . "\n" . 'host'
+                . "\n" . 'UNSIGNED-PAYLOAD';
+
+            $stringToSign = 'AWS4-HMAC-SHA256'
+                . "\n" . $amzDate
+                . "\n" . $credentialScope
+                . "\n" . hash('sha256', $canonicalRequest);
+
+            $signingKey = $this->buildAwsV4SigningKey($secretKey, $dateStamp, $region, 's3');
+            $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+
+            return $target['requestUrl']
+                . '?' . $canonicalQueryString
+                . '&X-Amz-Signature=' . $signature;
+        }
+
+        private function buildS3PublicObjectUrl($objectKey, array $credentials)
+        {
+            $target = $this->buildS3RequestTarget($objectKey, $credentials);
+            if(!$target['success'])
+            {
+                return '';
+            }
+
+            return $target['requestUrl'];
+        }
+
+        private function uploadS3ObjectWithoutSdk($localFilePath, $objectKey, array $credentials, $contentType = 'application/octet-stream', $objectAcl = 'private')
+        {
+            $filePath = trim((string)$localFilePath);
+            if($filePath == '' || !File::exists($filePath))
+            {
+                return [
+                    'success' => false,
+                    'error' => 'Invalid local file for S3-compatible upload',
+                ];
+            }
+
+            if(!function_exists('curl_init'))
+            {
+                return [
+                    'success' => false,
+                    'error' => 'cURL extension is required when AWS SDK is not installed',
+                ];
+            }
+
+            $target = $this->buildS3RequestTarget($objectKey, $credentials);
+            if(!$target['success'])
+            {
+                return [
+                    'success' => false,
+                    'error' => trim((string)$target['error']) != ''
+                        ? trim((string)$target['error'])
+                        : 'Unable to resolve S3 upload endpoint',
+                ];
+            }
+
+            $payloadHash = @hash_file('sha256', $filePath);
+            if($payloadHash === false || trim((string)$payloadHash) == '')
+            {
+                return [
+                    'success' => false,
+                    'error' => 'Unable to hash local file for S3 signature',
+                ];
+            }
+
+            $resolvedAcl = strtolower(trim((string)$objectAcl));
+            if($resolvedAcl == '')
+            {
+                $resolvedAcl = 'private';
+            }
+
+            $amzDate = gmdate('Ymd\THis\Z');
+            $dateStamp = gmdate('Ymd');
+
+            $headersForSignature = [
+                'host' => $target['host'],
+                'x-amz-content-sha256' => $payloadHash,
+                'x-amz-date' => $amzDate,
+                'x-amz-acl' => $resolvedAcl,
+            ];
+
+            $sessionToken = trim((string)($credentials['session_token'] ?? ''));
+            if($sessionToken != '')
+            {
+                $headersForSignature['x-amz-security-token'] = $sessionToken;
+            }
+
+            $authorizationPayload = $this->buildS3AuthorizationHeader(
+                'PUT',
+                $target['canonicalUri'],
+                '',
+                $headersForSignature,
+                $payloadHash,
+                $credentials,
+                $amzDate,
+                $dateStamp
+            );
+
+            if(trim((string)$authorizationPayload['authorization']) == '')
+            {
+                return [
+                    'success' => false,
+                    'error' => 'Unable to create S3 signature for upload request',
+                ];
+            }
+
+            $httpHeaders = [
+                'Host: ' . $target['host'],
+                'Content-Type: ' . trim((string)$contentType),
+                'x-amz-content-sha256: ' . $payloadHash,
+                'x-amz-date: ' . $amzDate,
+                'x-amz-acl: ' . $resolvedAcl,
+                'Authorization: ' . $authorizationPayload['authorization'],
+                'Expect:',
+            ];
+            if($sessionToken != '')
+            {
+                $httpHeaders[] = 'x-amz-security-token: ' . $sessionToken;
+            }
+
+            $fileHandle = @fopen($filePath, 'rb');
+            if(!$fileHandle)
+            {
+                return [
+                    'success' => false,
+                    'error' => 'Unable to open file stream for S3 upload',
+                ];
+            }
+
+            $curlHandle = curl_init($target['requestUrl']);
+            if($curlHandle === false)
+            {
+                fclose($fileHandle);
+                return [
+                    'success' => false,
+                    'error' => 'Unable to initialize cURL for S3 upload',
+                ];
+            }
+
+            $fileSize = (int)@filesize($filePath);
+            curl_setopt($curlHandle, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($curlHandle, CURLOPT_UPLOAD, true);
+            curl_setopt($curlHandle, CURLOPT_INFILE, $fileHandle);
+            if($fileSize > 0)
+            {
+                curl_setopt($curlHandle, CURLOPT_INFILESIZE, $fileSize);
+            }
+            curl_setopt($curlHandle, CURLOPT_HTTPHEADER, $httpHeaders);
+            curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curlHandle, CURLOPT_HEADER, true);
+            curl_setopt($curlHandle, CURLOPT_CONNECTTIMEOUT, 30);
+            curl_setopt($curlHandle, CURLOPT_TIMEOUT, 600);
+
+            $rawResponse = curl_exec($curlHandle);
+            $curlError = trim((string)curl_error($curlHandle));
+            $statusCode = (int)curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+            $headerSize = (int)curl_getinfo($curlHandle, CURLINFO_HEADER_SIZE);
+
+            curl_close($curlHandle);
+            fclose($fileHandle);
+
+            if($rawResponse === false)
+            {
+                return [
+                    'success' => false,
+                    'error' => $curlError != ''
+                        ? ('S3 upload transport error: ' . $curlError)
+                        : 'S3 upload transport failed',
+                ];
+            }
+
+            $responseBody = '';
+            if(is_string($rawResponse) && $headerSize >= 0)
+            {
+                $responseBody = trim((string)substr($rawResponse, $headerSize));
+            }
+
+            if($statusCode >= 200 && $statusCode < 300)
+            {
+                return [
+                    'success' => true,
+                    'error' => '',
+                ];
+            }
+
+            $errorMessage = 'S3 upload failed with HTTP ' . $statusCode;
+            if($responseBody != '')
+            {
+                $errorMessage .= ' - ' . substr($responseBody, 0, 400);
+            }
+
+            return [
+                'success' => false,
+                'error' => $errorMessage,
+            ];
+        }
+
+        private function buildS3SignedPlaybackUrl($objectKey, $provider = 's3')
+        {
+            $resolvedObjectKey = trim((string)$objectKey);
+            if($resolvedObjectKey == '')
+            {
+                return '';
+            }
+
+            $providerId = strtolower(trim((string)$provider));
+            $credentials = ($providerId == 'idrive')
+                ? $this->resolveIdriveS3Credentials()
+                : $this->resolveS3Credentials();
+
+            if($credentials['key'] == ''
+                || $credentials['secret'] == ''
+                || $credentials['region'] == ''
+                || $credentials['bucket'] == '')
+            {
+                return '';
+            }
+
+            if(!class_exists(S3Client::class))
+            {
+                return $this->buildS3SignedPlaybackUrlWithoutSdk($resolvedObjectKey, $credentials, 1200);
+            }
+
+            try {
+                $config = [
+                    'version' => 'latest',
+                    'region' => $credentials['region'],
+                    'credentials' => [
+                        'key' => $credentials['key'],
+                        'secret' => $credentials['secret'],
+                    ],
+                ];
+
+                if($credentials['endpoint'] != '')
+                {
+                    $config['endpoint'] = $credentials['endpoint'];
+                    $config['use_path_style_endpoint'] = (bool)$credentials['use_path_style_endpoint'];
+                }
+
+                $client = new S3Client($config);
+
+                $command = $client->getCommand('GetObject', [
+                    'Bucket' => $credentials['bucket'],
+                    'Key' => ltrim($resolvedObjectKey, '/'),
+                ]);
+
+                $request = $client->createPresignedRequest($command, '+20 minutes');
+
+                return (string)$request->getUri();
+            }
+            catch (
+                \Throwable $e)
+            {
+                return '';
+            }
+        }
+
+        private function uploadFileToS3CompatibleStorage($localFilePath, $remoteFileName, array $credentials, $scheme = 's3')
+        {
+            $filePath = trim((string)$localFilePath);
+            $filename = trim((string)$remoteFileName);
+            if($filePath == '' || !File::exists($filePath))
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Invalid local file for ' . strtoupper(trim((string)$scheme)) . ' upload',
+                ];
+            }
+
+            if($filename == '')
+            {
+                $filename = trim((string)pathinfo($filePath, PATHINFO_BASENAME));
+                if($filename == '')
+                {
+                    $filename = date('YmdHis') . '_' . str_replace('-', '', $this->helper->addUuid()) . '.mp4';
+                }
+            }
+
+            if($credentials['key'] == ''
+                || $credentials['secret'] == ''
+                || $credentials['region'] == ''
+                || $credentials['bucket'] == '')
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Missing ' . strtoupper(trim((string)$scheme)) . ' credentials',
+                ];
+            }
+
+            $prefix = trim((string)($credentials['upload_prefix'] ?? ''));
+            $objectKey = ltrim($filename, '/');
+            if($prefix != '')
+            {
+                $objectKey = trim($prefix, '/') . '/' . $objectKey;
+            }
+
+            $contentType = trim((string)mime_content_type($filePath));
+            if($contentType == '')
+            {
+                $contentType = 'application/octet-stream';
+            }
+
+            $objectAcl = strtolower(trim((string)($credentials['object_acl'] ?? 'private')));
+            if($objectAcl == '')
+            {
+                $objectAcl = 'private';
+            }
+
+            if(class_exists(S3Client::class))
+            {
+            try {
+                $config = [
+                    'version' => 'latest',
+                    'region' => $credentials['region'],
+                    'credentials' => [
+                        'key' => $credentials['key'],
+                        'secret' => $credentials['secret'],
+                    ],
+                ];
+
+                $sessionToken = trim((string)($credentials['session_token'] ?? ''));
+                if($sessionToken != '')
+                {
+                    $config['credentials']['token'] = $sessionToken;
+                }
+
+                    if(trim((string)($credentials['endpoint'] ?? '')) != '')
+                    {
+                        $config['endpoint'] = trim((string)$credentials['endpoint']);
+                        $config['use_path_style_endpoint'] = (bool)($credentials['use_path_style_endpoint'] ?? false);
+                    }
+
+                    $sessionToken = trim((string)($credentials['session_token'] ?? ''));
+                    if($sessionToken != '')
+                    {
+                        $config['credentials']['token'] = $sessionToken;
+                    }
+
+                    $client = new S3Client($config);
+
+                    $putOptions = [
+                        'Bucket' => $credentials['bucket'],
+                        'Key' => $objectKey,
+                        'SourceFile' => $filePath,
+                        'ContentType' => $contentType,
+                        'ACL' => $objectAcl,
+                    ];
+
+                    $client->putObject($putOptions);
+
+                    $storageReference = strtolower(trim((string)$scheme)) . '://' . ltrim($objectKey, '/');
+                    $playbackUrl = '';
+
+                    if(trim((string)($credentials['public_base_url'] ?? '')) != '')
+                    {
+                        $base = rtrim(trim((string)$credentials['public_base_url']), '/');
+                        $encodedSegments = [];
+                        foreach(explode('/', ltrim($objectKey, '/')) as $segment)
+                        {
+                            $segment = trim((string)$segment);
+                            if($segment != '')
+                            {
+                                $encodedSegments[] = rawurlencode($segment);
+                            }
+                        }
+                        $playbackUrl = $base . '/' . implode('/', $encodedSegments);
+                    }
+
+                    if($playbackUrl == '' && in_array($objectAcl, ['public-read', 'public-read-write'], true))
+                    {
+                        $playbackUrl = (string)$client->getObjectUrl($credentials['bucket'], $objectKey);
+                    }
+
+                    if($playbackUrl == '')
+                    {
+                        $command = $client->getCommand('GetObject', [
+                            'Bucket' => $credentials['bucket'],
+                            'Key' => $objectKey,
+                        ]);
+                        $request = $client->createPresignedRequest($command, '+20 minutes');
+                        $playbackUrl = (string)$request->getUri();
+                    }
+
+                    return [
+                        'success' => true,
+                        'storageUrl' => $storageReference,
+                        'playbackUrl' => $playbackUrl,
+                        'error' => '',
+                    ];
+                }
+                catch (
+                    \Throwable $e)
+                {
+                    return [
+                        'success' => false,
+                        'storageUrl' => '',
+                        'playbackUrl' => '',
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            $fallbackUpload = $this->uploadS3ObjectWithoutSdk($filePath, $objectKey, $credentials, $contentType, $objectAcl);
+            if(!$fallbackUpload['success'])
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => trim((string)($fallbackUpload['error'] ?? '')) != ''
+                        ? trim((string)$fallbackUpload['error'])
+                        : 'S3-compatible upload failed without AWS SDK',
+                ];
+            }
+
+            $storageReference = strtolower(trim((string)$scheme)) . '://' . ltrim($objectKey, '/');
+            $playbackUrl = '';
+
+            if(trim((string)($credentials['public_base_url'] ?? '')) != '')
+            {
+                $base = rtrim(trim((string)$credentials['public_base_url']), '/');
+                $encodedSegments = [];
+                foreach(explode('/', ltrim($objectKey, '/')) as $segment)
+                {
+                    $segment = trim((string)$segment);
+                    if($segment != '')
+                    {
+                        $encodedSegments[] = rawurlencode($segment);
+                    }
+                }
+                $playbackUrl = $base . '/' . implode('/', $encodedSegments);
+            }
+
+            if($playbackUrl == '' && in_array($objectAcl, ['public-read', 'public-read-write'], true))
+            {
+                $playbackUrl = $this->buildS3PublicObjectUrl($objectKey, $credentials);
+            }
+
+            if($playbackUrl == '')
+            {
+                $playbackUrl = $this->buildS3SignedPlaybackUrlWithoutSdk($objectKey, $credentials, 1200);
+            }
+
+            return [
+                'success' => true,
+                'storageUrl' => $storageReference,
+                'playbackUrl' => $playbackUrl,
+                'error' => '',
+            ];
+        }
+
+        private function uploadFileToS3Storage($localFilePath, $remoteFileName)
+        {
+            return $this->uploadFileToS3CompatibleStorage($localFilePath, $remoteFileName, $this->resolveS3Credentials(), 's3');
+        }
+
+        private function uploadFileToIdriveStorage($localFilePath, $remoteFileName)
+        {
+            $credentials = $this->resolveIdriveS3Credentials();
+
+            if($credentials['key'] != ''
+                && $credentials['secret'] != ''
+                && $credentials['region'] != ''
+                && $credentials['bucket'] != '')
+            {
+                return $this->uploadFileToS3CompatibleStorage($localFilePath, $remoteFileName, $credentials, 'idrive');
+            }
+
+            $uploadEndpoint = trim((string)($credentials['upload_endpoint'] ?? ''));
+            $accessToken = trim((string)($credentials['access_token'] ?? ''));
+            $filePath = trim((string)$localFilePath);
+            if($uploadEndpoint == '' || $accessToken == '' || $filePath == '' || !File::exists($filePath))
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Missing IDrive upload endpoint/token or S3-compatible IDrive credentials',
+                ];
+            }
+
+            $filename = trim((string)$remoteFileName);
+            if($filename == '')
+            {
+                $filename = trim((string)pathinfo($filePath, PATHINFO_BASENAME));
+            }
+
+            try {
+                $response = Http::withToken($accessToken)
+                    ->timeout(120)
+                    ->attach('file', File::get($filePath), $filename)
+                    ->post($uploadEndpoint, [
+                        'filename' => $filename,
+                    ]);
+
+                if(!$response->successful())
+                {
+                    return [
+                        'success' => false,
+                        'storageUrl' => '',
+                        'playbackUrl' => '',
+                        'error' => 'IDrive upload failed with HTTP ' . $response->status(),
+                    ];
+                }
+
+                $payload = $response->json();
+                $remoteId = trim((string)(is_array($payload)
+                    ? ($payload['id'] ?? $payload['fileId'] ?? $payload['key'] ?? '')
+                    : ''));
+                $playbackUrl = trim((string)(is_array($payload)
+                    ? ($payload['playbackUrl'] ?? $payload['url'] ?? $payload['downloadUrl'] ?? '')
+                    : ''));
+
+                return [
+                    'success' => ($remoteId != '' || $playbackUrl != ''),
+                    'storageUrl' => $remoteId != '' ? ('idrive://' . ltrim($remoteId, '/')) : $playbackUrl,
+                    'playbackUrl' => $playbackUrl,
+                    'error' => '',
+                ];
+            }
+            catch (
+                \Throwable $e)
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        private function uploadFileToGoogleDriveStorage($localFilePath, $user = null)
+        {
+            $filePath = trim((string)$localFilePath);
+            if($filePath == '' || !File::exists($filePath))
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Invalid local file for Google Drive upload',
+                ];
+            }
+
+            $googleCredentials = $this->resolveGoogleCredentials($user);
+            if($googleCredentials['client_id'] == '' || $googleCredentials['client_secret'] == '')
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Missing Google OAuth client credentials',
+                ];
+            }
+
+            if($googleCredentials['access_token'] == '' && $googleCredentials['refresh_token'] == '')
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => 'Google Drive access token is missing. Connect Google Drive first.',
+                ];
+            }
+
+            try {
+                $client = new Google_Client();
+                $client->setClientId($googleCredentials['client_id']);
+                $client->setClientSecret($googleCredentials['client_secret']);
+                if($googleCredentials['api_key'] != '')
+                {
+                    $client->setDeveloperKey($googleCredentials['api_key']);
+                }
+
+                $redirectUri = trim((string)env('GOOGLE_REDIRECT_URI', ''));
+                if($redirectUri != '')
+                {
+                    $client->setRedirectUri($redirectUri);
+                }
+
+                $client->setAccessType('offline');
+                $client->setScopes([
+                    'https://www.googleapis.com/auth/drive.file',
+                ]);
+
+                $tokenPayload = [
+                    'access_token' => $googleCredentials['access_token'],
+                    'refresh_token' => $googleCredentials['refresh_token'],
+                ];
+                if($googleCredentials['token_expires_at'] != '')
+                {
+                    $tokenPayload['created'] = strtotime($googleCredentials['token_expires_at']) ?: time();
+                }
+
+                $client->setAccessToken($tokenPayload);
+
+                if($client->isAccessTokenExpired() && $googleCredentials['refresh_token'] != '')
+                {
+                    $refreshedToken = $client->fetchAccessTokenWithRefreshToken($googleCredentials['refresh_token']);
+                    $newAccessToken = trim((string)($refreshedToken['access_token'] ?? ''));
+                    if($newAccessToken != '' && $user)
+                    {
+                        $expiresIn = (int)($refreshedToken['expires_in'] ?? 0);
+                        $updates = [
+                            'google_access_token' => $newAccessToken,
+                        ];
+                        if($expiresIn > 0)
+                        {
+                            $updates['google_token_expires_at'] = date('Y-m-d H:i:s', time() + $expiresIn);
+                        }
+                        $this->user->updateData($updates, (string)$user->uuid);
+                    }
+                }
+
+                if($client->isAccessTokenExpired())
+                {
+                    return [
+                        'success' => false,
+                        'storageUrl' => '',
+                        'playbackUrl' => '',
+                        'error' => 'Google access token is expired and could not be refreshed',
+                    ];
+                }
+
+                $service = new \Google_Service_Drive($client);
+
+                $folderId = trim((string)$googleCredentials['folder_id']);
+                if($folderId == '')
+                {
+                    $folderMetadata = new Google_Service_Drive_DriveFile([
+                        'name' => 'Application Storage - Video',
+                        'mimeType' => 'application/vnd.google-apps.folder',
+                    ]);
+                    $folder = $service->files->create($folderMetadata, [
+                        'fields' => 'id',
+                    ]);
+
+                    $folderId = trim((string)($folder->id ?? ''));
+                    if($folderId != '' && $user)
+                    {
+                        $this->user->updateData([
+                            'google_folder_id' => $folderId,
+                        ], (string)$user->uuid);
+                    }
+                }
+
+                $filename = trim((string)pathinfo($filePath, PATHINFO_BASENAME));
+                if($filename == '')
+                {
+                    $filename = date('YmdHis') . '_' . str_replace('-', '', $this->helper->addUuid()) . '.mp4';
+                }
+
+                $fileMetadata = new Google_Service_Drive_DriveFile([
+                    'name' => $filename,
+                    'parents' => $folderId != '' ? [$folderId] : [],
+                ]);
+
+                $mimeType = trim((string)mime_content_type($filePath));
+                if($mimeType == '')
+                {
+                    $mimeType = 'application/octet-stream';
+                }
+
+                $createdFile = $service->files->create($fileMetadata, [
+                    'data' => File::get($filePath),
+                    'mimeType' => $mimeType,
+                    'uploadType' => 'multipart',
+                    'fields' => 'id, webViewLink, webContentLink',
+                ]);
+
+                $fileId = trim((string)($createdFile->id ?? ''));
+                if($fileId == '')
+                {
+                    return [
+                        'success' => false,
+                        'storageUrl' => '',
+                        'playbackUrl' => '',
+                        'error' => 'Google Drive upload did not return a file id',
+                    ];
+                }
+
+                try {
+                    $permission = new Google_Service_Drive_Permission();
+                    $permission->setType('anyone');
+                    $permission->setRole('reader');
+                    $service->permissions->create($fileId, $permission);
+                }
+                catch (
+                    \Throwable $ignoredPermissionException)
+                {
+                    // keep upload successful even when sharing API fails
+                }
+
+                $playbackUrl = $this->buildGoogleDriveDirectPlaybackUrl($fileId);
+
+                return [
+                    'success' => true,
+                    'storageUrl' => 'gdrive://' . $fileId,
+                    'playbackUrl' => $playbackUrl,
+                    'error' => '',
+                ];
+            }
+            catch (
+                \Throwable $e)
+            {
+                return [
+                    'success' => false,
+                    'storageUrl' => '',
+                    'playbackUrl' => '',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
         private function buildDropboxDirectPlaybackUrl($sharedUrl)
         {
             $url = trim((string)$sharedUrl);
@@ -2198,7 +3362,7 @@ class VideoApiController extends ApiBaseController
         public function oauthProviderConnect(Request $request, $provider)
         {
             $normalizedProvider = strtolower(trim((string)$provider));
-            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega'];
+            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega', 's3'];
 
             if(!in_array($normalizedProvider, $supportedProviders))
             {
@@ -2219,6 +3383,7 @@ class VideoApiController extends ApiBaseController
                 'idrive' => 'IDrive',
                 'drime' => 'Drime.cloud',
                 'mega' => 'Mega',
+                's3' => 'Custom S3',
             ];
 
             $token = (string)$request->get('token', '');
@@ -2248,7 +3413,7 @@ class VideoApiController extends ApiBaseController
         public function oauthProviderCallback(Request $request, $provider)
         {
             $normalizedProvider = strtolower(trim((string)$provider));
-            $supportedProviders = ['dropbox'];
+            $supportedProviders = ['dropbox', 'gdrive'];
             if(!in_array($normalizedProvider, $supportedProviders, true))
             {
                 return $this->errorWrongArgs(['Unsupported storage provider callback']);
@@ -2376,6 +3541,95 @@ class VideoApiController extends ApiBaseController
                 }
             }
 
+            if($normalizedProvider == 'gdrive')
+            {
+                try {
+                    $googleClientId = trim((string)($user->google_client_id ?? env('GOOGLE_CLIENT_ID', '')));
+                    $googleClientSecret = trim((string)($user->google_client_secret ?? env('GOOGLE_CLIENT_SECRET', '')));
+                    $googleRedirectUri = trim((string)env('GOOGLE_REDIRECT_URI', ''));
+
+                    if($googleClientId == '' || $googleClientSecret == '' || $googleRedirectUri == '')
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Google Drive OAuth is not fully configured. Missing client id/secret/redirect URI.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    $tokenResponse = Http::asForm()
+                        ->acceptJson()
+                        ->timeout(20)
+                        ->post('https://oauth2.googleapis.com/token', [
+                            'code' => $oauthCode,
+                            'grant_type' => 'authorization_code',
+                            'client_id' => $googleClientId,
+                            'client_secret' => $googleClientSecret,
+                            'redirect_uri' => $googleRedirectUri,
+                        ]);
+
+                    if(!$tokenResponse->successful())
+                    {
+                        $errorPayload = $tokenResponse->json();
+                        $errorMessage = '';
+                        if(is_array($errorPayload))
+                        {
+                            $errorMessage = trim((string)($errorPayload['error_description'] ?? $errorPayload['error'] ?? ''));
+                        }
+                        if($errorMessage == '')
+                        {
+                            $errorMessage = 'Google token exchange failed with HTTP ' . $tokenResponse->status();
+                        }
+
+                        return $this->redirectOAuthPopupResult(false, $errorMessage, [
+                            'provider' => $normalizedProvider,
+                            'status' => (int)$tokenResponse->status(),
+                        ]);
+                    }
+
+                    $tokenPayload = $tokenResponse->json();
+                    $accessToken = is_array($tokenPayload) ? trim((string)($tokenPayload['access_token'] ?? '')) : '';
+                    $refreshToken = is_array($tokenPayload) ? trim((string)($tokenPayload['refresh_token'] ?? '')) : '';
+                    $expiresIn = is_array($tokenPayload) ? (int)($tokenPayload['expires_in'] ?? 0) : 0;
+
+                    if($accessToken == '')
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Google did not return an access token.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    $userUpdates = [
+                        'google_access_token' => $accessToken,
+                    ];
+                    if($refreshToken != '')
+                    {
+                        $userUpdates['google_refresh_token'] = $refreshToken;
+                    }
+                    if($expiresIn > 0)
+                    {
+                        $userUpdates['google_token_expires_at'] = date('Y-m-d H:i:s', time() + $expiresIn);
+                    }
+
+                    $updated = $this->user->updateData($userUpdates, $userId);
+
+                    if(!$updated)
+                    {
+                        return $this->redirectOAuthPopupResult(false, 'Unable to save Google token for this user.', [
+                            'provider' => $normalizedProvider,
+                        ]);
+                    }
+
+                    return $this->redirectOAuthPopupResult(true, 'Google Drive connected successfully.', [
+                        'provider' => $normalizedProvider,
+                    ]);
+                }
+                catch (\Throwable $e)
+                {
+                    return $this->redirectOAuthPopupResult(false, 'Google Drive OAuth callback failed: ' . $e->getMessage(), [
+                        'provider' => $normalizedProvider,
+                    ]);
+                }
+            }
+
             return $this->redirectOAuthPopupResult(false, 'Unsupported provider callback flow.', [
                 'provider' => $normalizedProvider,
             ]);
@@ -2384,7 +3638,7 @@ class VideoApiController extends ApiBaseController
         public function saveOAuthApp(Request $request, $provider)
         {
             $normalizedProvider = strtolower(trim((string)$provider));
-            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega'];
+            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega', 's3'];
             if(!in_array($normalizedProvider, $supportedProviders, true))
             {
                 return $this->errorWrongArgs(['Unsupported storage provider']);
@@ -2406,6 +3660,7 @@ class VideoApiController extends ApiBaseController
             $requiredFieldsMap = [
                 'gdrive' => ['google_client_id', 'google_client_secret', 'google_api_key'],
                 'dropbox' => ['dropbox_key', 'dropbox_secret', 'dropbox_access_token'],
+                's3' => ['aws_key', 'aws_secret', 'aws_region', 'aws_bucket'],
                 'idrive' => ['idrive_client_id', 'idrive_client_secret', 'idrive_access_token'],
                 'drime' => ['drime_client_id', 'drime_client_secret', 'drime_access_token'],
                 'terabox' => ['terabox_ndus', 'terabox_js_token'],
@@ -2472,6 +3727,7 @@ class VideoApiController extends ApiBaseController
             $providerLabels = [
                 'gdrive' => 'Google Drive',
                 'dropbox' => 'Dropbox',
+                's3' => 'Custom S3',
                 'terabox' => 'Terabox',
                 'hetzner' => 'Hetzner Storage Box',
                 'idrive' => 'IDrive',
@@ -2500,7 +3756,7 @@ class VideoApiController extends ApiBaseController
         public function storageFiles(Request $request)
         {
             $provider = strtolower(trim((string)$request->get('provider', '')));
-            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega'];
+            $supportedProviders = ['gdrive', 'dropbox', 'terabox', 'hetzner', 'idrive', 'drime', 'mega', 's3'];
 
             if($provider == '' || !in_array($provider, $supportedProviders))
             {
@@ -2522,6 +3778,7 @@ class VideoApiController extends ApiBaseController
             $providerLabelMap = [
                 'gdrive' => 'Google Drive',
                 'dropbox' => 'Dropbox',
+                's3' => 'Custom S3',
                 'terabox' => 'Terabox',
                 'hetzner' => 'Hetzner Storage Box',
                 'idrive' => 'IDrive',
@@ -2651,7 +3908,100 @@ class VideoApiController extends ApiBaseController
                     $videoUrl = $storedFilename;
                     $playbackUrl = url('/video/' . $storedFilename);
 
-                    if($preferredProvider == 'terabox')
+                    if($preferredProvider == 'gdrive')
+                    {
+                        $gdriveUpload = $this->uploadFileToGoogleDriveStorage($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename, $ownerUser);
+                        if(!$gdriveUpload['success'])
+                        {
+                            if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                            {
+                                File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                            }
+                            $message = trim((string)($gdriveUpload['error'] ?? ''));
+                            if($message == '')
+                            {
+                                $message = 'Google Drive upload failed. Video was not persisted locally because cloud storage is required.';
+                            }
+                            return $this->errorWrongArgs([$message]);
+                        }
+
+                        if($gdriveUpload['storageUrl'] != '')
+                        {
+                            $videoUrl = $gdriveUpload['storageUrl'];
+                        }
+                        if($gdriveUpload['playbackUrl'] != '')
+                        {
+                            $playbackUrl = $gdriveUpload['playbackUrl'];
+                        }
+
+                        if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                        {
+                            File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                        }
+                    }
+                    elseif($preferredProvider == 's3')
+                    {
+                        $s3Upload = $this->uploadFileToS3Storage($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename, $storedFilename);
+                        if(!$s3Upload['success'])
+                        {
+                            if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                            {
+                                File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                            }
+                            $message = trim((string)($s3Upload['error'] ?? ''));
+                            if($message == '')
+                            {
+                                $message = 'S3 upload failed. Video was not persisted locally because cloud storage is required.';
+                            }
+                            return $this->errorWrongArgs([$message]);
+                        }
+
+                        if($s3Upload['storageUrl'] != '')
+                        {
+                            $videoUrl = $s3Upload['storageUrl'];
+                        }
+                        if($s3Upload['playbackUrl'] != '')
+                        {
+                            $playbackUrl = $s3Upload['playbackUrl'];
+                        }
+
+                        if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                        {
+                            File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                        }
+                    }
+                    elseif($preferredProvider == 'idrive')
+                    {
+                        $idriveUpload = $this->uploadFileToIdriveStorage($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename, $storedFilename);
+                        if(!$idriveUpload['success'])
+                        {
+                            if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                            {
+                                File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                            }
+                            $message = trim((string)($idriveUpload['error'] ?? ''));
+                            if($message == '')
+                            {
+                                $message = 'IDrive upload failed. Video was not persisted locally because cloud storage is required.';
+                            }
+                            return $this->errorWrongArgs([$message]);
+                        }
+
+                        if($idriveUpload['storageUrl'] != '')
+                        {
+                            $videoUrl = $idriveUpload['storageUrl'];
+                        }
+                        if($idriveUpload['playbackUrl'] != '')
+                        {
+                            $playbackUrl = $idriveUpload['playbackUrl'];
+                        }
+
+                        if(File::exists($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename))
+                        {
+                            File::delete($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
+                        }
+                    }
+                    elseif($preferredProvider == 'terabox')
                     {
                         $teraboxUpload = $this->uploadFileToTeraboxViaNodeBridge($uploadDirectory . DIRECTORY_SEPARATOR . $storedFilename);
                         if(!$teraboxUpload['success'])
@@ -2986,7 +4336,106 @@ class VideoApiController extends ApiBaseController
             $videoUrl = $storedFilename;
             $playbackUrl = url('/video/' . $storedFilename);
 
-            if($preferredProvider == 'terabox')
+            if($preferredProvider == 'gdrive')
+            {
+                $gdriveUpload = $this->uploadFileToGoogleDriveStorage($targetPath, $ownerUser);
+                if(!$gdriveUpload['success'])
+                {
+                    if(File::exists($targetPath))
+                    {
+                        File::delete($targetPath);
+                    }
+                    File::deleteDirectory($chunkDir);
+
+                    $message = trim((string)($gdriveUpload['error'] ?? ''));
+                    if($message == '')
+                    {
+                        $message = 'Google Drive upload failed. Video was not persisted locally because cloud storage is required.';
+                    }
+                    return $this->errorWrongArgs([$message]);
+                }
+
+                if($gdriveUpload['storageUrl'] != '')
+                {
+                    $videoUrl = $gdriveUpload['storageUrl'];
+                }
+                if($gdriveUpload['playbackUrl'] != '')
+                {
+                    $playbackUrl = $gdriveUpload['playbackUrl'];
+                }
+
+                if(File::exists($targetPath))
+                {
+                    File::delete($targetPath);
+                }
+            }
+            elseif($preferredProvider == 's3')
+            {
+                $s3Upload = $this->uploadFileToS3Storage($targetPath, $storedFilename);
+                if(!$s3Upload['success'])
+                {
+                    if(File::exists($targetPath))
+                    {
+                        File::delete($targetPath);
+                    }
+                    File::deleteDirectory($chunkDir);
+
+                    $message = trim((string)($s3Upload['error'] ?? ''));
+                    if($message == '')
+                    {
+                        $message = 'S3 upload failed. Video was not persisted locally because cloud storage is required.';
+                    }
+                    return $this->errorWrongArgs([$message]);
+                }
+
+                if($s3Upload['storageUrl'] != '')
+                {
+                    $videoUrl = $s3Upload['storageUrl'];
+                }
+                if($s3Upload['playbackUrl'] != '')
+                {
+                    $playbackUrl = $s3Upload['playbackUrl'];
+                }
+
+                if(File::exists($targetPath))
+                {
+                    File::delete($targetPath);
+                }
+            }
+            elseif($preferredProvider == 'idrive')
+            {
+                $idriveUpload = $this->uploadFileToIdriveStorage($targetPath, $storedFilename);
+                if(!$idriveUpload['success'])
+                {
+                    if(File::exists($targetPath))
+                    {
+                        File::delete($targetPath);
+                    }
+                    File::deleteDirectory($chunkDir);
+
+                    $message = trim((string)($idriveUpload['error'] ?? ''));
+                    if($message == '')
+                    {
+                        $message = 'IDrive upload failed. Video was not persisted locally because cloud storage is required.';
+                    }
+                    return $this->errorWrongArgs([$message]);
+                }
+
+                if($idriveUpload['storageUrl'] != '')
+                {
+                    $videoUrl = $idriveUpload['storageUrl'];
+                }
+                if($idriveUpload['playbackUrl'] != '')
+                {
+                    $playbackUrl = $idriveUpload['playbackUrl'];
+                }
+
+                if(File::exists($targetPath))
+                {
+                    File::delete($targetPath);
+                }
+            }
+            elseif($preferredProvider == 'terabox')
             {
                 $teraboxUpload = $this->uploadFileToTeraboxViaNodeBridge($targetPath);
                 if(!$teraboxUpload['success'])
@@ -3303,6 +4752,50 @@ class VideoApiController extends ApiBaseController
                 $provider = strtolower(trim((string)env('MIGRATION_UPLOAD_PROVIDER', 'hetzner')));
             }
 
+            if($provider == 'gdrive')
+            {
+                $credentials = $this->resolveGoogleCredentials($user);
+                if($credentials['client_id'] != ''
+                    && $credentials['client_secret'] != ''
+                    && ($credentials['access_token'] != '' || $credentials['refresh_token'] != ''))
+                {
+                    return 'gdrive';
+                }
+
+                return 'local';
+            }
+
+            if($provider == 's3')
+            {
+                $credentials = $this->resolveS3Credentials();
+                if($credentials['key'] != ''
+                    && $credentials['secret'] != ''
+                    && $credentials['region'] != ''
+                    && $credentials['bucket'] != '')
+                {
+                    return 's3';
+                }
+
+                return 'local';
+            }
+
+            if($provider == 'idrive')
+            {
+                $credentials = $this->resolveIdriveS3Credentials();
+                $hasS3CompatibleCredentials = ($credentials['key'] != ''
+                    && $credentials['secret'] != ''
+                    && $credentials['region'] != ''
+                    && $credentials['bucket'] != '');
+                $hasDirectApiCredentials = ($credentials['upload_endpoint'] != '' && $credentials['access_token'] != '');
+
+                if($hasS3CompatibleCredentials || $hasDirectApiCredentials)
+                {
+                    return 'idrive';
+                }
+
+                return 'local';
+            }
+
             if($provider == 'dropbox')
             {
                 $credentials = $this->resolveDropboxCredentials($user);
@@ -3377,6 +4870,39 @@ class VideoApiController extends ApiBaseController
 
                 $nodeId = trim((string)substr($resolvedPath, strlen('mega://')));
                 return $nodeId != '' ? $this->fetchMegaDownloadLinkViaNodeBridge($nodeId) : '';
+            }
+
+            if(stripos($resolvedPath, 'gdrive://') === 0)
+            {
+                if($proxyUrl != '')
+                {
+                    return $proxyUrl;
+                }
+
+                $fileId = trim((string)substr($resolvedPath, strlen('gdrive://')));
+                return $this->buildGoogleDriveDirectPlaybackUrl($fileId);
+            }
+
+            if(stripos($resolvedPath, 's3://') === 0)
+            {
+                if($proxyUrl != '')
+                {
+                    return $proxyUrl;
+                }
+
+                $objectKey = trim((string)substr($resolvedPath, strlen('s3://')));
+                return $this->buildS3SignedPlaybackUrl($objectKey, 's3');
+            }
+
+            if(stripos($resolvedPath, 'idrive://') === 0)
+            {
+                if($proxyUrl != '')
+                {
+                    return $proxyUrl;
+                }
+
+                $objectKey = trim((string)substr($resolvedPath, strlen('idrive://')));
+                return $this->buildS3SignedPlaybackUrl($objectKey, 'idrive');
             }
 
             if(stripos($resolvedPath, 'https://dl.dropboxusercontent.com/') === 0
@@ -3963,6 +5489,48 @@ class VideoApiController extends ApiBaseController
                     return $this->errorUnknown('Unable to resolve Hetzner playback link');
                 }
             }
+            elseif(stripos($rawUrl, 'gdrive://') === 0)
+            {
+                $fileId = trim((string)substr($rawUrl, strlen('gdrive://')));
+                if($fileId == '')
+                {
+                    return $this->errorNotFound('Invalid Google Drive file id');
+                }
+
+                $rawUrl = $this->buildGoogleDriveDirectPlaybackUrl($fileId);
+                if($rawUrl == '')
+                {
+                    return $this->errorUnknown('Unable to resolve Google Drive playback link');
+                }
+            }
+            elseif(stripos($rawUrl, 's3://') === 0)
+            {
+                $objectKey = trim((string)substr($rawUrl, strlen('s3://')));
+                if($objectKey == '')
+                {
+                    return $this->errorNotFound('Invalid S3 object key');
+                }
+
+                $rawUrl = $this->buildS3SignedPlaybackUrl($objectKey, 's3');
+                if($rawUrl == '')
+                {
+                    return $this->errorUnknown('Unable to resolve S3 playback link');
+                }
+            }
+            elseif(stripos($rawUrl, 'idrive://') === 0)
+            {
+                $objectKey = trim((string)substr($rawUrl, strlen('idrive://')));
+                if($objectKey == '')
+                {
+                    return $this->errorNotFound('Invalid IDrive object key');
+                }
+
+                $rawUrl = $this->buildS3SignedPlaybackUrl($objectKey, 'idrive');
+                if($rawUrl == '')
+                {
+                    return $this->errorUnknown('Unable to resolve IDrive playback link');
+                }
+            }
             elseif(stripos($rawUrl, 'http://') !== 0 && stripos($rawUrl, 'https://') !== 0)
             {
                 $localPath = public_path('video/' . ltrim($rawUrl, '/'));
@@ -4130,6 +5698,130 @@ class VideoApiController extends ApiBaseController
                 ];
             }
 
+            if($provider == 'gdrive')
+            {
+                $credentials = $this->resolveGoogleCredentials($user);
+                $missingFields = [];
+
+                if($credentials['client_id'] == '')
+                {
+                    $missingFields[] = 'google_client_id_or_GOOGLE_CLIENT_ID';
+                }
+                if($credentials['client_secret'] == '')
+                {
+                    $missingFields[] = 'google_client_secret_or_GOOGLE_CLIENT_SECRET';
+                }
+                if($credentials['access_token'] == '' && $credentials['refresh_token'] == '')
+                {
+                    $missingFields[] = 'google_access_token_or_google_refresh_token';
+                }
+
+                if(!empty($missingFields))
+                {
+                    return [
+                        'connected' => false,
+                        'missing_fields' => $missingFields,
+                        'message' => 'Provider is not configured for this integration. Missing: ' . implode(', ', $missingFields),
+                    ];
+                }
+
+                return [
+                    'connected' => true,
+                    'missing_fields' => [],
+                    'message' => 'Provider credentials found. Connection ready.',
+                ];
+            }
+
+            if($provider == 's3')
+            {
+                $credentials = $this->resolveS3Credentials();
+                $missingFields = [];
+
+                if($credentials['key'] == '')
+                {
+                    $missingFields[] = 'AWS_KEY';
+                }
+                if($credentials['secret'] == '')
+                {
+                    $missingFields[] = 'AWS_SECRET';
+                }
+                if($credentials['region'] == '')
+                {
+                    $missingFields[] = 'AWS_REGION';
+                }
+                if($credentials['bucket'] == '')
+                {
+                    $missingFields[] = 'AWS_BUCKET';
+                }
+
+                if(!empty($missingFields))
+                {
+                    return [
+                        'connected' => false,
+                        'missing_fields' => $missingFields,
+                        'message' => 'Provider is not configured for this integration. Missing: ' . implode(', ', $missingFields),
+                    ];
+                }
+
+                return [
+                    'connected' => true,
+                    'missing_fields' => [],
+                    'message' => 'Provider credentials found. Connection ready.',
+                ];
+            }
+
+            if($provider == 'idrive')
+            {
+                $credentials = $this->resolveIdriveS3Credentials();
+                $missingFields = [];
+
+                $hasS3CompatibleCredentials = ($credentials['key'] != ''
+                    && $credentials['secret'] != ''
+                    && $credentials['region'] != ''
+                    && $credentials['bucket'] != '');
+                $hasDirectApiCredentials = ($credentials['upload_endpoint'] != '' && $credentials['access_token'] != '');
+
+                if(!$hasS3CompatibleCredentials && !$hasDirectApiCredentials)
+                {
+                    if($credentials['key'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_S3_ACCESS_KEY';
+                    }
+                    if($credentials['secret'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_S3_SECRET_KEY';
+                    }
+                    if($credentials['region'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_S3_REGION';
+                    }
+                    if($credentials['bucket'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_S3_BUCKET';
+                    }
+                    if($credentials['upload_endpoint'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_UPLOAD_ENDPOINT';
+                    }
+                    if($credentials['access_token'] == '')
+                    {
+                        $missingFields[] = 'IDRIVE_ACCESS_TOKEN';
+                    }
+
+                    return [
+                        'connected' => false,
+                        'missing_fields' => $missingFields,
+                        'message' => 'Provider is not configured for this integration. Missing S3-compatible or direct API credentials.',
+                    ];
+                }
+
+                return [
+                    'connected' => true,
+                    'missing_fields' => [],
+                    'message' => 'Provider credentials found. Connection ready.',
+                ];
+            }
+
             $providerRules = [
                 'gdrive' => [
                     'scope' => 'user',
@@ -4150,6 +5842,10 @@ class VideoApiController extends ApiBaseController
                 'idrive' => [
                     'scope' => 'env',
                     'required' => ['IDRIVE_CLIENT_ID', 'IDRIVE_CLIENT_SECRET', 'IDRIVE_ACCESS_TOKEN'],
+                ],
+                's3' => [
+                    'scope' => 'env',
+                    'required' => ['AWS_KEY', 'AWS_SECRET', 'AWS_REGION', 'AWS_BUCKET'],
                 ],
                 'drime' => [
                     'scope' => 'env',
@@ -4226,7 +5922,7 @@ class VideoApiController extends ApiBaseController
 
             if($provider == 'gdrive')
             {
-                $clientId = trim((string)($user->google_client_id ?? ''));
+                $clientId = trim((string)($user->google_client_id ?? env('GOOGLE_CLIENT_ID', '')));
                 $redirectUri = trim((string)env('GOOGLE_REDIRECT_URI', ''));
                 if($clientId == '' || $redirectUri == '')
                 {
@@ -4237,7 +5933,7 @@ class VideoApiController extends ApiBaseController
                     'client_id' => $clientId,
                     'redirect_uri' => $redirectUri,
                     'response_type' => 'code',
-                    'scope' => 'https://www.googleapis.com/auth/drive.readonly',
+                    'scope' => 'https://www.googleapis.com/auth/drive.file',
                     'access_type' => 'offline',
                     'prompt' => 'consent',
                     'state' => trim((string)$state),
@@ -4391,6 +6087,16 @@ class VideoApiController extends ApiBaseController
                     return $bridgeFiles;
                 }
 
+                return [];
+            }
+
+            if($provider == 'gdrive')
+            {
+                return [];
+            }
+
+            if($provider == 's3')
+            {
                 return [];
             }
 

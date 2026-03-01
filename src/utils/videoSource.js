@@ -81,6 +81,13 @@ function isLikelyDirectVideo(rawUrl) {
   return /\.(mp4|webm|m3u8|ogg)(\?.*)?$/i.test(rawUrl)
 }
 
+function isMigrationStreamType(type) {
+  return type === 'creator_migrated'
+    || type === 'creator-migrated'
+    || type === 'migration'
+    || type === 'migrated'
+}
+
 export function resolvePlaybackSource({ sourceType, sourceUrl, title } = {}) {
   const type = toStringSafe(sourceType).toLowerCase()
   const url = toStringSafe(sourceUrl)
@@ -92,6 +99,16 @@ export function resolvePlaybackSource({ sourceType, sourceUrl, title } = {}) {
       title: toStringSafe(title),
       provider: 'direct',
       openUrl: DEFAULT_HTML5_URL,
+    }
+  }
+
+  if (isMigrationStreamType(type)) {
+    return {
+      mode: 'html5',
+      src: url,
+      title: toStringSafe(title),
+      provider: 'direct',
+      openUrl: url,
     }
   }
 

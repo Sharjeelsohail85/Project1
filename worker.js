@@ -113,6 +113,157 @@ function buildDemoTagList() {
   ]
 }
 
+function normalizeProviderId(rawProvider) {
+  const normalized = String(rawProvider || '').trim().toLowerCase()
+  if (!normalized) return ''
+
+  if (normalized === 'google' || normalized === 'googledrive' || normalized === 'google-drive') {
+    return 'gdrive'
+  }
+
+  return normalized
+}
+
+function buildProviderDisplayName(providerId) {
+  const normalized = normalizeProviderId(providerId)
+  switch (normalized) {
+    case 'gdrive':
+      return 'Google Drive'
+    case 'dropbox':
+      return 'Dropbox'
+    case 'idrive':
+      return 'IDrive e2'
+    case 's3':
+      return 'Custom S3'
+    default:
+      return normalized || 'Storage Provider'
+  }
+}
+
+function buildProviderOAuthDemoPayload(providerId) {
+  const normalized = normalizeProviderId(providerId)
+  const displayName = buildProviderDisplayName(normalized)
+  const state = createRandomId()
+
+  return {
+    status: 200,
+    data: {
+      provider: normalized,
+      displayName,
+      connected: true,
+      requiresSetup: false,
+      requiresOAuthWindow: false,
+      missingFields: [],
+      oauthUrl: '',
+      authUrl: '',
+      message: `${displayName} connected in demo mode.`,
+      state,
+      fallback_mode: true,
+    },
+  }
+}
+
+const demoMigrationJobs = new Map()
+const DEMO_MIGRATION_STREAM_URL = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
+
+function extractPathParam(pathname, pattern) {
+  const normalizedPath = normalizePathname(pathname)
+  const match = normalizedPath.match(pattern)
+  if (!match || !match[1]) {
+    return ''
+  }
+
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return String(match[1] || '').trim()
+  }
+}
+
+function inferFilenameFromSourceUrl(sourceUrl = '') {
+  const normalized = String(sourceUrl || '').trim()
+  if (!normalized) {
+    return `video-${Date.now()}.mp4`
+  }
+
+  try {
+    const parsed = new URL(normalized)
+    const pathname = String(parsed.pathname || '').trim()
+    const lastSegment = pathname.split('/').filter(Boolean).slice(-1)[0]
+    return decodeURIComponent(lastSegment || '') || `video-${Date.now()}.mp4`
+  } catch {
+    return normalized.split('/').filter(Boolean).slice(-1)[0] || `video-${Date.now()}.mp4`
+  }
+}
+
+function inferVideoMimeType(fileName = '') {
+  const lower = String(fileName || '').trim().toLowerCase()
+  if (lower.endsWith('.mov')) return 'video/quicktime'
+  if (lower.endsWith('.mkv')) return 'video/x-matroska'
+  if (lower.endsWith('.webm')) return 'video/webm'
+  if (lower.endsWith('.avi')) return 'video/x-msvideo'
+  if (lower.endsWith('.m4v')) return 'video/x-m4v'
+  return 'video/mp4'
+}
+
+function getOrCreateDemoMigrationJob(jobId) {
+  const normalizedJobId = String(jobId || '').trim()
+  if (!normalizedJobId) {
+    return null
+  }
+
+  const existing = demoMigrationJobs.get(normalizedJobId)
+  if (existing) {
+    return existing
+  }
+
+  const fallbackJob = {
+    jobId: normalizedJobId,
+    createdAt: Date.now() - 12000,
+    provider: 'dropbox',
+    sourceUrl: '',
+    metadata: { title: 'Demo migration' },
+    filename: `video-${normalizedJobId.slice(0, 8)}.mp4`,
+    videoId: `demo-video-${normalizedJobId.slice(0, 8)}`,
+  }
+
+  demoMigrationJobs.set(normalizedJobId, fallbackJob)
+  return fallbackJob
+}
+
+function buildDemoMigrationStatusPayload(job) {
+  const elapsed = Math.max(0, Date.now() - Number(job?.createdAt || Date.now()))
+
+  let stage = 'queued'
+  let progress = 5
+  let completed = false
+
+  if (elapsed >= 2000 && elapsed < 5000) {
+    stage = 'downloading'
+    progress = 30
+  } else if (elapsed >= 5000 && elapsed < 8000) {
+    stage = 'uploading'
+    progress = 70
+  } else if (elapsed >= 8000 && elapsed < 11000) {
+    stage = 'finalizing'
+    progress = 92
+  } else if (elapsed >= 11000) {
+    stage = 'finalizing'
+    progress = 100
+    completed = true
+  }
+
+  return {
+    jobId: String(job?.jobId || '').trim(),
+    progress,
+    stage,
+    completed,
+    videoId: completed ? String(job?.videoId || '').trim() : null,
+    message: completed ? 'Migration completed in demo mode.' : 'Migration running in demo mode.',
+    fallback_mode: true,
+  }
+}
+
 function isOneOfPaths(pathname, candidates) {
   const path = normalizePathname(pathname)
   return candidates.includes(path)
@@ -202,6 +353,103 @@ export default {
           data: buildDemoTagList(),
         },
       })
+    }
+
+    if (request.method === 'GET' && requestPath.startsWith('/api/v1/oauth/')) {
+      const providerId = requestPath.split('/').filter(Boolean).slice(-1)[0]
+      return jsonResponse(buildProviderOAuthDemoPayload(providerId))
+    }
+
+    if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/migration/validate', '/migration/validate'])) {
+      const data = await parseBodyData(request)
+      const sourceUrl = String(data?.sourceUrl || '').trim()
+      const filename = inferFilenameFromSourceUrl(sourceUrl)
+      const mime = inferVideoMimeType(filename)
+
+      return jsonResponse({
+        status: 200,
+        data: {
+          valid: true,
+          size: 150 * 1024 * 1024,
+          mime,
+          filename,
+          message: 'Validation passed in demo mode.',
+          fallback_mode: true,
+        },
+      })
+    }
+
+    if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/migration/start', '/migration/start'])) {
+      const data = await parseBodyData(request)
+      const provider = normalizeProviderId(data?.provider) || 'dropbox'
+      const sourceUrl = String(data?.sourceUrl || '').trim()
+      const metadata = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {}
+      const filename = inferFilenameFromSourceUrl(sourceUrl)
+
+      const jobId = createRandomId()
+      const job = {
+        jobId,
+        createdAt: Date.now(),
+        provider,
+        sourceUrl,
+        metadata,
+        filename,
+        videoId: `demo-video-${createRandomId().slice(0, 8)}`,
+      }
+
+      demoMigrationJobs.set(jobId, job)
+
+      return jsonResponse({
+        status: 200,
+        data: {
+          jobId,
+          progress: 1,
+          stage: 'queued',
+          completed: false,
+          message: 'Migration started in demo mode.',
+          fallback_mode: true,
+        },
+      })
+    }
+
+    if (
+      request.method === 'GET'
+      && (requestPath.startsWith('/api/v1/migration/status/') || requestPath.startsWith('/migration/status/'))
+    ) {
+      const jobId = decodeURIComponent(requestPath.split('/').filter(Boolean).slice(-1)[0] || '').trim()
+      if (!jobId) {
+        return jsonResponse({
+          status: 400,
+          error_description: ['jobId is required.'],
+        }, 400)
+      }
+
+      const job = getOrCreateDemoMigrationJob(jobId)
+      return jsonResponse({
+        status: 200,
+        data: buildDemoMigrationStatusPayload(job),
+      })
+    }
+
+    if (request.method === 'GET') {
+      const streamUrlVideoId = extractPathParam(requestPath, /^\/(?:api\/v1\/)?videos\/([^/]+)\/stream-url$/i)
+      if (streamUrlVideoId) {
+        return jsonResponse({
+          status: 200,
+          data: {
+            videoId: streamUrlVideoId,
+            streamUrl: DEMO_MIGRATION_STREAM_URL,
+            playbackUrl: DEMO_MIGRATION_STREAM_URL,
+            message: 'Using demo playback stream URL.',
+            fallback_mode: true,
+          },
+        })
+      }
+
+      const migrationStreamVideoId = extractPathParam(requestPath, /^\/(?:api\/v1\/)?video\/migration\/stream\/([^/]+)$/i)
+      if (migrationStreamVideoId) {
+        return Response.redirect(DEMO_MIGRATION_STREAM_URL, 302)
+      }
     }
 
     if (request.method === 'GET' && isOneOfPaths(requestPath, ['/api/v1/user/tag', '/user/tag'])) {

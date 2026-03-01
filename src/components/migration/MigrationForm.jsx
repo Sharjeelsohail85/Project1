@@ -19,6 +19,45 @@ const DEFAULT_METADATA = {
   tags: [],
 }
 
+function revokeObjectUrlSafe(value) {
+  const next = String(value || '').trim()
+  if (!next) return
+
+  if (typeof window === 'undefined' || !window.URL || typeof window.URL.revokeObjectURL !== 'function') {
+    return
+  }
+
+  try {
+    window.URL.revokeObjectURL(next)
+  } catch {
+    // ignore URL revocation failures
+  }
+}
+
+function sanitizeLocalFileName(fileName) {
+  const normalized = String(fileName || '').trim()
+  if (!normalized) {
+    return `upload-${Date.now()}`
+  }
+
+  return normalized.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9._-]/g, '') || `upload-${Date.now()}`
+}
+
+function inferTitleFromLocalFile(fileName) {
+  const normalized = String(fileName || '').trim()
+  if (!normalized) {
+    return ''
+  }
+
+  const withoutExtension = normalized.replace(/\.[^.]+$/, '')
+  return withoutExtension || normalized
+}
+
+function buildLocalMigrationSourceUrl(file) {
+  const safeName = sanitizeLocalFileName(file?.name)
+  return `https://local-upload.octopussol/${encodeURIComponent(safeName)}`
+}
+
 function mapProviderNameToId(name) {
   const normalized = String(name || '').trim().toLowerCase()
   if (!normalized) return ''
@@ -34,6 +73,7 @@ const MigrationForm = memo(function MigrationForm({
   connectedProviders = [],
 }) {
   const completionRef = useRef('')
+  const localPlaybackUrlRef = useRef('')
   const [selectedProvider, setSelectedProvider] = useState('')
   const [sourceType, setSourceType] = useState('url')
   const [sourceUrl, setSourceUrl] = useState('')
@@ -76,11 +116,30 @@ const MigrationForm = memo(function MigrationForm({
     return base
   }, [])
 
-  const selectedProviderConnected = connectedProviderIds.includes(String(selectedProvider || '').trim().toLowerCase())
+  const normalizedSelectedProvider = String(selectedProvider || '').trim().toLowerCase()
+  const selectedProviderConnected = connectedProviderIds.includes(normalizedSelectedProvider)
   const disableActions = isValidating || isStarting
   const effectiveSourceUrl = sourceType === 'url'
-    ? sourceUrl
-    : String(localFile?.name || '').trim()
+    ? String(sourceUrl || '').trim()
+    : buildLocalMigrationSourceUrl(localFile)
+  const hasSourceReady = sourceType === 'url'
+    ? Boolean(String(sourceUrl || '').trim())
+    : Boolean(localFile)
+
+  useEffect(() => {
+    if (!connectedProviderIds.length) {
+      if (normalizedSelectedProvider) {
+        setSelectedProvider('')
+      }
+      return
+    }
+
+    if (normalizedSelectedProvider && connectedProviderIds.includes(normalizedSelectedProvider)) {
+      return
+    }
+
+    setSelectedProvider(connectedProviderIds[0])
+  }, [connectedProviderIds, normalizedSelectedProvider])
 
   useEffect(() => {
     if (!progressState.completed || !progressState.videoId) {
@@ -93,12 +152,21 @@ const MigrationForm = memo(function MigrationForm({
     }
 
     completionRef.current = completionKey
+
+    const completedPlaybackUrl = String(progressState.playbackUrl || '').trim()
+    const localPlaybackUrl = String(localPlaybackUrlRef.current || '').trim()
+    const completionSourceUrl = sourceType === 'local'
+      ? (completedPlaybackUrl || localPlaybackUrl || effectiveSourceUrl)
+      : (completedPlaybackUrl || effectiveSourceUrl)
+
     onMigrationComplete?.({
       jobId: progressState.jobId,
       videoId: progressState.videoId,
-      sourceUrl: effectiveSourceUrl,
+      sourceType,
+      sourceUrl: completionSourceUrl,
+      originalSourceUrl: effectiveSourceUrl,
     })
-  }, [effectiveSourceUrl, onMigrationComplete, progressState.completed, progressState.jobId, progressState.videoId])
+  }, [effectiveSourceUrl, onMigrationComplete, progressState.completed, progressState.jobId, progressState.playbackUrl, progressState.videoId, sourceType])
 
   const handleValidateVideo = async () => {
     setValidationError('')
@@ -115,7 +183,7 @@ const MigrationForm = memo(function MigrationForm({
     }
 
     if (sourceType !== 'url') {
-      setFormError('Validation currently requires Direct Video URL source.')
+      setFormError('URL validation is only for Direct Video URL mode. For local uploads, proceed with Start Migration.')
       return
     }
 
@@ -144,16 +212,18 @@ const MigrationForm = memo(function MigrationForm({
       return
     }
 
-    if (sourceType !== 'url') {
-      setFormError('Current migration lifecycle uses URL-based backend job start.')
+    if (!hasSourceReady) {
+      setFormError(sourceType === 'url' ? 'Video URL is required.' : 'Select a local video file first.')
       return
     }
 
     try {
       completionRef.current = ''
       await startMigration({
-        sourceUrl,
+        sourceUrl: effectiveSourceUrl,
         provider: selectedProvider,
+        sourceType,
+        localFile,
         metadata,
       })
     } catch (error) {
@@ -163,10 +233,35 @@ const MigrationForm = memo(function MigrationForm({
 
   const canStartMigration = Boolean(selectedProvider)
     && selectedProviderConnected
-    && sourceType === 'url'
-    && Boolean(sourceUrl.trim())
+    && hasSourceReady
     && Boolean(metadata.title.trim())
     && !disableActions
+
+  const startBlockedReason = useMemo(() => {
+    if (disableActions) {
+      return ''
+    }
+
+    if (!selectedProvider) {
+      return 'Select a connected storage provider first.'
+    }
+
+    if (!selectedProviderConnected) {
+      return 'Selected provider is not connected. Click Connect/Use first.'
+    }
+
+    if (!hasSourceReady) {
+      return sourceType === 'url'
+        ? 'Enter a direct video URL first.'
+        : 'Choose a local video file first.'
+    }
+
+    if (!metadata.title.trim()) {
+      return 'Enter a video title first.'
+    }
+
+    return ''
+  }, [disableActions, hasSourceReady, metadata.title, selectedProvider, selectedProviderConnected, sourceType])
 
   return (
     <Stack spacing={2}>
@@ -196,14 +291,51 @@ const MigrationForm = memo(function MigrationForm({
           setSourceType(next)
           setValidationError('')
           setFormError('')
+
+          if (next !== 'local') {
+            revokeObjectUrlSafe(localPlaybackUrlRef.current)
+            localPlaybackUrlRef.current = ''
+          }
         }}
         onSourceUrlChange={(value) => {
           setSourceUrl(value)
           setValidationError('')
         }}
         onLocalFileChange={(file) => {
+          revokeObjectUrlSafe(localPlaybackUrlRef.current)
+          localPlaybackUrlRef.current = ''
+
+          if (file && typeof window !== 'undefined' && window.URL && typeof window.URL.createObjectURL === 'function') {
+            try {
+              localPlaybackUrlRef.current = window.URL.createObjectURL(file)
+            } catch {
+              localPlaybackUrlRef.current = ''
+            }
+          }
+
           setLocalFile(file)
           setValidationError('')
+          setFormError('')
+
+          if (!file) {
+            return
+          }
+
+          setMetadata((previous) => {
+            if (String(previous?.title || '').trim()) {
+              return previous
+            }
+
+            const inferredTitle = inferTitleFromLocalFile(file.name)
+            if (!inferredTitle) {
+              return previous
+            }
+
+            return {
+              ...previous,
+              title: inferredTitle,
+            }
+          })
         }}
         validationError={validationError}
       />
@@ -216,20 +348,7 @@ const MigrationForm = memo(function MigrationForm({
         }}
       />
 
-      <MigrationProgress
-        progress={progressState.progress}
-        stageLabel={stageLabel}
-        stageTimeline={stageTimeline}
-        completed={progressState.completed}
-        error={progressState.error || formError}
-        warning={progressState.providerUploadWarning}
-      />
-
-      {validationResult ? (
-        <Alert severity="success">
-          Validation passed: {validationResult.filename || 'video'} ({validationResult.mime || 'video/*'})
-        </Alert>
-      ) : null}
+      {startBlockedReason ? <Alert severity="info">{startBlockedReason}</Alert> : null}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
         <Button
@@ -250,6 +369,21 @@ const MigrationForm = memo(function MigrationForm({
           {isStarting ? 'Starting…' : isPolling ? 'Migration Running…' : 'Start Migration'}
         </Button>
       </Box>
+
+      <MigrationProgress
+        progress={progressState.progress}
+        stageLabel={stageLabel}
+        stageTimeline={stageTimeline}
+        completed={progressState.completed}
+        error={progressState.error || formError}
+        warning={progressState.providerUploadWarning}
+      />
+
+      {validationResult ? (
+        <Alert severity="success">
+          Validation passed: {validationResult.filename || 'video'} ({validationResult.mime || 'video/*'})
+        </Alert>
+      ) : null}
 
       {progressState.completed && progressState.videoId ? (
         <Alert severity="success">

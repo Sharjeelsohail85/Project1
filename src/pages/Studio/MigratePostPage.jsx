@@ -67,13 +67,6 @@ const MigratePostPage = memo(function MigratePostPage() {
       return
     }
 
-    if (normalized === 's3') {
-      setConnectedById((prev) => ({ ...prev, s3: true }))
-      setConnectionInfo('Custom S3 selected. Ensure server S3 credentials are configured before starting migration.')
-      setConnectionError('')
-      return
-    }
-
     if (!hasAuthSession()) {
       setConnectionError('Please login first. Missing token/client_id for provider connection.')
       return
@@ -130,9 +123,17 @@ const MigratePostPage = memo(function MigratePostPage() {
     }
   }, [])
 
-  const onMigrationComplete = useCallback(({ videoId } = {}) => {
+  const onMigrationComplete = useCallback(({ videoId, sourceType, sourceUrl } = {}) => {
     const resolvedVideoId = String(videoId || '').trim()
     if (!resolvedVideoId) {
+      return
+    }
+
+    const normalizedSourceType = String(sourceType || '').trim().toLowerCase()
+    const resolvedSourceUrl = String(sourceUrl || '').trim()
+
+    if (normalizedSourceType === 'local' && resolvedSourceUrl) {
+      navigate(`/watch/${encodeURIComponent(resolvedVideoId)}?src=${encodeURIComponent(resolvedSourceUrl)}`)
       return
     }
 
