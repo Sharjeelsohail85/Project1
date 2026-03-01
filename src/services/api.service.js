@@ -7,6 +7,27 @@ function canUseWindow() {
   return typeof window !== 'undefined'
 }
 
+function isApiUnavailableFallbackMessage(message = '') {
+  const normalized = String(message || '').toLowerCase()
+  return normalized.includes('backend api is unavailable in this deployment')
+}
+
+function normalizeFallbackApiResponse(response) {
+  const directData = response?.data
+
+  if (
+    directData
+    && typeof directData === 'object'
+    && !Array.isArray(directData)
+    && Object.prototype.hasOwnProperty.call(directData, 'status')
+    && Object.prototype.hasOwnProperty.call(directData, 'data')
+  ) {
+    return directData
+  }
+
+  return response
+}
+
 function normalizeEndpoint(endpoint) {
   if (!endpoint) {
     return '/'
@@ -202,6 +223,8 @@ export async function apiRequest(endpoint, options = {}) {
       throw new Error(`Expected JSON response, got ${contentType || 'unknown content type'}`)
     }
 
+    data = normalizeFallbackApiResponse(data)
+
     console.log(`[API Response] Data:`, data)
     
     // Handle authentication errors only when we have an active session.
@@ -219,6 +242,11 @@ export async function apiRequest(endpoint, options = {}) {
     if (data.status && data.status >= 400) {
       const errorMessage = data.error_description?.[0] || data.message || 'An error occurred'
       console.error(`[API Error] ${data.status}: ${errorMessage}`)
+
+      if (isApiUnavailableFallbackMessage(errorMessage)) {
+        throw new Error('Authentication fallback is active. Continuing without backend profile sync.')
+      }
+
       throw new Error(errorMessage)
     }
     

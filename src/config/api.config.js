@@ -30,7 +30,34 @@ function buildAbsoluteApiBase(origin, pathname) {
   return `${normalizedOrigin}${normalizedPath}`
 }
 
+function getConfiguredProductionApiOrigin() {
+  const fromEnv = stripTrailingSlashes(import.meta.env.VITE_PRODUCTION_API_ORIGIN)
+  if (!fromEnv) {
+    return ''
+  }
+
+  try {
+    const parsed = new URL(fromEnv)
+    if (isLocalhostHost(parsed.hostname)) {
+      return ''
+    }
+
+    if (parsed.protocol !== 'https:') {
+      return `https://${parsed.host}`
+    }
+
+    return stripTrailingSlashes(parsed.origin)
+  } catch {
+    return ''
+  }
+}
+
 function resolveApiBaseURL() {
+  const productionApiOrigin = getConfiguredProductionApiOrigin()
+  if (!import.meta.env.DEV && productionApiOrigin) {
+    return buildAbsoluteApiBase(productionApiOrigin, '/api/v1')
+  }
+
   const configuredBaseURL = stripTrailingSlashes(import.meta.env.VITE_API_BASE_URL)
 
   if (!configuredBaseURL) {

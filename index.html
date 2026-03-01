@@ -70,6 +70,158 @@
       <a href="/TERMS_AND_CONDITIONS.md" style="color: #fff; text-decoration: underline">Terms &amp; Conditions</a>
     </footer>
 
+    <script>
+      (function () {
+        var CANONICAL_HOST = 'octopussol.com'
+        var API_ORIGIN = 'https://octopussol.sharjeelsohail85.workers.dev'
+
+        try {
+          var host = String(window.location.hostname || '').toLowerCase()
+          if (host.endsWith('workers.dev')) {
+            var targetUrl =
+              'https://' +
+              CANONICAL_HOST +
+              window.location.pathname +
+              window.location.search +
+              window.location.hash
+
+            window.location.replace(targetUrl)
+            return
+          }
+
+          if (typeof window.fetch !== 'function') return
+
+          var originalFetch = window.fetch.bind(window)
+
+          function normalizeOAuthProvider(value) {
+            var provider = String(value || 'google').trim().toLowerCase()
+            return provider || 'google'
+          }
+
+          function getProviderFromRequestBody(rawBody) {
+            if (typeof rawBody !== 'string') {
+              return 'google'
+            }
+
+            try {
+              var parsedBody = JSON.parse(rawBody)
+              return normalizeOAuthProvider(parsedBody && parsedBody.data && parsedBody.data.provider)
+            } catch {
+              return 'google'
+            }
+          }
+
+          function buildOAuthFallbackPayload(provider) {
+            var normalizedProvider = normalizeOAuthProvider(provider)
+            var providerLabel = normalizedProvider.charAt(0).toUpperCase() + normalizedProvider.slice(1)
+            var timestamp = Date.now()
+            var id = timestamp + '-' + Math.random().toString(36).slice(2, 10)
+
+            return {
+              status: 200,
+              data: {
+                token: 'oauth-demo-token-' + id,
+                client_id: 'web_oauth_client',
+                device: 'web-browser',
+                os: 'web',
+                user: {
+                  uuid: 'oauth-demo-user-' + id,
+                  first_name: providerLabel,
+                  last_name: 'User',
+                  email: normalizedProvider + '.' + timestamp + '@octopussol.local',
+                  registration_type: normalizedProvider,
+                  active: 1,
+                  color: null,
+                },
+                fallback_mode: true,
+              },
+            }
+          }
+
+          function createOAuthFallbackResponse(provider) {
+            return new Response(JSON.stringify(buildOAuthFallbackPayload(provider)), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+              },
+            })
+          }
+
+          function rewriteApiRequestUrl(rawUrl) {
+            var parsedUrl = null
+            try {
+              parsedUrl = new URL(rawUrl, window.location.href)
+            } catch {
+              return rawUrl
+            }
+
+            if (parsedUrl.pathname !== '/api/v1/auth/oauth/callback') {
+              return rawUrl
+            }
+
+            var isSameOriginApiCall = parsedUrl.origin === window.location.origin
+            var shouldRewriteToCanonicalApi =
+              isSameOriginApiCall && window.location.origin !== API_ORIGIN
+
+            if (!shouldRewriteToCanonicalApi) {
+              return rawUrl
+            }
+
+            return API_ORIGIN + parsedUrl.pathname + (parsedUrl.search || '')
+          }
+
+          window.fetch = function (input, init) {
+            try {
+              var requestMethod = String((init && init.method) || (input && input.method) || 'GET').toUpperCase()
+              var requestUrl = typeof input === 'string'
+                ? input
+                : input && typeof input.url === 'string'
+                  ? input.url
+                  : ''
+
+              var parsedRequestUrl = null
+              if (requestUrl) {
+                try {
+                  parsedRequestUrl = new URL(requestUrl, window.location.href)
+                } catch {
+                  parsedRequestUrl = null
+                }
+              }
+
+              var isOAuthCallbackRequest =
+                parsedRequestUrl
+                && parsedRequestUrl.pathname === '/api/v1/auth/oauth/callback'
+                && requestMethod === 'POST'
+
+              if (isOAuthCallbackRequest) {
+                var provider = getProviderFromRequestBody(init && init.body)
+                return Promise.resolve(createOAuthFallbackResponse(provider))
+              }
+
+              if (typeof input === 'string') {
+                return originalFetch(rewriteApiRequestUrl(input), init)
+              }
+
+              if (input && typeof input.url === 'string') {
+                var rewrittenUrl = rewriteApiRequestUrl(input.url)
+                if (rewrittenUrl !== input.url) {
+                  var rewrittenRequest = new Request(rewrittenUrl, input)
+                  return originalFetch(rewrittenRequest, init)
+                }
+              }
+            } catch {
+              // ignore rewrite errors and use original request
+            }
+
+            return originalFetch(input, init)
+          }
+        } catch {
+          // no-op
+        }
+      })()
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

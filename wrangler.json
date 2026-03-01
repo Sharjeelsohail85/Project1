@@ -1,8 +1,22 @@
 {
   "name": "octopussol",
+  "main": "worker.js",
   "compatibility_date": "2026-02-13",
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "octopussol.com/*",
+      "zone_name": "octopussol.com"
+    },
+    {
+      "pattern": "www.octopussol.com/*",
+      "zone_name": "octopussol.com"
+    }
+  ],
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   }
 }
