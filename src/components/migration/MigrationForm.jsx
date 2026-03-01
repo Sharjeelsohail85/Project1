@@ -156,7 +156,7 @@ const MigrationForm = memo(function MigrationForm({
     const completedPlaybackUrl = String(progressState.playbackUrl || '').trim()
     const localPlaybackUrl = String(localPlaybackUrlRef.current || '').trim()
     const completionSourceUrl = sourceType === 'local'
-      ? (completedPlaybackUrl || localPlaybackUrl || effectiveSourceUrl)
+      ? (localPlaybackUrl || completedPlaybackUrl || effectiveSourceUrl)
       : (completedPlaybackUrl || effectiveSourceUrl)
 
     onMigrationComplete?.({
