@@ -206,6 +206,20 @@ function inferVideoMimeType(fileName = '') {
   return 'video/mp4'
 }
 
+function inferProviderFromUploadRequest(request) {
+  const url = new URL(request.url)
+  const fromQuery = normalizeProviderId(url.searchParams.get('targetProvider') || '')
+  if (fromQuery) return fromQuery
+
+  const token = String(request.headers.get('content-type') || '').toLowerCase()
+  if (token.includes('multipart/form-data')) {
+    // Multipart parsing in Workers is expensive for demo mode; default to dropbox.
+    return 'dropbox'
+  }
+
+  return 'dropbox'
+}
+
 function getOrCreateDemoMigrationJob(jobId) {
   const normalizedJobId = String(jobId || '').trim()
   if (!normalizedJobId) {
@@ -408,6 +422,34 @@ export default {
           completed: false,
           message: 'Migration started in demo mode.',
           fallback_mode: true,
+        },
+      })
+    }
+
+    if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/storage/upload', '/storage/upload'])) {
+      const provider = inferProviderFromUploadRequest(request)
+      const filename = `upload-${Date.now()}.mp4`
+      const videoId = `demo-video-${createRandomId().slice(0, 8)}`
+      const playbackUrl = `/api/v1/video/migration/stream/${encodeURIComponent(videoId)}`
+
+      return jsonResponse({
+        status: 200,
+        data: {
+          files: [
+            {
+              id: videoId,
+              fileId: videoId,
+              videoUuid: videoId,
+              originalFilename: filename,
+              filename,
+              mimeType: inferVideoMimeType(filename),
+              size: 24.5,
+              playbackUrl,
+              provider,
+            },
+          ],
+          fallback_mode: true,
+          message: 'Storage upload completed in demo mode.',
         },
       })
     }
