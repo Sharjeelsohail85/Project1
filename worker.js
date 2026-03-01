@@ -103,6 +103,82 @@ function normalizePathname(pathname) {
   return withoutTrailingSlashes || '/'
 }
 
+function stripTrailingSlashes(value) {
+  return String(value || '').trim().replace(/\/+$/, '')
+}
+
+function resolveApiUpstreamOrigin(env) {
+  const candidates = [
+    env?.API_UPSTREAM_ORIGIN,
+    env?.LARAVEL_API_ORIGIN,
+    env?.PRODUCTION_API_ORIGIN,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = stripTrailingSlashes(candidate)
+    if (!normalized) continue
+
+    const withProtocol = /^(https?:)\/\//i.test(normalized)
+      ? normalized
+      : `https://${normalized}`
+
+    try {
+      const parsed = new URL(withProtocol)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        continue
+      }
+
+      return `${parsed.protocol}//${parsed.host}`
+    } catch {
+      // Ignore invalid candidate and keep checking.
+    }
+  }
+
+  return ''
+}
+
+function isApiPath(pathname) {
+  return normalizePathname(pathname).startsWith('/api/v1/')
+}
+
+async function proxyApiRequestToUpstream(request, upstreamOrigin) {
+  const incomingUrl = new URL(request.url)
+  const upstreamUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, `${upstreamOrigin}/`)
+
+  if (incomingUrl.host === upstreamUrl.host) {
+    return jsonResponse({
+      status: 500,
+      error_description: [
+        'Invalid API upstream origin. Use a separate backend host or subdomain to avoid a proxy loop.',
+      ],
+      message: 'Worker upstream proxy misconfigured.',
+    }, 500)
+  }
+
+  const headers = new Headers(request.headers)
+  headers.delete('host')
+  headers.delete('cf-connecting-ip')
+  headers.delete('cf-ipcountry')
+  headers.delete('cf-ray')
+  headers.set('x-forwarded-host', incomingUrl.host)
+  headers.set('x-forwarded-proto', incomingUrl.protocol.replace(':', ''))
+
+  const clientIp = String(request.headers.get('cf-connecting-ip') || '').trim()
+  if (clientIp) {
+    headers.set('x-forwarded-for', clientIp)
+  }
+
+  const shouldIncludeBody = request.method !== 'GET' && request.method !== 'HEAD'
+  const proxyRequest = new Request(upstreamUrl.toString(), {
+    method: request.method,
+    headers,
+    redirect: 'manual',
+    body: shouldIncludeBody ? request.body : undefined,
+  })
+
+  return fetch(proxyRequest)
+}
+
 function buildDemoTagList() {
   return [
     { uuid: 'demo-tag-1', name: 'Music', active: 1 },
@@ -287,6 +363,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url)
     const requestPath = normalizePathname(url.pathname)
+    const upstreamApiOrigin = resolveApiUpstreamOrigin(env)
 
     if (url.hostname.endsWith('workers.dev') && !requestPath.startsWith('/api/v1/')) {
       const canonical = new URL(request.url)
@@ -299,6 +376,10 @@ export default {
         status: 204,
         headers: buildJsonHeaders(),
       })
+    }
+
+    if (upstreamApiOrigin && isApiPath(requestPath)) {
+      return proxyApiRequestToUpstream(request, upstreamApiOrigin)
     }
 
     if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/auth/register', '/auth/register'])) {
