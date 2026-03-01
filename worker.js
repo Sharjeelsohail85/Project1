@@ -430,7 +430,6 @@ export default {
       const provider = inferProviderFromUploadRequest(request)
       const filename = `upload-${Date.now()}.mp4`
       const videoId = `demo-video-${createRandomId().slice(0, 8)}`
-      const playbackUrl = `/api/v1/video/migration/stream/${encodeURIComponent(videoId)}`
 
       return jsonResponse({
         status: 200,
@@ -444,7 +443,9 @@ export default {
               filename,
               mimeType: inferVideoMimeType(filename),
               size: 24.5,
-              playbackUrl,
+              // Intentionally empty in demo mode for local uploads so
+              // the watch page uses local object URL passed by frontend.
+              playbackUrl: '',
               provider,
             },
           ],
