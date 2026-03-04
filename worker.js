@@ -389,6 +389,16 @@ export default {
       if (!url.hostname.endsWith('workers.dev')) {
         return fetch(request)
       }
+
+      // For workers.dev preview URLs, fail fast instead of returning demo API
+      // payloads when upstream is not configured.
+      return jsonResponse({
+        status: 503,
+        error_description: [
+          'API upstream is not configured for this worker preview URL.',
+        ],
+        message: 'Configure API_UPSTREAM_ORIGIN or use the custom domain route.',
+      }, 503)
     }
 
     if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/auth/register', '/auth/register'])) {
