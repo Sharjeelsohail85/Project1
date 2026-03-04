@@ -641,6 +641,11 @@ export default {
       })
     }
 
+    if (request.method === 'GET' && requestPath.toLowerCase() === '/privacy_policy.md') {
+      const canonicalPrivacyPageUrl = new URL('/privacy-policy.html', url)
+      return Response.redirect(canonicalPrivacyPageUrl.toString(), 301)
+    }
+
     return env.ASSETS.fetch(request)
   },
 }

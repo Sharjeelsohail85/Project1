@@ -920,6 +920,18 @@ body.theme-effect-mixing .titlebar {
 		padding: 10px 16px;
 	}
 
+	.promoverlay-legal-links {
+		margin-top: 10px;
+		font-size: 12px;
+		line-height: 1.4;
+		color: rgba(255, 255, 255, 0.88);
+	}
+
+	.promoverlay-legal-links a {
+		color: #ffffff;
+		text-decoration: underline;
+	}
+
 	.promoverlay-tagline,
 	.promoverlay-user {
 		z-index: 3;
@@ -1192,6 +1204,11 @@ body.theme-effect-mixing .titlebar {
 
 	.promoverlay-desc {
 		font-size: 15px;
+	}
+
+	.promoverlay-legal-links {
+		font-size: 11px;
+		margin-top: 8px;
 	}
 
 	.promoverlay-tagline-sub {

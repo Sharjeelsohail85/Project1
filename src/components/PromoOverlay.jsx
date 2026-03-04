@@ -77,24 +77,32 @@ const PromoOverlay = memo(function PromoOverlay({
           </div>
         ))}
         {!isAuthenticated ? (
-          <div className="promoverlay-button-row" role="group" aria-label="Authentication actions">
-            <button
-              id="promoverlaySignup"
-              className="promoverlay-signup promoverlay-button button-flat"
-              onClick={() => onShowSignup?.()}
-            >
-              <i className="material-icons" aria-hidden="true">person_add</i>
-              Sign Up
-            </button>
-            <button
-              id="promoverlayLogin"
-              className="promoverlay-login promoverlay-button button-flat"
-              onClick={() => onShowLogin?.()}
-            >
-              <i className="material-icons" aria-hidden="true">exit_to_app</i>
-              Log In
-            </button>
-          </div>
+          <>
+            <div className="promoverlay-button-row" role="group" aria-label="Authentication actions">
+              <button
+                id="promoverlaySignup"
+                className="promoverlay-signup promoverlay-button button-flat"
+                onClick={() => onShowSignup?.()}
+              >
+                <i className="material-icons" aria-hidden="true">person_add</i>
+                Sign Up
+              </button>
+              <button
+                id="promoverlayLogin"
+                className="promoverlay-login promoverlay-button button-flat"
+                onClick={() => onShowLogin?.()}
+              >
+                <i className="material-icons" aria-hidden="true">exit_to_app</i>
+                Log In
+              </button>
+            </div>
+
+            <div className="promoverlay-legal-links" aria-label="Legal links">
+              <a href="/privacy-policy.html">Privacy Policy</a>
+              <span aria-hidden="true"> • </span>
+              <a href="/terms-and-conditions.html">Terms &amp; Conditions</a>
+            </div>
+          </>
         ) : null}
       </div>
 
