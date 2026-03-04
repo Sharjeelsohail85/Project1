@@ -1,2 +1,19 @@
-node_modules
-node_modules
+# Dependencies
+node_modules/
+Video-master/vendor/
+
+# Build output
+dist/
+
+# Local environment / secrets
+.env.infinityfree
+
+# Tool/runtime caches
+.npm-cache/
+.wrangler/
+.ifb/
+scripts/__pycache__/
+__pycache__/
+
+# Temporary artifacts
+.tmp-*

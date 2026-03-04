@@ -378,8 +378,17 @@ export default {
       })
     }
 
-    if (upstreamApiOrigin && isApiPath(requestPath)) {
-      return proxyApiRequestToUpstream(request, upstreamApiOrigin)
+    if (isApiPath(requestPath)) {
+      if (upstreamApiOrigin) {
+        return proxyApiRequestToUpstream(request, upstreamApiOrigin)
+      }
+
+      // Production safety: when running on a custom domain route and no explicit
+      // upstream is configured, pass API calls through to the zone origin.
+      // This prevents demo-mode API responses on production routes.
+      if (!url.hostname.endsWith('workers.dev')) {
+        return fetch(request)
+      }
     }
 
     if (request.method === 'POST' && isOneOfPaths(requestPath, ['/api/v1/auth/register', '/auth/register'])) {

@@ -53,6 +53,21 @@ function getConfiguredProductionApiOrigin() {
 }
 
 function resolveApiBaseURL() {
+  const runtimeOrigin = getOriginSafe()
+
+  // Production safety: if app is served on octopussol.com, always use same-origin API.
+  // This prevents accidental fallback to localhost or old worker/proxy endpoints.
+  if (!import.meta.env.DEV && runtimeOrigin) {
+    try {
+      const runtimeHost = new URL(runtimeOrigin).hostname.toLowerCase()
+      if (runtimeHost === 'octopussol.com' || runtimeHost === 'www.octopussol.com') {
+        return '/api/v1'
+      }
+    } catch {
+      // ignore parse errors and continue normal resolution
+    }
+  }
+
   const productionApiOrigin = getConfiguredProductionApiOrigin()
   if (!import.meta.env.DEV && productionApiOrigin) {
     return buildAbsoluteApiBase(productionApiOrigin, '/api/v1')
@@ -78,7 +93,6 @@ function resolveApiBaseURL() {
     }
 
     if (isLocalhostBackend && !import.meta.env.DEV) {
-      const runtimeOrigin = getOriginSafe()
       if (runtimeOrigin) {
         return buildAbsoluteApiBase(runtimeOrigin, configuredPath)
       }
