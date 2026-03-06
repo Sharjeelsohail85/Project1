@@ -704,6 +704,76 @@ body.theme-effect-mixing .titlebar {
 }
 
 @media (max-width: 768px) {
+	.top-wrap.active.comments-expanded {
+		height: auto;
+		min-height: clamp(760px, 128vh, 980px);
+	}
+
+	.top-wrap.active.theater-active.comments-expanded {
+		height: auto;
+		min-height: clamp(820px, 138vh, 1040px);
+	}
+
+	#daily #dailyClose {
+		top: 12px;
+		right: 12px;
+	}
+
+	#daily #dailyFull {
+		top: 12px;
+		right: 56px;
+	}
+
+	#daily .daily-player,
+	#daily .dailyPlayer {
+		position: relative;
+		top: auto;
+		left: auto;
+		right: auto;
+		width: calc(100% - 24px);
+		max-width: none;
+		height: min(54vw, 300px);
+		margin: 78px 12px 0;
+		border-radius: 10px;
+	}
+
+	#daily .daily-info,
+	#daily .dailyInfo {
+		position: relative;
+		top: auto;
+		left: auto;
+		right: auto;
+		width: 100%;
+		max-height: none;
+		padding: 14px 16px 0;
+		transform: none;
+		overflow: visible;
+	}
+
+	#daily .daily-info-title,
+	#daily .dailyInfoTitle {
+		width: 100%;
+		white-space: normal;
+		font-size: clamp(1.05rem, 4.4vw, 1.4rem);
+	}
+
+	#daily #dailyComments.daily-comments {
+		top: calc(78px + min(54vw, 300px) + 150px);
+		left: 12px;
+		right: 12px;
+	}
+
+	#daily.comments-open #dailyComments.daily-comments.active {
+		height: min(46vh, 400px);
+		max-height: min(46vh, 400px);
+	}
+
+	#daily.daily.alternate.comments-open #dailyComments.daily-comments.active {
+		top: calc(78px + min(54vw, 300px) + 220px);
+		height: min(42vh, 360px);
+		max-height: min(42vh, 360px);
+	}
+
 	#signup.signup.signup-step-1-view .signup-step1-reference.active {
 		padding: 68px 14px 22px;
 		gap: 12px;
@@ -1101,6 +1171,25 @@ body.theme-effect-mixing .titlebar {
 }
 
 @media (max-width: 520px) {
+	.top-wrap.active.comments-expanded {
+		min-height: clamp(820px, 140vh, 1060px);
+	}
+
+	.top-wrap.active.theater-active.comments-expanded {
+		min-height: clamp(860px, 150vh, 1120px);
+	}
+
+	#daily #dailyComments.daily-comments {
+		top: calc(74px + min(58vw, 250px) + 142px);
+		left: 10px;
+		right: 10px;
+	}
+
+	#daily.comments-open #dailyComments.daily-comments.active {
+		height: min(44vh, 340px);
+		max-height: min(44vh, 340px);
+	}
+
 	#signup.signup.signup-step-1-view .signup-step1-reference.active {
 		padding: 64px 10px 18px;
 		gap: 10px;
@@ -1234,7 +1323,19 @@ body.theme-effect-mixing .titlebar {
 	.signup-prev,
 	.upload-prev {
 		top: 14px;
-		right: 114px;
+		right: 106px;
+	}
+
+	.upload-item-select {
+		width: 64px;
+		height: 64px;
+		margin: 6px;
+	}
+
+	.upload-item-select .zmdi,
+	.upload-item-select .material-icons {
+		font-size: 26px;
+		line-height: 64px;
 	}
 }
 

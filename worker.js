@@ -79,6 +79,84 @@ function buildJsonHeaders() {
   }
 }
 
+function shouldBypassInfinityFreeChallenge(hostname, pathname) {
+  const host = String(hostname || '').trim().toLowerCase()
+  const path = normalizePathname(pathname)
+
+  if (!host.endsWith('.gamer.gd')) {
+    return false
+  }
+
+  return path.startsWith('/api/v1/')
+}
+
+async function solveInfinityFreeChallenge(request, response) {
+  const html = await response.text()
+  const hexMatches = [...html.matchAll(/"([0-9a-f]{32})"/gi)]
+  if (hexMatches.length < 3 || !html.includes('__test=')) {
+    return null
+  }
+
+  const keyHex = hexMatches[0][1]
+  const ivHex = hexMatches[1][1]
+  const cipherHex = hexMatches[2][1]
+
+  let keyBytes
+  let ivBytes
+  let cipherBytes
+
+  try {
+    keyBytes = Uint8Array.from(keyHex.match(/../g).map((x) => parseInt(x, 16)))
+    ivBytes = Uint8Array.from(ivHex.match(/../g).map((x) => parseInt(x, 16)))
+    cipherBytes = Uint8Array.from(cipherHex.match(/../g).map((x) => parseInt(x, 16)))
+  } catch {
+    return null
+  }
+
+  try {
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt']
+    )
+
+    const plainBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: ivBytes },
+      cryptoKey,
+      cipherBytes
+    )
+
+    const plainBytes = new Uint8Array(plainBuffer)
+    const cookieHex = [...plainBytes]
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+
+    if (!cookieHex) {
+      return null
+    }
+
+    const upstreamUrl = new URL(request.url)
+    const challengeUrl = new URL(upstreamUrl.toString())
+    challengeUrl.searchParams.set('i', '1')
+
+    const headers = new Headers(request.headers)
+    headers.set('cookie', `__test=${cookieHex}`)
+    headers.delete('host')
+
+    const shouldIncludeBody = request.method !== 'GET' && request.method !== 'HEAD'
+    return fetch(challengeUrl.toString(), {
+      method: request.method,
+      headers,
+      redirect: 'manual',
+      body: shouldIncludeBody ? request.body : undefined,
+    })
+  } catch {
+    return null
+  }
+}
+
 async function parseBodyData(request) {
   try {
     const payload = await request.clone().json()
@@ -176,7 +254,19 @@ async function proxyApiRequestToUpstream(request, upstreamOrigin) {
     body: shouldIncludeBody ? request.body : undefined,
   })
 
-  return fetch(proxyRequest)
+  const upstreamResponse = await fetch(proxyRequest)
+
+  if (shouldBypassInfinityFreeChallenge(upstreamUrl.hostname, upstreamUrl.pathname)) {
+    const contentType = String(upstreamResponse.headers.get('content-type') || '').toLowerCase()
+    if (upstreamResponse.ok && contentType.includes('text/html')) {
+      const solvedResponse = await solveInfinityFreeChallenge(proxyRequest, upstreamResponse.clone())
+      if (solvedResponse) {
+        return solvedResponse
+      }
+    }
+  }
+
+  return upstreamResponse
 }
 
 function buildDemoTagList() {
@@ -364,6 +454,27 @@ export default {
     const url = new URL(request.url)
     const requestPath = normalizePathname(url.pathname)
     const upstreamApiOrigin = resolveApiUpstreamOrigin(env)
+
+    if (request.method === 'GET' && requestPath === '/__probe/env') {
+      let upstreamHost = ''
+      try {
+        upstreamHost = upstreamApiOrigin ? new URL(upstreamApiOrigin).host : ''
+      } catch {
+        upstreamHost = ''
+      }
+
+      return jsonResponse({
+        status: 200,
+        data: {
+          worker: 'octopussol',
+          route_host: url.host,
+          request_path: requestPath,
+          has_api_upstream_origin: Boolean(upstreamApiOrigin),
+          api_upstream_origin_host: upstreamHost,
+          api_upstream_origin_scheme_https: String(upstreamApiOrigin || '').startsWith('https://'),
+        },
+      })
+    }
 
     if (url.hostname.endsWith('workers.dev') && !requestPath.startsWith('/api/v1/')) {
       const canonical = new URL(request.url)

@@ -121,7 +121,7 @@ const PageFaq = memo(function PageFaq({ isAuthenticated = false }) {
 
                 <Button
                   component="a"
-                  href="/TERMS_AND_CONDITIONS.md"
+                  href="/terms-and-conditions.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="text"

@@ -195,18 +195,6 @@ export default function SettingsPage({
     document.documentElement.style.setProperty('--theme-surface-overlay', contrast.surfaceOverlay)
   }
 
-  useEffect(() => {
-    const prevTitle = document.title
-    document.title = isChannelRoute
-      ? 'Channel'
-      : isThemeDesignerPage
-      ? 'Theme Designer'
-      : 'Settings'
-    return () => {
-      document.title = prevTitle
-    }
-  }, [isChannelRoute, isThemeDesignerPage])
-
   // Mirror original script.js slideout timing behavior
   useEffect(() => {
     let t50
