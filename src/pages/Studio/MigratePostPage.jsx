@@ -109,7 +109,19 @@ const MigratePostPage = memo(function MigratePostPage() {
 
       if (!result?.connected) {
         setConnectedById((prev) => ({ ...prev, [normalized]: false }))
-        setConnectionError(String(result?.message || `${provider?.name || normalized} is not configured for this account.`))
+
+        const missingFields = Array.isArray(result?.missingFields)
+          ? result.missingFields.map((field) => String(field || '').trim()).filter(Boolean)
+          : []
+
+        const baseMessage = String(result?.message || '').trim()
+        const providerName = provider?.name || normalized
+
+        const fallbackMessage = missingFields.length
+          ? `${providerName} is not configured for this account. Missing: ${missingFields.join(', ')}. Add provider credentials in account settings or server environment, then connect again.`
+          : `${providerName} is not configured for this account.`
+
+        setConnectionError(baseMessage || fallbackMessage)
         return
       }
 
