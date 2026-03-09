@@ -8,6 +8,12 @@ function requireAuthParams() {
   const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
   const clientId = String(localStorage.getItem('client_id') || '').trim()
 
+  const normalizedToken = token.toLowerCase()
+  const isDemoToken = normalizedToken.includes('demo-token') || normalizedToken.startsWith('oauth-demo-token-')
+  if (isDemoToken) {
+    throw new Error('Session is using demo token. Please sign in again to establish a real backend session.')
+  }
+
   if (!token || !clientId) {
     throw new Error('Please login first. Missing token/client_id for provider connection.')
   }
@@ -45,6 +51,16 @@ export async function beginProviderOAuth(providerId) {
     })
 
     const payload = response?.data?.data || response?.data || {}
+    const statusCode = Number(payload?.status || 0)
+    const errorDescriptions = Array.isArray(payload?.error_description)
+      ? payload.error_description.map((item) => String(item || '').trim()).filter(Boolean)
+      : []
+
+    if (statusCode >= 400 || errorDescriptions.length) {
+      const description = errorDescriptions.join(' ').trim()
+      const fallback = String(payload?.message || 'Provider connection failed.').trim()
+      throw new Error(description || fallback)
+    }
 
     return {
       provider: String(payload?.provider || normalizedProvider),

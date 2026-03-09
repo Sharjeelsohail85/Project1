@@ -45,7 +45,16 @@ function isProviderNotConfiguredError(error) {
 }
 
 function isOAuthDemoModeEnabled() {
-  return String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
+  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
+  if (!envEnabled) return false
+
+  if (typeof window === 'undefined') {
+    return Boolean(import.meta.env.DEV)
+  }
+
+  const hostname = String(window.location?.hostname || '').toLowerCase()
+  const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  return Boolean(import.meta.env.DEV) || isLocalRuntime
 }
 
 function completeOAuthInDemoMode(provider) {

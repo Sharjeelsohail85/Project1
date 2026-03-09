@@ -5,6 +5,12 @@ function stripTrailingSlashes(value) {
   return String(value || '').trim().replace(/\/+$/, '')
 }
 
+function isDemoTokenValue(value) {
+  const token = String(value || '').trim().toLowerCase()
+  if (!token) return false
+  return token.includes('demo-token') || token.startsWith('oauth-demo-token-')
+}
+
 function isLocalhostHost(hostname) {
   const normalized = String(hostname || '').trim().toLowerCase()
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
@@ -16,6 +22,18 @@ function getOriginSafe() {
   }
 
   return stripTrailingSlashes(window.location.origin)
+}
+
+function isPublicRuntimeHost() {
+  const origin = getOriginSafe()
+  if (!origin) return false
+
+  try {
+    const hostname = new URL(origin).hostname
+    return !isLocalhostHost(hostname)
+  } catch {
+    return false
+  }
 }
 
 function normalizeApiPath(pathname) {
@@ -130,9 +148,9 @@ export const API_CONFIG = {
   // Endpoints
   endpoints: {
     auth: {
-      login: '/auth/login',
-      register: '/auth/register',
-      oauthCallback: '/auth/oauth/callback', // For OAuth callbacks
+      login: '/api/v1/auth/login',
+      register: '/api/v1/auth/register',
+      oauthCallback: '/api/v1/auth/oauth/callback', // For OAuth callbacks
     },
     video: {
       list: '/video',
@@ -182,9 +200,29 @@ export const API_CONFIG = {
 // Helper to get auth tokens from localStorage
 export function getAuthTokens() {
   if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
+    const storedClientId = localStorage.getItem('client_id') || localStorage.getItem('auth_client_id')
+
+    // Production hardening: stale demo-mode tokens must never be used against live API.
+    if (isPublicRuntimeHost() && isDemoTokenValue(token)) {
+      try {
+        localStorage.removeItem('token')
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('client_id')
+        localStorage.removeItem('auth_client_id')
+      } catch {
+        // ignore storage cleanup errors
+      }
+
+      return {
+        token: null,
+        client_id: null,
+      }
+    }
+
     return {
-      token: localStorage.getItem('token'),
-      client_id: localStorage.getItem('client_id'),
+      token,
+      client_id: storedClientId || (token ? 'web_client' : null),
     }
   }
   return { token: null, client_id: null }
@@ -193,8 +231,11 @@ export function getAuthTokens() {
 // Helper to save auth tokens
 export function saveAuthTokens(token, clientId) {
   if (typeof window !== 'undefined') {
+    const normalizedClientId = String(clientId || '').trim() || 'web_client'
     localStorage.setItem('token', token)
-    localStorage.setItem('client_id', clientId)
+    localStorage.setItem('auth_token', token)
+    localStorage.setItem('client_id', normalizedClientId)
+    localStorage.setItem('auth_client_id', normalizedClientId)
 
     try {
       window.dispatchEvent(new CustomEvent('auth:login'))
@@ -210,6 +251,7 @@ export function clearAuthTokens() {
     localStorage.removeItem('token')
     localStorage.removeItem('client_id')
     localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_client_id')
     localStorage.removeItem('auth_provider')
     localStorage.removeItem('user_info')
   }

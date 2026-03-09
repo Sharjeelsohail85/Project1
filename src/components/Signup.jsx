@@ -41,6 +41,14 @@ function shouldAllowOfflineSignupFallback(error) {
 }
 
 function createDemoSignupSession({ name, email, provider = 'password' }) {
+  if (typeof window !== 'undefined') {
+    const hostname = String(window.location?.hostname || '').toLowerCase()
+    const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+    if (!isLocalRuntime && !import.meta.env.DEV) {
+      throw new Error('Demo signup session is disabled on production. Please use real backend signup/login.')
+    }
+  }
+
   const timestamp = Date.now()
   const demoToken = `demo-token-${provider}-${timestamp}`
   const demoClientId = `demo-client-${provider}-${timestamp}`
@@ -963,7 +971,7 @@ const Signup = memo(function Signup({
 
       {/* Step 2: Tags */}
       <div id="signup2" className={`signup-page-2 signup-page ${step === 2 ? 'active' : ''}`}>
-        <TagsPage />
+        {active && step === 2 ? <TagsPage /> : null}
       </div>
 
       {/* Step 3: Theme Color */}
