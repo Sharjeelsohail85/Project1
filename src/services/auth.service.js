@@ -261,9 +261,13 @@ export async function handleOAuthCallback(provider, params) {
   try {
     const redirectUri = getOAuthRedirectUri(provider)
     const response = await authAPI.oauthCallback(provider, code, state, redirectUri)
-    
-    if (response.data && response.data.user) {
-      return response.data.user
+
+    const directUser = response?.data?.user
+    const nestedUser = response?.data?.data?.user
+    const fallbackUser = response?.user
+
+    if (directUser || nestedUser || fallbackUser) {
+      return directUser || nestedUser || fallbackUser
     }
     
     throw new Error('Invalid response from server')
