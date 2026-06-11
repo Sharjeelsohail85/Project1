@@ -40,6 +40,8 @@ RUN mkdir -p \
     bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+RUN chmod +x scripts/start-kuberns.sh
+
 EXPOSE 8080
 
-CMD ["sh", "-c", "mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views bootstrap/cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["scripts/start-kuberns.sh"]

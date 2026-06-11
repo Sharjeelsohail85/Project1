@@ -15,6 +15,13 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/healthz', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'project1-backend',
+    ]);
+});
+
 if (class_exists(\Laravel\Ui\UiServiceProvider::class)) {
     Auth::routes();
 }
