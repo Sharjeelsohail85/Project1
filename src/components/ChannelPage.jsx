@@ -28,15 +28,17 @@ function normalizeVideoRows(response) {
           || 'General'
       ).trim()
 
-      return {
-        id: uuid,
-        title: String(item?.title || item?.name || `Video ${index + 1}`).trim() || `Video ${index + 1}`,
-        type: String(item?.type || 'Upload').trim() || 'Upload',
-        channelName: channelName || 'General',
-        privacy: String(item?.privacyOption?.data?.name || item?.privacy_option || 'Public').trim() || 'Public',
-        sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
-        description: String(item?.description || item?.body || '').trim(),
-      }
+return {
+  id: uuid,
+  title: String(item?.title || item?.name || `Video ${index + 1}`).trim() || `Video ${index + 1}`,
+  type: String(item?.type || 'Upload').trim() || 'Upload',
+  channelName: channelName || 'General',
+  privacy: String(item?.privacyOption?.data?.name || item?.privacy_option || 'Public').trim() || 'Public',
+  sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
+  sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
+  createdAt: String(item?.created_at || '').trim(),
+  description: String(item?.description || item?.body || '').trim(),
+}
     })
     .filter(Boolean)
 }
@@ -113,15 +115,15 @@ const ChannelPage = memo(function ChannelPage({
       .slice(0, 5)
   }, [videos])
 
-  const handleOpenVideo = useCallback((video) => {
-    onOpenVideo({
-      videoId: video.id,
-      sourceUrl: video.sourceUrl,
-      title: video.title,
-      description: video.description,
-      sourceType: 'creator_migrated',
-    })
-  }, [onOpenVideo])
+const handleOpenVideo = useCallback((video) => {
+  onOpenVideo({
+    videoId: video.id,
+    sourceUrl: video.sourceUrl,
+    title: video.title,
+    description: video.description,
+    sourceType: video.sourceType || 'creator_migrated',
+  })
+}, [onOpenVideo])
 
   const formatViews = (v) => {
     const n = Number(v)
@@ -215,15 +217,16 @@ const ChannelPage = memo(function ChannelPage({
             {!isLoading && !loadError && recentVideos.length > 0 ? (
               <div className="browser-content-page" style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {recentVideos.map((video) => (
-                  <ContentItem
-                    key={video.id}
-                    title={video.title}
-                    username={video.channelName}
-                    views={formatViews(video.views)}
-                    rating="—"
-                    description={video.description}
-                    onOpenVideo={() => handleOpenVideo(video)}
-                  />
+<ContentItem
+  key={video.id}
+  title={video.title}
+  username={video.channelName}
+  views={formatViews(video.views)}
+  rating="—"
+  description={video.description}
+  createdAt={video.createdAt}
+  onOpenVideo={() => handleOpenVideo(video)}
+/>
                 ))}
               </div>
             ) : null}
@@ -243,15 +246,16 @@ const ChannelPage = memo(function ChannelPage({
           ) : (
             <div className="browser-content-page" style={{ display: 'flex', flexWrap: 'wrap' }}>
               {videos.map((video) => (
-                <ContentItem
-                  key={video.id}
-                  title={video.title}
-                  username={video.channelName}
-                  views={formatViews(video.views)}
-                  rating="—"
-                  description={video.description}
-                  onOpenVideo={() => handleOpenVideo(video)}
-                />
+<ContentItem
+  key={video.id}
+  title={video.title}
+  username={video.channelName}
+  views={formatViews(video.views)}
+  rating="—"
+  description={video.description}
+  createdAt={video.createdAt}
+  onOpenVideo={() => handleOpenVideo(video)}
+/>
               ))}
             </div>
           )}

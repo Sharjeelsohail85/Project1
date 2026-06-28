@@ -61,7 +61,7 @@ const Browser = memo(function Browser({ activePage, onOpenVideo }) {
             href: '',
             videoId: uuid,
             sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
-            sourceType: 'creator_migrated',
+sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
           }
         }).filter((v) => v.id)
 
@@ -79,7 +79,9 @@ const Browser = memo(function Browser({ activePage, onOpenVideo }) {
             isNsfw: false,
             href: '',
             videoId: uuid,
-            sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
+sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
+sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
+createdAt: String(item?.created_at || '').trim(),
             sourceType: 'creator_migrated',
           }
         }).filter((v) => v.id)
@@ -172,15 +174,16 @@ const Browser = memo(function Browser({ activePage, onOpenVideo }) {
             </div>
           ) : (
             videos.map((item) => (
-              <ContentItem
-                key={item.id}
-                title={item.title}
-                username={item.username}
-                views={item.views}
-                rating={item.rating}
-                description={item.description}
-                onOpenVideo={() => handleOpenVideo(item)}
-              />
+<ContentItem
+  key={item.id}
+  title={item.title}
+  username={item.username}
+  views={item.views}
+  rating={item.rating}
+  description={item.description}
+  createdAt={item.createdAt}
+  onOpenVideo={() => handleOpenVideo(item)}
+/>
             ))
           )}
         </div>

@@ -6,6 +6,7 @@ const ContentItem = memo(function ContentItem({
   views,
   rating,
   description,
+  createdAt,
   isPick = false,
   isNsfw = false,
   href,
@@ -99,7 +100,10 @@ const ContentItem = memo(function ContentItem({
         </div>
         
         {/* Description (hidden by CSS) */}
-        <p className="browser-content-item-desc">{description}</p>
+      <p className="browser-content-item-desc">{description}</p>
+      {createdAt && (
+        <p className="browser-content-item-date">{new Date(createdAt).toLocaleString()}</p>
+      )}
         
         {/* Pick Badge (hidden by CSS) */}
         {isPick && <div className="browser-content-item-pick">Editors' Pick</div>}
