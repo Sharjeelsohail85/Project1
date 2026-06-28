@@ -584,6 +584,51 @@ select:disabled {
 
 .titlebar-right {
 	right: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.titlebar-auth-actions {
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	height: 100%;
+	vertical-align: top;
+}
+
+.titlebar-auth-button,
+.titlebar-auth-button.button {
+	position: relative;
+	top: auto;
+	transform: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-width: 96px;
+	height: 38px;
+	padding: 0 14px;
+	margin: 0;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.16) !important;
+	color: var(--theme-on-color, #fafafa) !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+	z-index: 2;
+}
+
+.titlebar-auth-button:hover,
+.titlebar-auth-button.button:hover {
+	background: rgba(255, 255, 255, 0.24) !important;
+	transform: translateY(-1px);
+}
+
+.titlebar-auth-button .material-icons {
+	top: 0;
+	font-size: 18px;
+	line-height: 1;
 }
 
 .titlebar-item {
@@ -1259,6 +1304,238 @@ select:disabled {
 	.post-page-shell #upload1 .upload-link {
 		margin-top: 16px;
 	}
+}
+
+/* Linked Account Import - embedded in step 1 of upload */
+.upload-item-select-divider {
+	width: 100%;
+	height: 1px;
+	margin: 16px 0;
+	background: rgba(255, 255, 255, 0.15);
+	flex-shrink: 0;
+}
+
+.post-page-shell #upload1 .upload-item-select.linked-account-select {
+	width: 100%;
+	height: 76px;
+	border: 1px dashed rgba(3, 218, 198, 0.5) !important;
+	background: rgba(3, 218, 198, 0.08) !important;
+}
+
+.post-page-shell #upload1 .upload-item-select.linked-account-select:hover {
+	background: rgba(3, 218, 198, 0.16) !important;
+	border-color: rgba(3, 218, 198, 0.8) !important;
+}
+
+.post-page-shell #upload1 .upload-item-select.linked-account-select.active {
+	background: rgba(3, 218, 198, 0.2) !important;
+	border-color: #03DAC6 !important;
+}
+
+.post-page-shell #upload1 .upload-linked-accounts-panel {
+	width: 100%;
+	max-width: 640px;
+	margin: 20px auto 0;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	text-align: left;
+}
+
+/* Linked Account Import Component */
+
+.linked-account-import {
+	width: 100%;
+}
+
+.linked-account-title {
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: var(--theme-on-color, #fafafa);
+	margin: 0 0 4px;
+}
+
+.linked-account-desc {
+	font-size: 0.85rem;
+	color: var(--theme-on-color-muted, rgba(250, 250, 250, 0.72));
+	margin: 0 0 16px;
+	line-height: 1.5;
+}
+
+.linked-account-section {
+	margin-bottom: 14px;
+}
+
+.linked-account-section-title {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin: 0 0 8px;
+}
+
+.linked-account-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	margin-bottom: 6px;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	transition: background 0.2s ease;
+}
+
+.linked-account-item:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.linked-account-item-left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.linked-account-icon {
+	font-size: 24px !important;
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+}
+
+.linked-account-name {
+	font-size: 0.9rem;
+	color: var(--theme-on-color, #fafafa);
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.linked-account-badge {
+	font-size: 0.7rem;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-weight: 500;
+}
+
+.linked-account-badge.connected {
+	background: rgba(3, 218, 198, 0.2);
+	color: #03DAC6;
+	border: 1px solid rgba(3, 218, 198, 0.3);
+}
+
+.linked-account-item-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.linked-account-btn {
+	min-width: 0 !important;
+	padding: 6px 12px !important;
+}
+
+.linked-account-btn .material-icons {
+	font-size: 18px !important;
+}
+
+.linked-account-videos {
+	margin-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+	padding-top: 14px;
+}
+
+.linked-account-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	padding: 20px 0;
+	color: rgba(255, 255, 255, 0.6);
+	font-size: 0.85rem;
+}
+
+.linked-account-spinner {
+	width: 20px;
+	height: 20px;
+	border: 2px solid rgba(255, 255, 255, 0.2);
+	border-top-color: #03DAC6;
+	border-radius: 50%;
+	animation: linked-account-spin 0.7s linear infinite;
+}
+
+@keyframes linked-account-spin {
+	to { transform: rotate(360deg); }
+}
+
+.linked-account-video-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.linked-account-video-card {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	transition: background 0.2s ease;
+}
+
+.linked-account-video-card:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.linked-account-video-thumb {
+	width: 48px;
+	height: 36px;
+	border-radius: 6px;
+	overflow: hidden;
+	background: rgba(0, 0, 0, 0.3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.linked-account-video-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.linked-account-video-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.linked-account-video-title {
+	font-size: 0.85rem;
+	color: var(--theme-on-color, #fafafa);
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.linked-account-video-meta {
+	font-size: 0.75rem;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.linked-account-video-card .import-btn {
+	flex-shrink: 0;
 }
 
 /* Signup polish for steps 2-4 */

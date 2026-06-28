@@ -90,7 +90,7 @@ export const authConfig = {
   google: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
     redirectUri: resolveRedirectUri(import.meta.env.VITE_GOOGLE_REDIRECT_URI, '/auth/google/callback'),
-    scope: 'openid profile email',
+    scope: 'openid profile email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   },
   facebook: {

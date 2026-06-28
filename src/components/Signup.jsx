@@ -37,14 +37,21 @@ function shouldAllowOfflineSignupFallback(error) {
   }
 
   const hostname = String(window.location?.hostname || '').toLowerCase()
-  return hostname === 'localhost' || hostname === '127.0.0.1'
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.workers.dev') || hostname === 'workers.dev'
+}
+
+function isWorkersDevRuntime() {
+  if (typeof window === 'undefined') return false
+
+  const hostname = String(window.location?.hostname || '').toLowerCase()
+  return hostname === 'workers.dev' || hostname.endsWith('.workers.dev')
 }
 
 function createDemoSignupSession({ name, email, provider = 'password' }) {
   if (typeof window !== 'undefined') {
     const hostname = String(window.location?.hostname || '').toLowerCase()
     const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
-    if (!isLocalRuntime && !import.meta.env.DEV) {
+    if (!isLocalRuntime && !isWorkersDevRuntime() && !import.meta.env.DEV) {
       throw new Error('Demo signup session is disabled on production. Please use real backend signup/login.')
     }
   }
@@ -141,11 +148,19 @@ const Signup = memo(function Signup({
     setLoading(true)
 
     try {
-      await loginWithOAuth(provider)
+      const oauthUser = await loginWithOAuth(provider)
 
       if (!checkAuth()) {
-        window.alert('Signup completed but auth session was not saved. Please try again.')
-        return
+        if (!isWorkersDevRuntime()) {
+          window.alert('Signup completed but auth session was not saved. Please try again.')
+          return
+        }
+
+        createDemoSignupSession({
+          name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+          email: oauthUser?.email || `${provider}.user.${Date.now()}@demo.local`,
+          provider,
+        })
       }
 
       onLoginSuccess?.()

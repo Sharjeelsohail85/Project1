@@ -8,6 +8,7 @@ import SettingsPage from './components/SettingsPage'
 import ChannelPage from './components/ChannelPage'
 import PageFaq from './pages/PageFaq'
 import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
+import { getLocalChannelVideos } from './services/videoService'
 import { isAuthenticated as checkAuth, logout } from './services/auth.service'
 import './styles/global.css'
 import './styles/design-system.css'
@@ -808,6 +809,37 @@ function App() {
   // Open the video player from content cards (Editors' Picks / etc.)
   const handleOpenVideo = useCallback((payload = {}) => {
     const requestedVideoId = String(payload?.videoId || payload?.id || '').trim()
+    const requestedSourceUrl = String(payload?.sourceUrl || payload?.source_url || payload?.video_url || '').trim()
+    if (requestedSourceUrl) {
+      const resolvedTitle = String(payload?.title || (requestedVideoId ? `Migrated video ${requestedVideoId}` : ''))
+      const resolvedDescription = String(payload?.description || '')
+      const resolvedSourceType = String(payload?.sourceType || 'creator_migrated')
+
+      if (requestedVideoId) {
+        const query = new URLSearchParams({
+          src: requestedSourceUrl,
+          sourceType: resolvedSourceType,
+        })
+        if (resolvedTitle) query.set('title', resolvedTitle)
+        if (resolvedDescription) query.set('description', resolvedDescription)
+        navigate(`/watch/${encodeURIComponent(requestedVideoId)}?${query.toString()}`)
+      }
+
+      setCurrentVideoSource({
+        sourceType: resolvedSourceType,
+        sourceUrl: requestedSourceUrl,
+        title: resolvedTitle,
+        description: resolvedDescription,
+        discussionLink: String(payload?.discussionLink || ''),
+      })
+      setPromoActive(false)
+      setSignupActive(false)
+      setLoginActive(false)
+      setUploadActive(false)
+      setDailyActive(true)
+      return
+    }
+
     if (requestedVideoId) {
       navigate(`/watch/${encodeURIComponent(requestedVideoId)}`)
       setPromoActive(false)
@@ -884,18 +916,30 @@ function App() {
       decodedVideoId = rawVideoId
     }
 
-    const applyWatchSource = (streamUrl) => {
+    const findLocalWatchVideo = () => {
+      try {
+        return getLocalChannelVideos().find((item) => String(item?.uuid || item?.id || '').trim() === decodedVideoId) || null
+      } catch {
+        return null
+      }
+    }
+
+    const applyWatchSource = (streamUrl, titleFromQuery = '', sourceTypeFromQuery = '', descriptionFromQuery = '') => {
       const resolvedStreamUrl = String(streamUrl || '').trim()
       if (!resolvedStreamUrl) {
         return
       }
 
+      const localVideo = findLocalWatchVideo()
+      const resolvedTitle = String(titleFromQuery || localVideo?.title || localVideo?.name || '').trim() || `Migrated video ${decodedVideoId}`
+      const resolvedDescription = String(descriptionFromQuery || localVideo?.description || '').trim()
+
       setCurrentVideoSource({
-        sourceType: 'creator_migrated',
+        sourceType: String(sourceTypeFromQuery || 'creator_migrated'),
         sourceUrl: resolvedStreamUrl,
-        title: `Migrated video ${decodedVideoId}`,
-        description: '',
-        discussionLink: '',
+        title: resolvedTitle,
+        description: resolvedDescription,
+        discussionLink: String(localVideo?.discussion_link || localVideo?.discussionLink || '').trim(),
       })
       setPromoActive(false)
       setSignupActive(false)
@@ -907,8 +951,11 @@ function App() {
 
     const searchParams = new URLSearchParams(String(location.search || ''))
     const srcFromQuery = String(searchParams.get('src') || '').trim()
+    const titleFromQuery = String(searchParams.get('title') || '').trim()
+    const sourceTypeFromQuery = String(searchParams.get('sourceType') || '').trim()
+    const descriptionFromQuery = String(searchParams.get('description') || '').trim()
     if (srcFromQuery) {
-      applyWatchSource(srcFromQuery)
+      applyWatchSource(srcFromQuery, titleFromQuery, sourceTypeFromQuery, descriptionFromQuery)
       return undefined
     }
 
@@ -1046,6 +1093,8 @@ function App() {
         onToggleSearch={toggleSearch}
         onToggleDaily={toggleDaily}
         onShowUpload={openPostPage}
+        onShowSignup={showSignup}
+        onShowLogin={showLogin}
         onLogoHome={handleLogoHome}
         isAuthenticated={isAuthenticated}
         subscriberCount={subscriberCountLabel}

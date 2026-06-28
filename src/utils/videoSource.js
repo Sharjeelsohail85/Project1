@@ -112,6 +112,16 @@ export function resolvePlaybackSource({ sourceType, sourceUrl, title } = {}) {
     }
   }
 
+  if (/^\/?api\/v1\/google-drive\/stream\//i.test(url) || /\/api\/v1\/google-drive\/stream\//i.test(url)) {
+    return {
+      mode: 'html5',
+      src: url,
+      title: toStringSafe(title),
+      provider: 'direct',
+      openUrl: url,
+    }
+  }
+
   const youtubeId = extractYouTubeId(url)
   if (youtubeId || type === 'uploadyoutube') {
     const id = youtubeId || extractYouTubeId(url)

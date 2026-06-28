@@ -41,6 +41,13 @@ function buildRequestUrl(endpoint) {
   const { token, client_id } = getAuthTokens()
   const authEndpoint = token && client_id ? buildAuthUrl(normalizedEndpoint) : normalizedEndpoint
 
+  // Some legacy endpoint constants already include the API version prefix.
+  // Avoid producing duplicated URLs like /api/v1/api/v1/auth/oauth/callback,
+  // because the Worker treats those as generic fallback responses.
+  if (authEndpoint.startsWith('/api/v1/')) {
+    return authEndpoint
+  }
+
   return `${API_CONFIG.baseURL}${authEndpoint}`
 }
 
@@ -136,14 +143,39 @@ function extractAuthPayload(response) {
     return null
   }
 
+  const user = source.user
+    || directData?.user
+    || nestedData?.user
+    || null
+
+  if (user && typeof user === 'object') {
+    const googleAccessToken = source.google_access_token
+      || directData?.google_access_token
+      || nestedData?.google_access_token
+      || source.access_token
+      || directData?.access_token
+      || nestedData?.access_token
+      || ''
+    const googleRefreshToken = source.google_refresh_token
+      || directData?.google_refresh_token
+      || nestedData?.google_refresh_token
+      || source.refresh_token
+      || directData?.refresh_token
+      || nestedData?.refresh_token
+      || ''
+
+    if (googleAccessToken && !user.google_access_token) {
+      user.google_access_token = googleAccessToken
+    }
+    if (googleRefreshToken && !user.google_refresh_token) {
+      user.google_refresh_token = googleRefreshToken
+    }
+  }
+
   return {
     token: source.token,
     client_id: source.client_id,
-    user:
-      source.user
-      || directData?.user
-      || nestedData?.user
-      || null,
+    user,
   }
 }
 

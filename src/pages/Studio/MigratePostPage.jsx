@@ -10,6 +10,98 @@ import MigrationForm from '../../components/migration/MigrationForm'
 import { storageProviders } from '../../config/storageProviders'
 import { beginProviderOAuth, waitForProviderOAuthResult } from '../../services/multiCloudMigrationService'
 import { videoAPI } from '../../services/api.service'
+import { saveLocalChannelVideo } from '../../services/videoService'
+import { connectAccount } from '../../services/linkedAccountService'
+
+function getGoogleOAuthClientId() {
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID || '989755989766-i7v8a6h95cou5bd9ab9li19mqi06guj1.apps.googleusercontent.com'
+}
+
+function connectGoogleDriveWithImplicitToken() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('Google Drive connect is only available in a browser.'))
+      return
+    }
+
+    const state = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    const redirectUri = `${window.location.origin}/auth/google/callback`
+    const params = new URLSearchParams({
+      client_id: getGoogleOAuthClientId(),
+      redirect_uri: redirectUri,
+      response_type: 'token',
+      scope: 'openid profile email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
+      prompt: 'consent',
+      state,
+    })
+
+    const popup = window.open(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, 'google-drive-token', 'width=560,height=720')
+    if (!popup) {
+      reject(new Error('Popup blocked for Google Drive. Please allow popups and try again.'))
+      return
+    }
+
+    const cleanup = () => {
+      window.removeEventListener('message', onMessage)
+      clearInterval(timer)
+    }
+
+    const finish = (callbackUrl) => {
+      const parsed = new URL(callbackUrl)
+      const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+      const search = new URLSearchParams(parsed.search)
+      const accessToken = String(hash.get('access_token') || search.get('access_token') || '').trim()
+      const error = String(hash.get('error') || search.get('error') || '').trim()
+      if (error) throw new Error(`Google OAuth error: ${error}`)
+      if (!accessToken) throw new Error('Google did not return an upload token.')
+
+      const user = {
+        uuid: `google-drive-${Date.now()}`,
+        first_name: 'Google',
+        last_name: 'Drive',
+        email: 'google.drive@connected.local',
+        registration_type: 'google',
+        active: 1,
+        google_access_token: accessToken,
+      }
+      localStorage.setItem('user_info', JSON.stringify(user))
+      localStorage.setItem('connected_accounts', JSON.stringify([{ provider: 'google', connected: true, user }]))
+      resolve(user)
+    }
+
+    function onMessage(event) {
+      if (event.data?.type !== 'oauth-callback' || !event.data?.url) return
+      try {
+        finish(event.data.url)
+        cleanup()
+        popup.close()
+      } catch (error) {
+        cleanup()
+        popup.close()
+        reject(error)
+      }
+    }
+
+    window.addEventListener('message', onMessage)
+    const timer = setInterval(() => {
+      try {
+        if (popup.closed) {
+          cleanup()
+          reject(new Error('Google Drive popup closed before connection completed.'))
+          return
+        }
+        const href = popup.location.href
+        if (href && href.includes('/auth/google/callback')) {
+          finish(href)
+          cleanup()
+          popup.close()
+        }
+      } catch {
+        // ignore cross-origin until callback
+      }
+    }, 250)
+  })
+}
 
 function hasAuthSession() {
   if (typeof window === 'undefined') return false
@@ -77,6 +169,33 @@ const MigratePostPage = memo(function MigratePostPage() {
     setConnectionInfo('')
 
     try {
+      if (normalized === 'gdrive') {
+        const accounts = await connectGoogleDriveWithImplicitToken().then((user) => [{ provider: 'google', connected: true, user }]).catch(async () => connectAccount('google'))
+        const googleAccount = Array.isArray(accounts)
+          ? accounts.find((account) => {
+            const providerName = String(account?.provider || '').toLowerCase()
+            return account?.connected && ['google', 'gdrive', 'googledrive', 'google-drive'].includes(providerName)
+          })
+          : null
+        const googleToken = String(
+          googleAccount?.user?.google_access_token
+            || googleAccount?.user?.googleAccessToken
+            || googleAccount?.google_access_token
+            || googleAccount?.googleAccessToken
+            || '',
+        ).trim()
+
+        if (!googleToken) {
+          setConnectedById((prev) => ({ ...prev, [normalized]: false }))
+          setConnectionError('Google Drive connected, but no upload token was received. Reconnect Google Drive and approve Drive file permissions.')
+          return
+        }
+
+        setConnectedById((prev) => ({ ...prev, [normalized]: true }))
+        setConnectionInfo('Google Drive connected for uploads.')
+        return
+      }
+
       const provider = (Array.isArray(storageProviders) ? storageProviders : []).find((item) => String(item?.id || '').trim().toLowerCase() === normalized)
       if (provider?.backendSupported === false) {
         setConnectionError(`${provider.name || normalized} is not available yet in backend.`)
@@ -135,7 +254,7 @@ const MigratePostPage = memo(function MigratePostPage() {
     }
   }, [])
 
-  const onMigrationComplete = useCallback(({ videoId, sourceType, sourceUrl } = {}) => {
+  const onMigrationComplete = useCallback(({ videoId, sourceType, sourceUrl, title, description, originalSourceUrl } = {}) => {
     const resolvedVideoId = String(videoId || '').trim()
     if (!resolvedVideoId) {
       return
@@ -143,9 +262,28 @@ const MigratePostPage = memo(function MigratePostPage() {
 
     const normalizedSourceType = String(sourceType || '').trim().toLowerCase()
     const resolvedSourceUrl = String(sourceUrl || '').trim()
+    const resolvedTitle = String(title || '').trim() || 'Migrated video'
+    const resolvedDescription = String(description || '').trim()
 
-    if (normalizedSourceType === 'local' && resolvedSourceUrl) {
-      navigate(`/watch/${encodeURIComponent(resolvedVideoId)}?src=${encodeURIComponent(resolvedSourceUrl)}`)
+    saveLocalChannelVideo({
+      uuid: resolvedVideoId,
+      id: resolvedVideoId,
+      title: resolvedTitle,
+      name: resolvedTitle,
+      description: resolvedDescription,
+      source_url: resolvedSourceUrl,
+      video_url: resolvedSourceUrl,
+      original_source_url: String(originalSourceUrl || '').trim(),
+      type: normalizedSourceType === 'local' ? 'Google Drive' : 'Migration',
+      privacy_option: 'public',
+    })
+
+    if (resolvedSourceUrl) {
+      const query = new URLSearchParams({ src: resolvedSourceUrl })
+      if (resolvedTitle) query.set('title', resolvedTitle)
+      if (resolvedDescription) query.set('description', resolvedDescription)
+      query.set('sourceType', normalizedSourceType || 'creator_migrated')
+      navigate(`/watch/${encodeURIComponent(resolvedVideoId)}?${query.toString()}`)
       return
     }
 

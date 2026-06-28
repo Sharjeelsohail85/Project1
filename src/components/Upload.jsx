@@ -8,6 +8,7 @@ import Snackbar from '@mui/material/Snackbar'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import useVideoUploadForm from '../hooks/useVideoUploadForm'
+import LinkedAccountImport from './LinkedAccountImport'
 import {
   formatBytes,
   MAX_THUMBNAIL_SIZE_BYTES,
@@ -21,6 +22,8 @@ const SOURCE_OPTIONS = [
   { id: 'uploadFacebook', icon: 'facebook', label: 'Facebook' },
   { id: 'uploadDropbox', icon: 'folder_shared', label: 'Dropbox' },
 ]
+
+const LINKED_ACCOUNT_SOURCE = { id: 'importLinked', icon: 'sync_alt', label: 'Linked Accounts' }
 
 const PRIVACY_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -108,6 +111,12 @@ const Upload = memo(function Upload({
       return false
     }
 
+    // Linked Accounts panel: user must import a video first
+    if (selectedSource === LINKED_ACCOUNT_SOURCE.id) {
+      setSourceError('Import a video from your connected account first.')
+      return false
+    }
+
     if (!trimmed) {
       setSourceError('Source URL is required.')
       return false
@@ -126,6 +135,11 @@ const Upload = memo(function Upload({
     if (!canGoNext || isUploading) return
 
     if (boundedStep === 1) {
+      // If still on linked accounts panel, show error instead of proceeding
+      if (selectedSource === LINKED_ACCOUNT_SOURCE.id) {
+        setSourceError('Import a video from your connected account first, or select a different source.')
+        return
+      }
       if (!validateSourceInput()) return
       onNextUpload?.()
       return
@@ -322,7 +336,32 @@ const Upload = memo(function Upload({
           </Button>
         ))}
 
-        <div id="uploadLinkBox" className={`upload-link ${selectedSource ? 'active' : ''}`}>
+        <div className="upload-item-select-divider" />
+
+        <Button
+          id={LINKED_ACCOUNT_SOURCE.id}
+          className={`upload-item-select linked-account-select ${selectedSource === LINKED_ACCOUNT_SOURCE.id ? 'active' : ''}`}
+          onClick={() => {
+            if (selectedSource === LINKED_ACCOUNT_SOURCE.id) {
+              setSelectedSource('')
+            } else {
+              setSelectedSource(LINKED_ACCOUNT_SOURCE.id)
+              setSourceInputValue('')
+              setSourceError('')
+            }
+          }}
+          aria-label={LINKED_ACCOUNT_SOURCE.label}
+          type="button"
+          variant="text"
+          color="inherit"
+          disableElevation
+          disableRipple
+          sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+        >
+          <i className="material-icons" aria-hidden="true">{LINKED_ACCOUNT_SOURCE.icon}</i>
+        </Button>
+
+        <div id="uploadLinkBox" className={`upload-link ${selectedSource && selectedSource !== LINKED_ACCOUNT_SOURCE.id ? 'active' : ''}`}>
           <Button
             className="upload-link-back"
             onClick={() => {
@@ -369,6 +408,24 @@ const Upload = memo(function Upload({
           </div>
           {sourceError ? <p className="upload-desc" style={{ top: 'auto', marginTop: 8, color: '#ffdddd' }}>{sourceError}</p> : null}
         </div>
+
+        {selectedSource === LINKED_ACCOUNT_SOURCE.id && (
+          <div className="upload-linked-accounts-panel">
+            <LinkedAccountImport
+              onSelectVideo={(video) => {
+                setSelectedSource(SOURCE_OPTIONS.find((s) => s.id === 'uploadLink')?.id || 'uploadLink')
+                setSourceInputValue(video.sourceUrl)
+                setSourceError('')
+                if (video.title && formValues.title === '') {
+                  // Title will be set in step 2
+                }
+              }}
+              onError={(msg) => {
+                setSourceError(msg)
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <div

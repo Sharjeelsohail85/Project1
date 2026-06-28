@@ -46,14 +46,16 @@ function isProviderNotConfiguredError(error) {
 
 function isOAuthDemoModeEnabled() {
   const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
-  if (!envEnabled) return false
 
   if (typeof window === 'undefined') {
-    return Boolean(import.meta.env.DEV)
+    return Boolean(import.meta.env.DEV) && envEnabled
   }
 
   const hostname = String(window.location?.hostname || '').toLowerCase()
   const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+
+  if (!envEnabled) return false
+
   return Boolean(import.meta.env.DEV) || isLocalRuntime
 }
 
@@ -71,9 +73,9 @@ function completeOAuthInDemoMode(provider) {
   }
 
   // Keep app auth flow functional even when backend OAuth endpoint is not available.
-  saveAuthTokens(`demo-token-${provider}-${timestamp}`, `demo-client-${provider}-${timestamp}`)
   setLocalStorageItem('user_info', JSON.stringify(demoUser))
   setLocalStorageItem('auth_provider', provider)
+  saveAuthTokens(`demo-token-${provider}-${timestamp}`, `demo-client-${provider}-${timestamp}`)
 
   return demoUser
 }
@@ -86,6 +88,10 @@ function completeOAuthInDemoMode(provider) {
 export async function loginWithOAuth(provider) {
   if (typeof window === 'undefined') {
     throw new Error('OAuth login is only available in browser environment')
+  }
+
+  if (isOAuthDemoModeEnabled()) {
+    return completeOAuthInDemoMode(provider)
   }
 
   return new Promise((resolve, reject) => {
@@ -168,7 +174,51 @@ export async function loginWithOAuth(provider) {
       return
     }
 
-    // Listen for OAuth callback
+    // Listen for OAuth callback via postMessage from the callback page
+    const messageHandler = (event) => {
+      if (event.data?.type === 'oauth-callback' && event.data?.url) {
+        try {
+          const callbackUrl = new URL(event.data.url)
+          const urlParams = new URLSearchParams(callbackUrl.search)
+          const code = urlParams.get('code')
+          const error = urlParams.get('error')
+
+          if (error) {
+            closePopupSafe()
+            window.removeEventListener('message', messageHandler)
+            rejectOnce(new Error(`OAuth error: ${error}`))
+            return
+          }
+
+          if (code) {
+            isAwaitingCallbackCompletion = true
+
+            if (checkPopup) {
+              clearInterval(checkPopup)
+              checkPopup = null
+            }
+
+            closePopupSafe()
+            window.removeEventListener('message', messageHandler)
+
+            // Exchange code for tokens via backend
+            handleOAuthCallback(provider, urlParams)
+              .then((userInfo) => {
+                resolveOnce(userInfo)
+              })
+              .catch((err) => {
+                rejectOnce(err)
+              })
+          }
+        } catch (e) {
+          // ignore malformed messages
+        }
+      }
+    }
+
+    window.addEventListener('message', messageHandler)
+
+    // Fallback: also poll popup location in case postMessage doesn't fire
     checkPopup = setInterval(() => {
       try {
         if (popup.closed) {
@@ -176,37 +226,38 @@ export async function loginWithOAuth(provider) {
             return
           }
 
+          cleanup()
+          window.removeEventListener('message', messageHandler)
           rejectOnce(new Error('Login cancelled or popup closed'))
           return
         }
 
-        // Check if popup has navigated to callback URL
+        // Check if popup has navigated to callback URL (fallback for browsers that block postMessage)
         try {
           const popupUrl = popup.location.href
           if (popupUrl.includes('/auth/') || popupUrl.includes('code=') || popupUrl.includes('error=')) {
-            // Get the authorization code from the callback URL
+            if (checkPopup) {
+              clearInterval(checkPopup)
+              checkPopup = null
+            }
+
             const callbackUrl = new URL(popupUrl)
             const urlParams = new URLSearchParams(callbackUrl.search)
             const code = urlParams.get('code')
             const error = urlParams.get('error')
-            
+
             if (error) {
               closePopupSafe()
+              window.removeEventListener('message', messageHandler)
               rejectOnce(new Error(`OAuth error: ${error}`))
               return
             }
-            
+
             if (code) {
               isAwaitingCallbackCompletion = true
-
-              if (checkPopup) {
-                clearInterval(checkPopup)
-                checkPopup = null
-              }
-
               closePopupSafe()
-              
-              // Exchange code for tokens via backend
+              window.removeEventListener('message', messageHandler)
+
               handleOAuthCallback(provider, urlParams)
                 .then((userInfo) => {
                   resolveOnce(userInfo)
@@ -218,11 +269,9 @@ export async function loginWithOAuth(provider) {
           }
         } catch (e) {
           // Cross-origin error is expected until popup navigates to callback
-          // This is normal during OAuth flow - continue checking
         }
       } catch (e) {
-        // Cross-origin error is expected until popup navigates to callback
-        // This is normal during OAuth flow
+        // Cross-origin error is expected during OAuth flow
       }
     }, 100)
 
@@ -267,7 +316,29 @@ export async function handleOAuthCallback(provider, params) {
     const fallbackUser = response?.user
 
     if (directUser || nestedUser || fallbackUser) {
-      return directUser || nestedUser || fallbackUser
+      const user = directUser || nestedUser || fallbackUser
+      const googleAccessToken = response?.google_access_token
+        || response?.data?.google_access_token
+        || response?.data?.data?.google_access_token
+        || response?.access_token
+        || response?.data?.access_token
+        || response?.data?.data?.access_token
+        || ''
+      const googleRefreshToken = response?.google_refresh_token
+        || response?.data?.google_refresh_token
+        || response?.data?.data?.google_refresh_token
+        || response?.refresh_token
+        || response?.data?.refresh_token
+        || response?.data?.data?.refresh_token
+        || ''
+
+      if (user && typeof user === 'object') {
+        if (googleAccessToken && !user.google_access_token) user.google_access_token = googleAccessToken
+        if (googleRefreshToken && !user.google_refresh_token) user.google_refresh_token = googleRefreshToken
+        setLocalStorageItem('user_info', JSON.stringify(user))
+      }
+
+      return user
     }
     
     throw new Error('Invalid response from server')

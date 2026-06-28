@@ -1,4 +1,17 @@
 import apiClient from '../lib/apiClient'
+import { loginWithOAuth } from './auth.service'
+
+function isDemoTokenValue(value) {
+  const normalizedToken = String(value || '').trim().toLowerCase()
+  return normalizedToken.includes('demo-token') || normalizedToken.startsWith('oauth-demo-token-')
+}
+
+function isWorkerDemoRuntime() {
+  if (typeof window === 'undefined') return false
+
+  const hostname = String(window.location?.hostname || '').trim().toLowerCase()
+  return hostname === 'workers.dev' || hostname.endsWith('.workers.dev')
+}
 
 function requireAuthParams() {
   if (typeof window === 'undefined') {
@@ -8,10 +21,9 @@ function requireAuthParams() {
   const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
   const clientId = String(localStorage.getItem('client_id') || '').trim()
 
-  const normalizedToken = token.toLowerCase()
-  const isDemoToken = normalizedToken.includes('demo-token') || normalizedToken.startsWith('oauth-demo-token-')
-  if (isDemoToken) {
-    throw new Error('Session is using demo token. Please sign in again to establish a real backend session.')
+  const isDemoToken = isDemoTokenValue(token)
+  if (isDemoToken && !isWorkerDemoRuntime()) {
+    throw new Error('Session is using demo token. Please sign in with a real backend account before connecting storage providers.')
   }
 
   if (!token || !clientId) {
@@ -42,6 +54,24 @@ export async function beginProviderOAuth(providerId) {
   }
 
   const auth = requireAuthParams()
+
+  if (normalizedProvider === 'gdrive' || normalizedProvider === 'google' || normalizedProvider === 'google-drive') {
+    const user = await loginWithOAuth('google')
+
+    return {
+      provider: 'gdrive',
+      displayName: 'Google Drive',
+      connected: true,
+      requiresSetup: false,
+      requiresOAuthWindow: false,
+      missingFields: [],
+      oauthUrl: '',
+      authUrl: '',
+      message: user?.google_access_token
+        ? 'Google Drive connected.'
+        : 'Google Drive connected. Reconnect if Drive videos do not load.',
+    }
+  }
 
   try {
     const response = await apiClient.get(`/oauth/${encodeURIComponent(normalizedProvider)}`, {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-const CANONICAL_HOST = 'octopussol.com'
+const CANONICAL_HOST = ''
 
 function normalizePathname(pathname) {
   const value = String(pathname || '/').trim()
@@ -11,15 +11,15 @@ function normalizePathname(pathname) {
 
 function getBaseOrigin() {
   if (typeof window === 'undefined') {
-    return `https://${CANONICAL_HOST}`
+    return CANONICAL_HOST ? `https://${CANONICAL_HOST}` : ''
   }
 
   const host = String(window.location.hostname || '').toLowerCase()
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('workers.dev')) {
+  if (CANONICAL_HOST && (host === 'localhost' || host === '127.0.0.1' || host.endsWith('workers.dev'))) {
     return `https://${CANONICAL_HOST}`
   }
 
-  return window.location.origin || `https://${CANONICAL_HOST}`
+  return window.location.origin || (CANONICAL_HOST ? `https://${CANONICAL_HOST}` : '')
 }
 
 function upsertMeta(attr, key, content) {
@@ -79,7 +79,7 @@ function getRouteSeo(pathname) {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'Octopussol',
-        url: 'https://octopussol.com/',
+        url: CANONICAL_HOST ? `https://${CANONICAL_HOST}/` : '/',
       },
     }
   }

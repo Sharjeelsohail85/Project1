@@ -83,9 +83,20 @@ const SourceInput = memo(function SourceInput({
           ) : null}
 
           {sourceType === 'account' ? (
-            <Alert severity="info">
-              This feature lets you import videos you own from connected platforms.
-            </Alert>
+            <Box>
+              <TextField
+                label="Google Drive video link"
+                value={sourceUrl}
+                onChange={(event) => onSourceUrlChange?.(event.target.value)}
+                placeholder="https://drive.google.com/file/d/VIDEO_FILE_ID/view"
+                fullWidth
+                error={Boolean(validationError)}
+                helperText={validationError || 'Paste a Google Drive video share link that the signed-in user can access.'}
+              />
+              <Alert severity="info" sx={{ mt: 1.25 }}>
+                Linked account import can publish a Google Drive video link and play it inside the app through the video player.
+              </Alert>
+            </Box>
           ) : null}
         </Stack>
       </CardContent>

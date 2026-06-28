@@ -11,7 +11,7 @@
     <meta name="author" content="Octopussol" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
     <meta name="theme-color" content="#673ab7" />
-    <link rel="canonical" href="https://octopussol.com/" />
+    <link rel="canonical" href="https://project1-video-app.sharjeelsohail85.workers.dev/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Octopussol" />
     <meta property="og:title" content="Octopussol | Creator-First Video Platform" />
@@ -19,8 +19,8 @@
       property="og:description"
       content="Upload, migrate, organize, and stream creator videos with multi-cloud integrations and channel tools."
     />
-    <meta property="og:url" content="https://octopussol.com/" />
-    <meta property="og:image" content="https://octopussol.com/og-image.svg" />
+    <meta property="og:url" content="https://project1-video-app.sharjeelsohail85.workers.dev/" />
+    <meta property="og:image" content="/og-image.svg" />
     <meta property="og:image:alt" content="Octopussol creator video platform preview" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Octopussol | Creator-First Video Platform" />
@@ -28,7 +28,7 @@
       name="twitter:description"
       content="Creator-first cloud video platform with migration, channel publishing, and streaming workflows."
     />
-    <meta name="twitter:image" content="https://octopussol.com/og-image.svg" />
+    <meta name="twitter:image" content="/og-image.svg" />
     <meta
       name="google-site-verification"
       content=""
@@ -38,16 +38,16 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Octopussol",
-        "url": "https://octopussol.com/",
+        "url": "https://project1-video-app.sharjeelsohail85.workers.dev/",
         "description": "Creator-first video platform for cloud-based upload, migration, and streaming.",
         "publisher": {
           "@type": "Organization",
           "name": "Octopussol",
-          "url": "https://octopussol.com/"
+          "url": "https://project1-video-app.sharjeelsohail85.workers.dev/"
         },
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://octopussol.com/?q={search_term_string}",
+          "target": "https://project1-video-app.sharjeelsohail85.workers.dev/?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
@@ -137,23 +137,9 @@
 
     <script>
       (function () {
-        var CANONICAL_HOST = 'octopussol.com'
-        var API_ORIGIN = 'https://octopussol.sharjeelsohail85.workers.dev'
+        var API_ORIGIN = window.location.origin
 
         try {
-          var host = String(window.location.hostname || '').toLowerCase()
-          if (host.endsWith('workers.dev')) {
-            var targetUrl =
-              'https://' +
-              CANONICAL_HOST +
-              window.location.pathname +
-              window.location.search +
-              window.location.hash
-
-            window.location.replace(targetUrl)
-            return
-          }
-
           if (typeof window.fetch !== 'function') return
 
           var originalFetch = window.fetch.bind(window)
@@ -227,7 +213,7 @@
 
             var isSameOriginApiCall = parsedUrl.origin === window.location.origin
             var shouldRewriteToCanonicalApi =
-              isSameOriginApiCall && window.location.origin !== API_ORIGIN
+              API_ORIGIN && isSameOriginApiCall && window.location.origin !== API_ORIGIN
 
             if (!shouldRewriteToCanonicalApi) {
               return rawUrl

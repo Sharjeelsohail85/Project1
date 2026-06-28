@@ -16,6 +16,11 @@ function isLocalhostHost(hostname) {
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1'
 }
 
+function isCloudflareWorkersDevHost(hostname) {
+  const normalized = String(hostname || '').trim().toLowerCase()
+  return normalized === 'workers.dev' || normalized.endsWith('.workers.dev')
+}
+
 function getOriginSafe() {
   if (typeof window === 'undefined' || !window.location?.origin) {
     return ''
@@ -30,6 +35,10 @@ function isPublicRuntimeHost() {
 
   try {
     const hostname = new URL(origin).hostname
+    if (isCloudflareWorkersDevHost(hostname)) {
+      return false
+    }
+
     return !isLocalhostHost(hostname)
   } catch {
     return false

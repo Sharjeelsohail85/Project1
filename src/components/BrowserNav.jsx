@@ -2,6 +2,7 @@ import { memo } from 'react'
 
 const NAV_ITEMS = [
   { id: 'browserContentPicks', icon: 'account_balance', label: "Editors' Picks" },
+  { id: 'browserContentVideos', icon: 'video_library', label: 'Videos' },
   { id: 'browserContentPop', icon: 'trending_up', label: 'Popular' },
   { id: 'browserContentSubs', icon: 'notifications_active', label: 'Subscriptions' },
   { id: 'browserContentRec', icon: 'loyalty', label: 'Recommended' },

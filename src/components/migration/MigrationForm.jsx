@@ -119,12 +119,12 @@ const MigrationForm = memo(function MigrationForm({
   const normalizedSelectedProvider = String(selectedProvider || '').trim().toLowerCase()
   const selectedProviderConnected = connectedProviderIds.includes(normalizedSelectedProvider)
   const disableActions = isValidating || isStarting
-  const effectiveSourceUrl = sourceType === 'url'
-    ? String(sourceUrl || '').trim()
-    : buildLocalMigrationSourceUrl(localFile)
-  const hasSourceReady = sourceType === 'url'
-    ? Boolean(String(sourceUrl || '').trim())
-    : Boolean(localFile)
+  const effectiveSourceUrl = sourceType === 'local'
+    ? buildLocalMigrationSourceUrl(localFile)
+    : String(sourceUrl || '').trim()
+  const hasSourceReady = sourceType === 'local'
+    ? Boolean(localFile)
+    : Boolean(String(sourceUrl || '').trim())
 
   useEffect(() => {
     if (!connectedProviderIds.length) {
@@ -155,8 +155,11 @@ const MigrationForm = memo(function MigrationForm({
 
     const completedPlaybackUrl = String(progressState.playbackUrl || '').trim()
     const localPlaybackUrl = String(localPlaybackUrlRef.current || '').trim()
+    const shouldPreferProviderPlayback = sourceType === 'local' && normalizedSelectedProvider === 'gdrive'
     const completionSourceUrl = sourceType === 'local'
-      ? (localPlaybackUrl || completedPlaybackUrl || effectiveSourceUrl)
+      ? (shouldPreferProviderPlayback
+        ? (completedPlaybackUrl || localPlaybackUrl || effectiveSourceUrl)
+        : (localPlaybackUrl || completedPlaybackUrl || effectiveSourceUrl))
       : (completedPlaybackUrl || effectiveSourceUrl)
 
     onMigrationComplete?.({
@@ -165,8 +168,10 @@ const MigrationForm = memo(function MigrationForm({
       sourceType,
       sourceUrl: completionSourceUrl,
       originalSourceUrl: effectiveSourceUrl,
+      title: metadata.title,
+      description: metadata.description,
     })
-  }, [effectiveSourceUrl, onMigrationComplete, progressState.completed, progressState.jobId, progressState.playbackUrl, progressState.videoId, sourceType])
+  }, [effectiveSourceUrl, metadata.description, metadata.title, onMigrationComplete, progressState.completed, progressState.jobId, progressState.playbackUrl, progressState.videoId, sourceType, normalizedSelectedProvider])
 
   const handleValidateVideo = async () => {
     setValidationError('')
@@ -213,7 +218,7 @@ const MigrationForm = memo(function MigrationForm({
     }
 
     if (!hasSourceReady) {
-      setFormError(sourceType === 'url' ? 'Video URL is required.' : 'Select a local video file first.')
+      setFormError(sourceType === 'local' ? 'Select a local video file first.' : 'Video URL is required.')
       return
     }
 
@@ -251,9 +256,11 @@ const MigrationForm = memo(function MigrationForm({
     }
 
     if (!hasSourceReady) {
-      return sourceType === 'url'
-        ? 'Enter a direct video URL first.'
-        : 'Choose a local video file first.'
+      return sourceType === 'local'
+        ? 'Choose a local video file first.'
+        : sourceType === 'account'
+          ? 'Paste a Google Drive video link first.'
+          : 'Enter a direct video URL first.'
     }
 
     if (!metadata.title.trim()) {

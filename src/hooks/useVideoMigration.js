@@ -22,6 +22,78 @@ const DEFAULT_METADATA = {
 
 const POLL_INTERVAL_MS = 3000
 
+function getGoogleAccessTokenSafe() {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const rawAccounts = localStorage.getItem('connected_accounts')
+    const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
+    if (Array.isArray(accounts)) {
+      const googleAccount = accounts.find((account) => {
+        const provider = String(account?.provider || '').toLowerCase()
+        return account?.connected && ['google', 'gdrive', 'googledrive', 'google-drive'].includes(provider)
+      })
+      const accountToken = String(
+        googleAccount?.user?.google_access_token
+          || googleAccount?.user?.googleAccessToken
+          || googleAccount?.google_access_token
+          || googleAccount?.googleAccessToken
+          || '',
+      ).trim()
+      if (accountToken) return accountToken
+    }
+  } catch {
+    // continue to user_info fallback
+  }
+
+  try {
+    const rawUser = localStorage.getItem('user_info')
+    const user = rawUser ? JSON.parse(rawUser) : null
+    return String(user?.google_access_token || user?.googleAccessToken || '').trim()
+  } catch {
+    return ''
+  }
+}
+
+async function uploadLocalFileToGoogleDrive({ file, accessToken, title, description }) {
+  if (!file || !accessToken) {
+    throw new Error('Google Drive is not connected. Reconnect Google Drive, then upload again.')
+  }
+
+  const boundary = `octopussol_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const metadata = {
+    name: title || file.name || `upload-${Date.now()}.mp4`,
+    description: description || '',
+    mimeType: file.type || 'video/mp4',
+  }
+  const delimiter = `--${boundary}\r
+`
+  const closeDelimiter = `\r
+--${boundary}--`
+  const prefix = `${delimiter}Content-Type: application/json; charset=UTF-8\r
+\r
+${JSON.stringify(metadata)}\r
+${delimiter}Content-Type: ${metadata.mimeType}\r
+\r
+`
+  const body = new Blob([prefix, file, closeDelimiter], { type: `multipart/related; boundary=${boundary}` })
+
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,webContentLink,mimeType,size', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': `multipart/related; boundary=${boundary}`,
+    },
+    body,
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'Unable to upload video to Google Drive.')
+  }
+
+  return payload
+}
+
 function requireMigrationAuthParams() {
   if (typeof window === 'undefined') {
     throw new Error('Migration API requires an authenticated browser session.')
@@ -330,6 +402,39 @@ export function useVideoMigration() {
       const authParams = requireMigrationAuthParams()
 
       if (sourceType === 'local') {
+        if (provider === 'gdrive') {
+          const googleAccessToken = getGoogleAccessTokenSafe()
+          const driveFile = await uploadLocalFileToGoogleDrive({
+            file: localFile,
+            accessToken: googleAccessToken,
+            title: metadata.title,
+            description: metadata.description,
+          })
+          const driveFileId = String(driveFile?.id || '').trim()
+          if (!driveFileId) {
+            throw new Error('Google Drive upload did not return a file id.')
+          }
+          const playbackUrl = `/api/v1/google-drive/stream/${encodeURIComponent(driveFileId)}?access_token=${encodeURIComponent(googleAccessToken)}`
+          const uploadJobId = `gdrive-upload-${driveFileId}`
+          setProgressState({
+            jobId: uploadJobId,
+            progress: 100,
+            stage: 'finalizing',
+            completed: true,
+            videoId: driveFileId,
+            playbackUrl,
+            error: '',
+            providerUploadWarning: '',
+          })
+          setValidationResult({
+            valid: true,
+            size: Number(localFile?.size || 0),
+            mime: String(driveFile?.mimeType || localFile?.type || 'video/mp4'),
+            filename: String(driveFile?.name || localFile?.name || ''),
+          })
+          return { jobId: uploadJobId, videoId: driveFileId, playbackUrl }
+        }
+
         setProgressState((previous) => ({
           ...previous,
           stage: 'uploading',
@@ -338,6 +443,7 @@ export function useVideoMigration() {
           error: '',
         }))
 
+        const googleAccessToken = provider === 'gdrive' ? getGoogleAccessTokenSafe() : ''
         const uploadPayload = new FormData()
         uploadPayload.append('video', localFile)
         uploadPayload.append('targetProvider', provider)
@@ -349,7 +455,10 @@ export function useVideoMigration() {
         uploadPayload.append('token', authParams.token)
         uploadPayload.append('client_id', authParams.client_id)
 
-        const response = await apiClient.post('/storage/upload', uploadPayload)
+        const response = await apiClient.post('/storage/upload', uploadPayload, {
+          headers: googleAccessToken ? { 'x-google-access-token': googleAccessToken } : {},
+          timeout: 10 * 60 * 1000,
+        })
         const data = response?.data?.data || response?.data || {}
         const files = Array.isArray(data?.files) ? data.files : []
         const primaryFile = files[0] || {}
@@ -393,11 +502,17 @@ export function useVideoMigration() {
         }
       }
 
+      const googleAccessToken = sourceType === 'account' ? getGoogleAccessTokenSafe() : ''
       const response = await apiClient.post('/migration/start', {
         sourceUrl,
         provider,
+        sourceType,
+        googleAccessToken,
         metadata,
         ...authParams,
+      }, {
+        headers: googleAccessToken ? { 'x-google-access-token': googleAccessToken } : {},
+        timeout: sourceType === 'account' ? 120000 : 30000,
       })
 
       const data = response?.data?.data || response?.data || {}

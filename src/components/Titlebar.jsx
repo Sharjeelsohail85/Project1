@@ -9,6 +9,8 @@ const Titlebar = memo(function Titlebar({
   onToggleSearch,
   onToggleDaily,
   onShowUpload,
+  onShowSignup,
+  onShowLogin,
   onLogoHome,
   isAuthenticated = false,
   subscriberCount = '0',
@@ -175,6 +177,28 @@ const Titlebar = memo(function Titlebar({
             <i className="material-icons" aria-hidden="true">wc</i>
           </div>
         ) : null}
+        <div className="titlebar-auth-actions" role="group" aria-label="Authentication actions">
+          <button
+            id="titlebarSignup"
+            className="titlebar-auth-button titlebar-auth-signup button"
+            type="button"
+            onClick={() => onShowSignup?.()}
+            aria-label="Sign up"
+          >
+            <i className="material-icons" aria-hidden="true">person_add</i>
+            <span>Sign Up</span>
+          </button>
+          <button
+            id="titlebarLogin"
+            className="titlebar-auth-button titlebar-auth-login button"
+            type="button"
+            onClick={() => onShowLogin?.()}
+            aria-label="Log in"
+          >
+            <i className="material-icons" aria-hidden="true">exit_to_app</i>
+            <span>Log In</span>
+          </button>
+        </div>
         <button
           id="titlebarMenu"
           className="titlebar-item titlebar-left-item titlebar-menu"
