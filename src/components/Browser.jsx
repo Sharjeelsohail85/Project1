@@ -47,44 +47,43 @@ const Browser = memo(function Browser({ activePage, onOpenVideo }) {
           : Array.isArray(payload)
             ? payload
             : []
-        const apiVideos = rows.map((item) => {
-          const uuid = String(item?.uuid || item?.id || '').trim()
-          return {
-            id: uuid,
-            title: String(item?.title || item?.name || 'Untitled').trim(),
-            username: String(item?.channel_name || item?.channel?.name || 'My Channel').trim(),
-            views: '—',
-            rating: '—',
-            description: String(item?.description || '').trim(),
-            isPick: false,
-            isNsfw: false,
-            href: '',
-            videoId: uuid,
-            sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
-sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
-          }
-        }).filter((v) => v.id)
+            const apiVideos = rows.map((item) => {
+              const uuid = String(item?.uuid || item?.id || '').trim()
+              return {
+                id: uuid,
+                title: String(item?.title || item?.name || 'Untitled').trim(),
+                username: String(item?.channel_name || item?.channel?.name || 'My Channel').trim(),
+                views: '—',
+                rating: '—',
+                description: String(item?.description || '').trim(),
+                isPick: false,
+                isNsfw: false,
+                href: '',
+                videoId: uuid,
+                sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
+                sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
+              }
+            }).filter((v) => v.id)
 
         const localRows = getLocalChannelVideos()
-        const localVideos = (Array.isArray(localRows) ? localRows : []).map((item) => {
-          const uuid = String(item?.uuid || item?.id || '').trim()
-          return {
-            id: uuid,
-            title: String(item?.title || item?.name || 'Untitled').trim(),
-            username: String(item?.channel_name || item?.channel?.name || 'My Channel').trim(),
-            views: '—',
-            rating: '—',
-            description: String(item?.description || '').trim(),
-            isPick: false,
-            isNsfw: false,
-            href: '',
-            videoId: uuid,
-sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
-sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
-createdAt: String(item?.created_at || '').trim(),
-            sourceType: 'creator_migrated',
-          }
-        }).filter((v) => v.id)
+            const localVideos = (Array.isArray(localRows) ? localRows : []).map((item) => {
+              const uuid = String(item?.uuid || item?.id || '').trim()
+              return {
+                id: uuid,
+                title: String(item?.title || item?.name || 'Untitled').trim(),
+                username: String(item?.channel_name || item?.channel?.name || 'My Channel').trim(),
+                views: '—',
+                rating: '—',
+                description: String(item?.description || '').trim(),
+                isPick: false,
+                isNsfw: false,
+                href: '',
+                videoId: uuid,
+                sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
+                sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
+                createdAt: String(item?.created_at || '').trim(),
+              }
+            }).filter((v) => v.id)
 
         const seen = new Set()
         const merged = [...localVideos, ...apiVideos].filter((video) => {
