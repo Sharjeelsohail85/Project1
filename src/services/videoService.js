@@ -44,7 +44,8 @@ export function saveLocalChannelVideo(video) {
       privacyOption: video?.privacyOption || { data: { name: 'Public' } },
       channel_name: String(video?.channel_name || 'My Channel').trim(),
       channel: video?.channel || { name: 'My Channel', data: { name: 'My Channel' } },
-      created_at: video?.created_at || new Date().toISOString(),
+      created_at: String(video?.created_at || video?.createdAt || video?.publishedAt || new Date().toISOString()).trim(),
+      createdAt: String(video?.created_at || video?.createdAt || video?.publishedAt || new Date().toISOString()).trim(),
     }
 
     const next = [normalized, ...list.filter((item) => String(item?.uuid || item?.id || '') !== id)].slice(0, 100)

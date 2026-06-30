@@ -31,16 +31,35 @@ function normalizeVideoRows(response) {
 return {
   id: uuid,
   title: String(item?.title || item?.name || `Video ${index + 1}`).trim() || `Video ${index + 1}`,
-  type: String(item?.type || 'Upload').trim() || 'Upload',
+  type: String(item?.type || item?.source_type || item?.sourceType || 'Upload').trim() || 'Upload',
   channelName: channelName || 'General',
   privacy: String(item?.privacyOption?.data?.name || item?.privacy_option || 'Public').trim() || 'Public',
   sourceUrl: String(item?.sourceUrl || item?.source_url || item?.video_url || item?.url || '').trim(),
-  sourceType: String(item?.source_type || item?.sourceType || 'creator_migrated').trim(),
+  sourceType: inferSourceType(item),
   createdAt: String(item?.created_at || '').trim(),
   description: String(item?.description || item?.body || '').trim(),
 }
     })
     .filter(Boolean)
+}
+
+function inferSourceType(item) {
+  const rawType = String(item?.type || item?.source_type || item?.sourceType || 'Upload').trim().toLowerCase()
+  const explicit = String(item?.source_type || item?.sourceType || '').trim()
+
+  if (explicit && explicit !== 'creator_migrated') {
+    return explicit
+  }
+
+  if (rawType === 'migration') return 'creator_migrated'
+  if (rawType === 'google drive' || rawType === 'gdrive') return 'uploadgoogle'
+  if (rawType === 'youtube') return 'uploadyoutube'
+  if (rawType === 'facebook') return 'uploadfacebook'
+  if (rawType === 'dropbox') return 'uploaddropbox'
+  if (rawType === 'direct link' || rawType === 'direct') return 'uploadLink'
+  if (rawType === 'local') return 'local'
+
+  return 'creator_migrated'
 }
 
 const CHANNEL_NAV_ITEMS = [
@@ -215,7 +234,7 @@ const handleOpenVideo = useCallback((video) => {
             ) : null}
 
             {!isLoading && !loadError && recentVideos.length > 0 ? (
-              <div className="browser-content-page" style={{ display: 'flex', flexWrap: 'wrap' }}>
+              <div className="browser-content-page">
                 {recentVideos.map((video) => (
 <ContentItem
   key={video.id}
@@ -244,7 +263,7 @@ const handleOpenVideo = useCallback((video) => {
           ) : videos.length === 0 ? (
             <div className="browser-content-status"><p>No uploads available yet.</p></div>
           ) : (
-            <div className="browser-content-page" style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <div className="browser-content-page">
               {videos.map((video) => (
 <ContentItem
   key={video.id}
