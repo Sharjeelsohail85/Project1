@@ -8,6 +8,10 @@ import { apiRequest } from './api.service'
 const CONNECTED_ACCOUNTS_KEY = 'connected_accounts'
 
 function shouldUseDemoVideosFallback() {
+  // Check environment variable first - this controls whether demo mode is allowed
+  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
+  if (!envEnabled) return false
+  
   if (import.meta.env.DEV) return true
   if (typeof window === 'undefined') return false
 
@@ -64,12 +68,21 @@ export async function connectAccount(provider) {
   const userInfo = await loginWithOAuth(provider)
   const accounts = getConnectedAccounts()
 
+  // Ensure user info with access tokens is stored for all providers
+  const userWithToken = {
+    ...userInfo,
+    google_access_token: userInfo?.google_access_token || userInfo?.access_token || '',
+    google_refresh_token: userInfo?.google_refresh_token || '',
+    dropbox_access_token: userInfo?.dropbox_access_token || '',
+    facebook_access_token: userInfo?.facebook_access_token || '',
+  }
+
   const existing = accounts.find((a) => a.provider === provider)
   if (existing) {
     existing.connected = true
-    existing.user = userInfo || null
+    existing.user = userWithToken || null
   } else {
-    accounts.push({ provider, connected: true, user: userInfo || null })
+    accounts.push({ provider, connected: true, user: userWithToken || null })
   }
 
   saveConnectedAccounts(accounts)
@@ -111,20 +124,31 @@ export async function fetchVideosFromAccount(provider, options = {}) {
 
   // Try backend endpoint first
   try {
-    const googleAccessToken = String(
+    const accessToken = String(
       account?.user?.google_access_token
         || account?.user?.googleAccessToken
+        || account?.user?.dropbox_access_token
+        || account?.user?.facebook_access_token
         || account?.google_access_token
+        || account?.dropbox_access_token
+        || account?.facebook_access_token
         || ''
     ).trim()
 
+    const headers = accessToken ? { 'x-google-access-token': accessToken } : {}
+    
     const response = await apiRequest(`/api/v1/accounts/${provider}/videos?page=${page}&per_page=${perPage}`, {
-      headers: googleAccessToken ? { 'x-google-access-token': googleAccessToken } : {},
+      headers,
     })
+    
+    // Check if response indicates fallback mode (demo data)
+    if (response?.fallback_mode === true) {
+      throw new Error(`${provider} OAuth is not configured on the server. Videos shown are demo data.`)
+    }
+    
     return response?.data || { videos: [], total: 0, page, perPage, hasMore: false }
   } catch (error) {
-    // Backend unavailable — return demo data only during local development.
-    // Production must show the real API error instead of silently using demo mode.
+    // In production, show real error. In local dev, show demo data.
     if (shouldUseDemoVideosFallback()) {
       return getDemoVideos(provider, page, perPage)
     }

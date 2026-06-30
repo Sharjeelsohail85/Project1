@@ -778,16 +778,120 @@ export default {
         }, 500)
       }
 
-      // Non-Google providers are not configured for real provider API import yet.
-      const providerLabel = provider.charAt(0).toUpperCase() + provider.slice(1)
-      const email = normalizeEmail(`${provider}.${Date.now()}`, provider)
+      // Non-Google providers: check for configured secrets
+      if (provider === 'dropbox') {
+        if (!env?.DROPBOX_CLIENT_SECRET) {
+          return jsonResponse({
+            status: 500,
+            error_description: ['DROPBOX_CLIENT_SECRET is not configured on the Cloudflare Worker. Set it via `wrangler secret put DROPBOX_CLIENT_SECRET`.'],
+            message: 'Dropbox OAuth is not configured for production.',
+          }, 500)
+        }
+        // Dropbox OAuth token exchange
+        try {
+          const dropboxClientId = env?.DROPBOX_CLIENT_ID || ''
+          const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              code: data.code,
+              client_id: dropboxClientId,
+              client_secret: env.DROPBOX_CLIENT_SECRET,
+              redirect_uri: String(data.redirect_uri || '').trim() || `https://${url.hostname}/auth/dropbox/callback`,
+              grant_type: 'authorization_code',
+            }).toString(),
+          })
+          const tokenData = await tokenResponse.json()
+          const randomId = createRandomId()
+          return jsonResponse({
+            status: 200,
+            data: {
+              token: `dropbox-oauth-token-${randomId}`,
+              client_id: 'web_client',
+              device: 'web-browser',
+              os: 'web',
+              user: {
+                uuid: `dropbox-user-${randomId}`,
+                first_name: 'Dropbox',
+                last_name: 'User',
+                email: normalizeEmail(`dropbox.${Date.now()}`, 'dropbox'),
+                registration_type: 'dropbox',
+                active: 1,
+                color: null,
+                dropbox_access_token: tokenData.access_token || '',
+              },
+              dropbox_access_token: tokenData.access_token || '',
+              dropbox_connected: true,
+            },
+          })
+        } catch (e) {
+          return jsonResponse({
+            status: 500,
+            error_description: [String(e?.message || 'Dropbox OAuth token exchange failed.')],
+            message: 'Dropbox OAuth token exchange failed.',
+          }, 500)
+        }
+      }
 
-      return jsonResponse(buildDemoAuthBody({
-        provider,
-        firstName: providerLabel,
-        lastName: 'User',
-        email,
-      }))
+      if (provider === 'facebook') {
+        if (!env?.FACEBOOK_APP_SECRET) {
+          return jsonResponse({
+            status: 500,
+            error_description: ['FACEBOOK_APP_SECRET is not configured on the Cloudflare Worker. Set it via `wrangler secret put FACEBOOK_APP_SECRET`.'],
+            message: 'Facebook OAuth is not configured for production.',
+          }, 500)
+        }
+        // Facebook OAuth token exchange
+        try {
+          const facebookAppId = env?.FACEBOOK_APP_ID || '4353526181633465'
+          const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              code: data.code,
+              client_id: facebookAppId,
+              client_secret: env.FACEBOOK_APP_SECRET,
+              redirect_uri: String(data.redirect_uri || '').trim() || `https://${url.hostname}/auth/facebook/callback`,
+            }).toString(),
+          })
+          const tokenData = await tokenResponse.json()
+          const randomId = createRandomId()
+          return jsonResponse({
+            status: 200,
+            data: {
+              token: `facebook-oauth-token-${randomId}`,
+              client_id: 'web_client',
+              device: 'web-browser',
+              os: 'web',
+              user: {
+                uuid: `facebook-user-${randomId}`,
+                first_name: 'Facebook',
+                last_name: 'User',
+                email: normalizeEmail(`facebook.${Date.now()}`, 'facebook'),
+                registration_type: 'facebook',
+                active: 1,
+                color: null,
+                facebook_access_token: tokenData.access_token || '',
+              },
+              facebook_access_token: tokenData.access_token || '',
+              facebook_connected: true,
+            },
+          })
+        } catch (e) {
+          return jsonResponse({
+            status: 500,
+            error_description: [String(e?.message || 'Facebook OAuth token exchange failed.')],
+            message: 'Facebook OAuth token exchange failed.',
+          }, 500)
+        }
+      }
+
+      // Fallback: provider not fully supported
+      return jsonResponse({
+        status: 400,
+        error_description: [`Unsupported OAuth provider: ${provider}`],
+        message: 'OAuth provider not supported.',
+      }, 400)
     }
 
     if (request.method === 'GET' && isOneOfPaths(requestPath, ['/api/v1/users/me', '/users/me'])) {
@@ -1183,7 +1287,7 @@ export default {
         })
       }
 
-      // Return demo video data for the provider
+      // Return demo video data for the provider (in demo mode only)
       const demoVideos = {
         google: [
           { id: 'gdrive-demo-1', title: 'My Google Drive Presentation', url: 'https://drive.google.com/file/d/demo1/view', thumbnail: '', duration: '12:34', publishedAt: '2026-05-15' },
@@ -1205,6 +1309,23 @@ export default {
           { id: 'dbx-demo-3', title: 'Course Introduction', url: 'https://dropbox.com/s/demo3/video.mp4', thumbnail: '', duration: '10:00', publishedAt: '2026-05-25' },
           { id: 'dbx-demo-4', title: 'Behind the Scenes', url: 'https://dropbox.com/s/demo4/video.mp4', thumbnail: '', duration: '3:20', publishedAt: '2026-05-18' },
         ],
+      }
+
+      // Require access token for non-Google providers in production
+      if (provider === 'facebook' && !env?.FACEBOOK_APP_SECRET) {
+        return jsonResponse({
+          status: 401,
+          error_description: ['Facebook OAuth is not configured. FACEBOOK_APP_SECRET is required for production.'],
+          message: 'Facebook OAuth not configured.',
+        }, 401)
+      }
+
+      if (provider === 'dropbox' && !env?.DROPBOX_CLIENT_SECRET) {
+        return jsonResponse({
+          status: 401,
+          error_description: ['Dropbox OAuth is not configured. DROPBOX_CLIENT_SECRET is required for production.'],
+          message: 'Dropbox OAuth not configured.',
+        }, 401)
       }
 
       const videos = demoVideos[provider] || demoVideos.google
