@@ -1527,8 +1527,9 @@ export default {
           }, 500)
         }
       }
+    }
 
-      if (requestPath.startsWith('/api/v1/')) {
+    if (requestPath.startsWith('/api/v1/')) {
       return jsonResponse({
         status: 200,
         data: {
