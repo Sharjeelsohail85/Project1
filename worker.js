@@ -75,7 +75,7 @@ function buildJsonHeaders() {
     'cache-control': 'no-store',
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'access-control-allow-headers': 'content-type, token, client_id, authorization, x-google-access-token',
+    'access-control-allow-headers': 'content-type, token, client_id, authorization, x-google-access-token, x-dropbox-access-token, x-facebook-access-token',
   }
 }
 
@@ -492,6 +492,72 @@ async function uploadSourceUrlToGoogleDrive({ accessToken, sourceUrl, title, des
     }
 
     return uploadPayload
+  } catch (error) {
+    throw error
+  }
+}
+
+async function uploadSourceUrlToDropbox({ accessToken, sourceUrl, title, description }) {
+  if (!accessToken || !sourceUrl) return null
+
+  const filename = title.toLowerCase().endsWith('.mp4') ? title : `${title || inferFilenameFromSourceUrl(sourceUrl)}.mp4`
+
+  try {
+    // Get a temporary upload link from Dropbox
+    const uploadLinkResponse = await fetch('https://api.dropboxapi.com/2/files/get_temporary_upload_link', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        max_file_size: 150 * 1024 * 1024,
+      }),
+    })
+
+    if (!uploadLinkResponse.ok) {
+      const linkError = await uploadLinkResponse.json().catch(() => ({}))
+      throw new Error(linkError?.error?.message || 'Unable to get Dropbox upload link.')
+    }
+
+    const linkData = await uploadLinkResponse.json()
+    const uploadUrl = linkData.link
+
+    // Download the source video
+    const sourceResponse = await fetch(sourceUrl)
+    if (!sourceResponse.ok) {
+      throw new Error(`Unable to download source video (${sourceResponse.status}).`)
+    }
+
+    const contentType = String(sourceResponse.headers.get('content-type') || 'video/mp4').trim() || 'video/mp4'
+    const videoBuffer = await sourceResponse.arrayBuffer()
+
+    // Upload to Dropbox
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({
+          mode: 'add',
+          autorename: true,
+          mute: false,
+          path: `/${filename}`,
+        }),
+      },
+      body: videoBuffer,
+    })
+
+    if (!uploadResponse.ok) {
+      const uploadError = await uploadResponse.json().catch(() => ({}))
+      throw new Error(uploadError?.error?.message || 'Unable to upload video to Dropbox.')
+    }
+
+    const result = await uploadResponse.json()
+    return {
+      id: result.id || `dropbox-${createRandomId()}`,
+      name: filename,
+      url: result.link || `https://dropbox.com/s/${result.id}/video.mp4`,
+    }
   } catch (error) {
     throw error
   }
@@ -952,12 +1018,16 @@ export default {
       const sourceType = String(data?.sourceType || 'url').trim().toLowerCase()
       const metadata = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {}
       const googleAccessToken = String(request.headers.get('x-google-access-token') || data?.googleAccessToken || data?.google_access_token || '').trim()
+      const dropboxAccessToken = String(request.headers.get('x-dropbox-access-token') || data?.dropboxAccessToken || data?.dropbox_access_token || '').trim()
+      const facebookAccessToken = String(request.headers.get('x-facebook-access-token') || data?.facebookAccessToken || data?.facebook_access_token || '').trim()
       const title = String(metadata?.title || inferFilenameFromSourceUrl(sourceUrl)).trim() || 'Imported video'
       const filename = inferFilenameFromSourceUrl(sourceUrl)
       let driveFile = null
+      let dropboxFile = null
       let playbackUrl = sourceType === 'account' ? normalizeLinkedAccountPlaybackUrl(sourceUrl) : ''
 
-      if (sourceType === 'account' && provider === 'gdrive' && !googleAccessToken) {
+      // Handle Google Drive import
+      if (sourceType === 'account' && (provider === 'gdrive' || provider === 'google') && !googleAccessToken) {
         return jsonResponse({
           status: 401,
           error_description: ['Google Drive access token missing. Reconnect Google Drive, then start the import again.'],
@@ -965,7 +1035,7 @@ export default {
         }, 401)
       }
 
-      if (sourceType === 'account' && provider === 'gdrive' && googleAccessToken && sourceUrl) {
+      if (sourceType === 'account' && (provider === 'gdrive' || provider === 'google') && googleAccessToken && sourceUrl) {
         try {
           driveFile = await uploadSourceUrlToGoogleDrive({
             accessToken: googleAccessToken,
@@ -984,8 +1054,45 @@ export default {
         }
       }
 
+      // Handle Dropbox import
+      if (sourceType === 'account' && provider === 'dropbox' && !dropboxAccessToken) {
+        return jsonResponse({
+          status: 401,
+          error_description: ['Dropbox access token missing. Reconnect Dropbox, then start the import again.'],
+          message: 'Dropbox access token missing.',
+        }, 401)
+      }
+
+      if (sourceType === 'account' && provider === 'dropbox' && dropboxAccessToken && sourceUrl) {
+        try {
+          dropboxFile = await uploadSourceUrlToDropbox({
+            accessToken: dropboxAccessToken,
+            sourceUrl,
+            title,
+            description: String(metadata?.description || '').trim(),
+          })
+          playbackUrl = dropboxFile?.url || playbackUrl
+        } catch (dropboxError) {
+          return jsonResponse({
+            status: 502,
+            error_description: [String(dropboxError?.message || dropboxError || 'Unable to upload video to Dropbox.')],
+            message: 'Unable to upload video to Dropbox.',
+          }, 502)
+        }
+      }
+
+      // Handle Facebook import
+      if (sourceType === 'account' && provider === 'facebook' && !facebookAccessToken) {
+        return jsonResponse({
+          status: 401,
+          error_description: ['Facebook access token missing. Reconnect Facebook, then start the import again.'],
+          message: 'Facebook access token missing.',
+        }, 401)
+      }
+
       const googleDriveFileId = String(driveFile?.id || '').trim()
-      const migrationVideoId = googleDriveFileId || `migration-${createRandomId().slice(0, 8)}`
+      const dropboxFileId = String(dropboxFile?.id || '').trim()
+      const migrationVideoId = googleDriveFileId || dropboxFileId || `migration-${createRandomId().slice(0, 8)}`
 
       const jobId = createRandomId()
       const job = {
@@ -999,6 +1106,8 @@ export default {
         playbackUrl,
         googleDriveFileId,
         googleDriveFile: driveFile || null,
+        dropboxFileId,
+        dropboxFile: dropboxFile || null,
         videoId: migrationVideoId,
       }
 
@@ -1287,63 +1396,139 @@ export default {
         })
       }
 
-      // Return demo video data for the provider (in demo mode only)
-      const demoVideos = {
-        google: [
-          { id: 'gdrive-demo-1', title: 'My Google Drive Presentation', url: 'https://drive.google.com/file/d/demo1/view', thumbnail: '', duration: '12:34', publishedAt: '2026-05-15' },
-          { id: 'gdrive-demo-2', title: 'Project Demo Recording', url: 'https://drive.google.com/file/d/demo2/view', thumbnail: '', duration: '8:21', publishedAt: '2026-05-10' },
-          { id: 'gdrive-demo-3', title: 'Team Meeting Notes', url: 'https://drive.google.com/file/d/demo3/view', thumbnail: '', duration: '45:00', publishedAt: '2026-04-28' },
-        ],
-        gdrive: [
-          { id: 'gdrive-demo-1', title: 'My Google Drive Presentation', url: 'https://drive.google.com/file/d/demo1/view', thumbnail: '', duration: '12:34', publishedAt: '2026-05-15' },
-          { id: 'gdrive-demo-2', title: 'Project Demo Recording', url: 'https://drive.google.com/file/d/demo2/view', thumbnail: '', duration: '8:21', publishedAt: '2026-05-10' },
-          { id: 'gdrive-demo-3', title: 'Team Meeting Notes', url: 'https://drive.google.com/file/d/demo3/view', thumbnail: '', duration: '45:00', publishedAt: '2026-04-28' },
-        ],
-        facebook: [
-          { id: 'fb-demo-1', title: 'Live Stream Recording', url: 'https://facebook.com/watch/?v=demo1', thumbnail: '', duration: '1:23:45', publishedAt: '2026-06-01' },
-          { id: 'fb-demo-2', title: 'Product Launch Video', url: 'https://facebook.com/watch/?v=demo2', thumbnail: '', duration: '15:30', publishedAt: '2026-05-20' },
-        ],
-        dropbox: [
-          { id: 'dbx-demo-1', title: 'Tutorial Screencast', url: 'https://dropbox.com/s/demo1/video.mp4', thumbnail: '', duration: '22:15', publishedAt: '2026-06-05' },
-          { id: 'dbx-demo-2', title: 'Event Highlights', url: 'https://dropbox.com/s/demo2/video.mp4', thumbnail: '', duration: '5:45', publishedAt: '2026-05-30' },
-          { id: 'dbx-demo-3', title: 'Course Introduction', url: 'https://dropbox.com/s/demo3/video.mp4', thumbnail: '', duration: '10:00', publishedAt: '2026-05-25' },
-          { id: 'dbx-demo-4', title: 'Behind the Scenes', url: 'https://dropbox.com/s/demo4/video.mp4', thumbnail: '', duration: '3:20', publishedAt: '2026-05-18' },
-        ],
+      // Facebook videos endpoint
+      if (provider === 'facebook') {
+        const facebookAccessToken = String(request.headers.get('x-facebook-access-token') || '').trim()
+
+        if (!facebookAccessToken) {
+          return jsonResponse({
+            status: 401,
+            error_description: ['Facebook is connected, but no Facebook access token was provided. Please reconnect Facebook.'],
+            message: 'Facebook access token missing.',
+          }, 401)
+        }
+
+        try {
+          // Fetch videos from Facebook Graph API
+          const fbUrl = new URL('https://graph.facebook.com/v18.0/me/videos')
+          fbUrl.searchParams.set('access_token', facebookAccessToken)
+          fbUrl.searchParams.set('fields', 'id,title,description,created_time,updated_time,permalink_url,source')
+
+          const fbResponse = await fetch(fbUrl.toString())
+          const fbPayload = await fbResponse.json().catch(() => ({}))
+
+          if (!fbResponse.ok) {
+            return jsonResponse({
+              status: fbResponse.status,
+              error_description: [fbPayload?.error?.message || 'Unable to fetch Facebook videos. Please reconnect Facebook.'],
+              message: 'Unable to fetch Facebook videos.',
+            }, fbResponse.status)
+          }
+
+          const videos = Array.isArray(fbPayload.data)
+            ? fbPayload.data.map((v) => ({
+                id: v.id || '',
+                title: v.title || v.description || 'Facebook Video',
+                url: v.permalink_url || `https://facebook.com/watch/?v=${v.id}`,
+                thumbnail: '',
+                duration: '',
+                publishedAt: v.created_time || '',
+              }))
+            : []
+
+          return jsonResponse({
+            status: 200,
+            data: {
+              videos,
+              total: videos.length,
+              page: Number(url.searchParams.get('page') || 1),
+              perPage: Number(url.searchParams.get('per_page') || 20),
+              hasMore: false,
+              fallback_mode: false,
+            },
+          })
+        } catch (error) {
+          return jsonResponse({
+            status: 500,
+            error_description: [String(error?.message || 'Unable to fetch Facebook videos.')],
+            message: 'Unable to fetch Facebook videos.',
+          }, 500)
+        }
       }
 
-      // Require access token for non-Google providers in production
-      if (provider === 'facebook' && !env?.FACEBOOK_APP_SECRET) {
-        return jsonResponse({
-          status: 401,
-          error_description: ['Facebook OAuth is not configured. FACEBOOK_APP_SECRET is required for production.'],
-          message: 'Facebook OAuth not configured.',
-        }, 401)
+      // Dropbox videos endpoint
+      if (provider === 'dropbox') {
+        const dropboxAccessToken = String(request.headers.get('x-dropbox-access-token') || '').trim()
+
+        if (!dropboxAccessToken) {
+          return jsonResponse({
+            status: 401,
+            error_description: ['Dropbox is connected, but no Dropbox access token was provided. Please reconnect Dropbox.'],
+            message: 'Dropbox access token missing.',
+          }, 401)
+        }
+
+        try {
+          // List files from Dropbox
+          const listResponse = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${dropboxAccessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              path: '',
+              recursive: false,
+              limit: 20,
+            }),
+          })
+
+          const listPayload = await listResponse.json().catch(() => ({}))
+
+          if (!listResponse.ok) {
+            return jsonResponse({
+              status: listResponse.status,
+              error_description: [listPayload?.error?.message || 'Unable to fetch Dropbox videos. Please reconnect Dropbox.'],
+              message: 'Unable to fetch Dropbox videos.',
+            }, listResponse.status)
+          }
+
+          // Filter for video files
+          const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.m4v']
+          const videos = Array.isArray(listPayload.entries)
+            ? listPayload.entries
+              .filter((entry) => videoExtensions.some((ext) => entry?.name?.toLowerCase()?.includes(ext)))
+              .map((entry) => ({
+                id: entry?.id || '',
+                title: entry?.name || 'Dropbox Video',
+                url: `https://dropbox.com/s/${entry?.id}/${entry?.name}`,
+                thumbnail: '',
+                duration: '',
+                publishedAt: entry?.server_modified || '',
+              }))
+            : []
+
+          return jsonResponse({
+            status: 200,
+            data: {
+              videos,
+              total: videos.length,
+              page: Number(url.searchParams.get('page') || 1),
+              perPage: Number(url.searchParams.get('per_page') || 20),
+              hasMore: false,
+              fallback_mode: false,
+            },
+          })
+        } catch (error) {
+          return jsonResponse({
+            status: 500,
+            error_description: [String(error?.message || 'Unable to fetch Dropbox videos.')],
+            message: 'Unable to fetch Dropbox videos.',
+          }, 500)
+        }
       }
 
-      if (provider === 'dropbox' && !env?.DROPBOX_CLIENT_SECRET) {
-        return jsonResponse({
-          status: 401,
-          error_description: ['Dropbox OAuth is not configured. DROPBOX_CLIENT_SECRET is required for production.'],
-          message: 'Dropbox OAuth not configured.',
-        }, 401)
-      }
-
-      const videos = demoVideos[provider] || demoVideos.google
-      
-      return jsonResponse({
-        status: 200,
-        data: {
-          videos,
-          total: videos.length,
-          page: 1,
-          perPage: 20,
-          hasMore: false,
-          fallback_mode: true,
-        },
-      })
-    }
-
-    if (requestPath.startsWith('/api/v1/')) {
+      if (requestPath.startsWith('/api/v1/')) {
       return jsonResponse({
         status: 200,
         data: {

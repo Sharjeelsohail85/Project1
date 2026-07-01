@@ -135,7 +135,17 @@ export async function fetchVideosFromAccount(provider, options = {}) {
         || ''
     ).trim()
 
-    const headers = accessToken ? { 'x-google-access-token': accessToken } : {}
+    // Use correct header based on provider
+    let headers = {}
+    if (accessToken) {
+      if (provider === 'google' || provider === 'gdrive') {
+        headers['x-google-access-token'] = accessToken
+      } else if (provider === 'dropbox') {
+        headers['x-dropbox-access-token'] = accessToken
+      } else if (provider === 'facebook') {
+        headers['x-facebook-access-token'] = accessToken
+      }
+    }
     
     const response = await apiRequest(`/api/v1/accounts/${provider}/videos?page=${page}&per_page=${perPage}`, {
       headers,
