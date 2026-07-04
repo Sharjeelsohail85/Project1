@@ -167,7 +167,7 @@ const MigratePostPage = memo(function MigratePostPage() {
 
   const connectedProviders = useMemo(() => normalizeConnectedProviderIds(connectedById), [connectedById])
 
-  const onConnectProvider = useCallback(async (providerId) => {
+  const onConnectProvider = useCallback(async (providerId, manualToken = '') => {
     const normalized = String(providerId || '').trim().toLowerCase()
     if (!normalized) {
       setConnectionError('Provider id is required.')
@@ -212,15 +212,38 @@ const MigratePostPage = memo(function MigratePostPage() {
       }
 
       if (normalized === 'dropbox') {
-        const accounts = await connectAccount('dropbox')
-        const dropboxAccount = Array.isArray(accounts)
-          ? accounts.find((account) => account?.provider === 'dropbox' && account?.connected)
-          : null
-        const token = String(
-          dropboxAccount?.user?.dropbox_access_token ||
-          dropboxAccount?.user?.access_token ||
-          ''
-        ).trim()
+        let token = ''
+        if (manualToken) {
+          const accounts = getConnectedAccounts()
+          const newAccount = {
+            provider: 'dropbox',
+            connected: true,
+            user: {
+              uuid: `dropbox-user-manual-${Date.now()}`,
+              first_name: 'Dropbox',
+              last_name: 'User (Manual)',
+              email: `dropbox.${Date.now()}@manual.local`,
+              registration_type: 'dropbox',
+              active: 1,
+              dropbox_access_token: manualToken.trim(),
+              access_token: manualToken.trim(),
+            }
+          }
+          const filtered = accounts.filter(a => a.provider !== 'dropbox')
+          filtered.push(newAccount)
+          saveConnectedAccounts(filtered)
+          token = manualToken.trim()
+        } else {
+          const accounts = await connectAccount('dropbox')
+          const dropboxAccount = Array.isArray(accounts)
+            ? accounts.find((account) => account?.provider === 'dropbox' && account?.connected)
+            : null
+          token = String(
+            dropboxAccount?.user?.dropbox_access_token ||
+            dropboxAccount?.user?.access_token ||
+            ''
+          ).trim()
+        }
 
         if (!token) {
           setConnectedById((prev) => ({ ...prev, [normalized]: false }))

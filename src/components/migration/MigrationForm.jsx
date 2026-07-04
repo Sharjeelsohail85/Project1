@@ -287,7 +287,7 @@ const MigrationForm = memo(function MigrationForm({
           setSelectedProvider(provider)
           setFormError('')
         }}
-        onRequestConnect={(provider) => onConnectProvider?.(provider)}
+        onRequestConnect={(provider, token) => onConnectProvider?.(provider, token)}
       />
 
       <SourceInput
