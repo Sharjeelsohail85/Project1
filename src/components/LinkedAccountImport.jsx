@@ -6,6 +6,7 @@ import {
   connectAccount,
   disconnectAccount,
   fetchVideosFromAccount,
+  saveConnectedAccounts,
 } from "../services/linkedAccountService";
 import { saveLocalChannelVideo } from "../services/videoService";
 
@@ -25,6 +26,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [fetchingVideos, setFetchingVideos] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [videoError, setVideoError] = useState("");
+  const [showDropboxManual, setShowDropboxManual] = useState(false);
+  const [dropboxManualToken, setDropboxManualToken] = useState("");
 
   const refreshAccounts = useCallback(() => {
     setAccounts(getConnectedAccounts());
@@ -217,35 +220,131 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
             };
             const isLoading = loadingProvider === provider;
             return (
-              <div key={provider} className="linked-account-item">
-                <div className="linked-account-item-left">
-                  <i
-                    className="material-icons linked-account-icon"
-                    style={{ color: meta.color }}
-                    aria-hidden="true"
-                  >
-                    {meta.icon}
-                  </i>
-                  <span className="linked-account-name">{meta.label}</span>
+              <div key={provider} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+                <div className="linked-account-item" style={{ marginBottom: 0 }}>
+                  <div className="linked-account-item-left">
+                    <i
+                      className="material-icons linked-account-icon"
+                      style={{ color: meta.color }}
+                      aria-hidden="true"
+                    >
+                      {meta.icon}
+                    </i>
+                    <span className="linked-account-name">{meta.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {provider === 'dropbox' && (
+                      <Button
+                        onClick={() => setShowDropboxManual(prev => !prev)}
+                        variant="text"
+                        color="inherit"
+                        sx={{
+                          minWidth: 0,
+                          padding: "4px 8px",
+                          textTransform: "none",
+                          color: "rgba(255,255,255,0.7)",
+                          fontSize: "0.75rem",
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {showDropboxManual ? "Cancel" : "Use Token"}
+                      </Button>
+                    )}
+                    <Button
+                      className="linked-account-btn connect-btn"
+                      onClick={() => handleConnect(provider)}
+                      disabled={isLoading}
+                      variant="text"
+                      color="inherit"
+                      disableElevation
+                      disableRipple
+                      sx={{
+                        minWidth: 0,
+                        padding: "6px 14px",
+                        textTransform: "none",
+                        color: "#03DAC6",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {isLoading ? "Connecting..." : "Connect"}
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  className="linked-account-btn connect-btn"
-                  onClick={() => handleConnect(provider)}
-                  disabled={isLoading}
-                  variant="text"
-                  color="inherit"
-                  disableElevation
-                  disableRipple
-                  sx={{
-                    minWidth: 0,
-                    padding: "6px 14px",
-                    textTransform: "none",
-                    color: "#03DAC6",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  {isLoading ? "Connecting..." : "Connect"}
-                </Button>
+                {provider === 'dropbox' && showDropboxManual && (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
+                      Enter your Dropbox <strong>Personal Access Token</strong> (generated from Dropbox App Console) to connect directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="password"
+                        placeholder="Paste Dropbox token..."
+                        value={dropboxManualToken}
+                        onChange={(e) => setDropboxManualToken(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (!dropboxManualToken.trim()) {
+                            onError?.("Please enter a valid token.");
+                            return;
+                          }
+                          try {
+                            const accounts = getConnectedAccounts();
+                            const newAccount = {
+                              provider: 'dropbox',
+                              connected: true,
+                              user: {
+                                uuid: `dropbox-user-manual-${Date.now()}`,
+                                first_name: 'Dropbox',
+                                last_name: 'User (Manual)',
+                                email: `dropbox.${Date.now()}@manual.local`,
+                                registration_type: 'dropbox',
+                                active: 1,
+                                dropbox_access_token: dropboxManualToken.trim(),
+                                access_token: dropboxManualToken.trim(),
+                              }
+                            };
+                            const filtered = accounts.filter(a => a.provider !== 'dropbox');
+                            filtered.push(newAccount);
+                            saveConnectedAccounts(filtered);
+                            refreshAccounts();
+                            setDropboxManualToken('');
+                            setShowDropboxManual(false);
+                          } catch (err) {
+                            onError?.("Failed to save token: " + err.message);
+                          }
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: '#03DAC6',
+                          fontSize: '0.8rem',
+                          border: '1px solid rgba(3, 218, 198, 0.3)',
+                          padding: '4px 10px'
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
