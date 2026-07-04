@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography'
 import useVideoUploadForm from '../hooks/useVideoUploadForm'
 import LinkedAccountImport from './LinkedAccountImport'
 import { isDropboxConnected, uploadToDropboxAndGetLink } from '../services/dropboxUploadService'
-import { connectAccount, getConnectedAccounts, saveConnectedAccounts } from '../services/linkedAccountService'
+import { connectAccount, disconnectAccount, getConnectedAccounts, saveConnectedAccounts } from '../services/linkedAccountService'
 import {
   formatBytes,
   MAX_THUMBNAIL_SIZE_BYTES,
@@ -465,6 +465,20 @@ const Upload = memo(function Upload({
                           Select Video File
                         </Button>
                       )}
+
+                      <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        <Button
+                          variant="text"
+                          onClick={() => {
+                            disconnectAccount('dropbox')
+                            setDropboxConnected(false)
+                            setDropboxLocalFile(null)
+                          }}
+                          sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', '&:hover': { color: '#ff5252' } }}
+                        >
+                          Disconnect / Change Dropbox Account
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '12px' }}>
