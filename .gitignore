@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+Video-master/vendor/
+
+# Build output
+dist/
+
+# Local environment / secrets
+.env
+.env.infinityfree
+.aistudio/
+
+# Tool/runtime caches
+.npm-cache/
+.wrangler/
+.ifb/
+scripts/__pycache__/
+__pycache__/
+
+# Temporary artifacts
+.tmp-*
