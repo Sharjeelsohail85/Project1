@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+.npm-cache
+.wrangler
+node_modules
+dist
+coverage
+npm-debug.log
+yarn-error.log
+Video-master
+screenshots
+*.log
+

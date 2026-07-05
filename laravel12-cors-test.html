@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laravel 12 CORS Test - Built-in HandleCors</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .critical { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
+        .header-row { display: flex; gap: 20px; margin-bottom: 10px; }
+        .header-item { flex: 1; }
+        .status-badge { padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .status-pass { background: #d4edda; color: #155724; }
+        .status-fail { background: #f8d7da; color: #721c24; }
+        .status-warn { background: #fff3cd; color: #856404; }
+        .command-box { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Laravel 12 CORS Test - Built-in HandleCors</h1>
+    <p><strong>Testing the proper Laravel 12 way of handling CORS with built-in middleware.</strong></p>
+    
+    <div class="test-section info">
+        <h3>⚙️ Configuration Applied</h3>
+        <div class="header-row">
+            <div class="header-item">
+                <strong>Middleware:</strong> <code>HandleCors::class</code> (prepended)
+            </div>
+            <div class="header-item">
+                <strong>Config:</strong> <code>config/cors.php</code>
+            </div>
+            <div class="header-item">
+                <strong>Origin:</strong> <code>http://localhost:3000</code>
+            </div>
+        </div>
+        <p><strong>Key Settings:</strong></p>
+        <ul>
+            <li>✅ <code>supports_credentials: true</code></li>
+            <li>✅ <code>allowed_origins: ['http://localhost:3000']</code></li>
+            <li>✅ <code>paths: ['api/*', 'sanctum/csrf-cookie', 'login', 'register']</code></li>
+            <li>✅ <code>allowed_headers: ['*']</code></li>
+        </ul>
+    </div>
+
+    <div class="test-section critical">
+        <h3>⚠️ Laravel 12 "Tricky" Behavior</h3>
+        <p><strong>Why prepending is critical:</strong> In Laravel 12, if a request hits a route that throws an error (401, 500, etc.) and CORS middleware isn't global, Laravel might send the error response without CORS headers. The browser sees a response without "Allow-Origin" and labels it a "CORS Error" even if the real problem was a backend crash.</p>
+    </div>
+
+    <div class="test-section" id="preflight-test">
+        <h3>1. OPTIONS Preflight Request</h3>
+        <button onclick="testPreflight()">Run Preflight Test</button>
+        <div id="preflight-result"></div>
+    </div>
+
+    <div class="test-section" id="actual-request-test">
+        <h3>2. Actual POST Request with Credentials</h3>
+        <button onclick="testActualRequest()">Run Actual Request Test</button>
+        <div id="actual-request-result"></div>
+    </div>
+
+    <div class="test-section" id="tag-api-test">
+        <h3>3. Tag API Test (Specific Endpoint)</h3>
+        <button onclick="testTagAPI()">Test Tag API</button>
+        <div id="tag-api-result"></div>
+    </div>
+
+    <div class="test-section" id="curl-test">
+        <h3>4. Manual cURL Verification</h3>
+        <p>Run this command in your terminal to manually verify headers:</p>
+        <div class="command-box">
+            curl -I -X OPTIONS http://localhost:8000/api/tag -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: GET"
+        </div>
+        <p><strong>Expected in output:</strong> <code>Access-Control-Allow-Origin: http://localhost:3000</code></p>
+    </div>
+
+    <div class="test-section" id="summary">
+        <h3>📊 Laravel 12 CORS Test Summary</h3>
+        <div id="summary-result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000/api/v1';
+        const FRONTEND_ORIGIN = window.location.origin;
+
+        async function testPreflight() {
+            const resultDiv = document.getElementById('preflight-result');
+            resultDiv.innerHTML = '<p>Testing OPTIONS preflight with Laravel 12 HandleCors...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,token,client_id',
+                    }
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                    headers: response.headers.get('access-control-allow-headers'),
+                    credentials: response.headers.get('access-control-allow-credentials'),
+                    vary: response.headers.get('vary')
+                };
+
+                // Laravel 12 HandleCors specific checks
+                const isOriginCorrect = headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const hasVary = headers.vary && headers.vary.includes('Origin');
+                const isPass = response.status === 200 && isOriginCorrect && hasCredentials;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Status:</strong> ${response.status} ${response.status === 200 ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginCorrect ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Methods:</strong> ${headers.methods}
+                            </div>
+                            <div class="header-item">
+                                <strong>Vary Header:</strong> ${headers.vary || 'none'} ${hasVary ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Laravel 12 HandleCors working' : '❌ FAIL - HandleCors not configured properly'}</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Network error</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function testActualRequest() {
+            const resultDiv = document.getElementById('actual-request-result');
+            resultDiv.innerHTML = '<p>Testing actual POST request with credentials...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Content-Type': 'application/json',
+                        'token': 'test-token-laravel12',
+                        'client_id': 'test-client-laravel12',
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            email: 'test@example.com',
+                            password: 'test123'
+                        }
+                    })
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    credentials: response.headers.get('access-control-allow-credentials'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                    allHeaders: response.headers.get('access-control-allow-headers')
+                };
+
+                // Laravel 12 HandleCors specific checks for actual requests
+                const isOriginMatch = headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const isPass = isOriginMatch && hasCredentials;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Status:</strong> ${response.status}
+                            </div>
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginMatch ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Credentialed request successful' : '❌ FAIL - Credentialed request blocked'}</p>
+                        <p><strong>Note:</strong> Status may be 401/422 due to invalid credentials, but CORS should pass</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Request blocked by CORS</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function testTagAPI() {
+            const resultDiv = document.getElementById('tag-api-result');
+            resultDiv.innerHTML = '<p>Testing Tag API endpoint (specific to your use case)...</p>';
+            
+            try {
+                // Test the specific endpoint mentioned in the user's issue
+                const response = await fetch(`${BACKEND_URL}/tag`, {
+                    method: 'GET',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    credentials: response.headers.get('access-control-allow-credentials'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                };
+
+                const isOriginMatch = headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const isPass = isOriginMatch && hasCredentials;
+                
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <div class="header-row">
+                            <div class="header-item">
+                                <strong>Status:</strong> ${response.status}
+                            </div>
+                            <div class="header-item">
+                                <strong>Origin:</strong> ${headers.origin} ${isOriginMatch ? '✅' : '❌'}
+                            </div>
+                            <div class="header-item">
+                                <strong>Credentials:</strong> ${headers.credentials} ${hasCredentials ? '✅' : '❌'}
+                            </div>
+                        </div>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS - Tag API accessible' : '❌ FAIL - Tag API blocked by CORS'}</p>
+                        <p><strong>Note:</strong> This tests the specific endpoint mentioned in your issue</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL - Tag API request failed</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            const preflightPass = await testPreflight();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const actualPass = await testActualRequest();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const tagPass = await testTagAPI();
+            
+            const summaryDiv = document.getElementById('summary-result');
+            const allPass = preflightPass && actualPass && tagPass;
+            const className = allPass ? 'pass' : 'fail';
+            
+            summaryDiv.innerHTML = `
+                <div class="${className}">
+                    <h4>🔧 Laravel 12 CORS Test Results:</h4>
+                    <div class="header-row">
+                        <div class="header-item">
+                            <span class="status-badge ${preflightPass ? 'status-pass' : 'status-fail'}">Preflight: ${preflightPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                        <div class="header-item">
+                            <span class="status-badge ${actualPass ? 'status-pass' : 'status-fail'}">Actual Request: ${actualPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                        <div class="header-item">
+                            <span class="status-badge ${tagPass ? 'status-pass' : 'status-fail'}">Tag API: ${tagPass ? 'PASS' : 'FAIL'}</span>
+                        </div>
+                    </div>
+                    <p><strong>Final Status: ${allPass ? '✅ ALL TESTS PASS - LARAVEL 12 CORS WORKING' : '❌ SOME TESTS FAILED - LARAVEL 12 CORS INCOMPLETE'}</strong></p>
+                </div>
+            `;
+            
+            if (allPass) {
+                summaryDiv.innerHTML += `
+                    <div class="pass">
+                        <h4>🎉 Laravel 12 CORS Fix Summary:</h4>
+                        <p><strong>The Laravel 12 built-in HandleCors is working correctly!</strong></p>
+                        <ul>
+                            <li>✅ HandleCors middleware is properly prepended</li>
+                            <li>✅ CORS configuration is correctly applied</li>
+                            <li>✅ Credentials are properly supported</li>
+                            <li>✅ Origin matching is explicit (not wildcard)</li>
+                            <li>✅ Tag API endpoint is accessible</li>
+                        </ul>
+                        <p><strong>Your frontend should now be able to make API calls without CORS errors.</strong></p>
+                    </div>
+                `;
+            } else {
+                summaryDiv.innerHTML += `
+                    <div class="fail">
+                        <h4>⚠️ Laravel 12 CORS Issues:</h4>
+                        <p>Some tests failed. Check the Laravel 12 configuration:</p>
+                        <ul>
+                            <li>Ensure <code>HandleCors::class</code> is PREPENDED in bootstrap/app.php</li>
+                            <li>Ensure <code>config/cors.php</code> exists with proper settings</li>
+                            <li>Ensure <code>supports_credentials: true</code> is set</li>
+                            <li>Ensure <code>allowed_origins</code> is explicit (not wildcard)</li>
+                            <li>Clear caches: <code>php artisan config:clear</code></li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests when page loads
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "project1-video-app",
+  "main": "worker.js",
+  "compatibility_date": "2026-02-13",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "vars": {
+    "GOOGLE_CLIENT_ID": "989755989766-i7v8a6h95cou5bd9ab9li19mqi06guj1.apps.googleusercontent.com",
+    "FACEBOOK_APP_ID": "4353526181633465",
+    "DROPBOX_CLIENT_ID": "hczocrkw8l7dl21",
+    "DROPBOX_CLIENT_SECRET": "46visk1tvrmnxgl"
+  }
+}
