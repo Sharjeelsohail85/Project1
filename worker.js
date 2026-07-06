@@ -569,10 +569,14 @@ async function uploadSourceUrlToDropbox({ accessToken, sourceUrl, title, descrip
     const result = await uploadResponse.json()
     const uploadedPath = result.path_display || path
 
-    // 2. Create public shared link
+    // 2. Create public shared link with multiple fallbacks
     const shareSettingsUrl = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
+    const listUrl = 'https://api.dropboxapi.com/2/sharing/list_shared_links'
+    const tempLinkUrl = 'https://api.dropboxapi.com/2/files/get_temporary_link'
+
     let streamUrl = ''
 
+    // Attempt A: Create shared link with public visibility
     try {
       const shareResponse = await fetch(shareSettingsUrl, {
         method: 'POST',
@@ -591,9 +595,14 @@ async function uploadSourceUrlToDropbox({ accessToken, sourceUrl, title, descrip
       const shareData = await shareResponse.json()
       if (shareResponse.ok) {
         streamUrl = shareData.url
-      } else if (shareData?.error_summary?.includes('shared_link_already_exists')) {
-        const listUrl = 'https://api.dropboxapi.com/2/sharing/list_shared_links'
-        const listResponse = await fetch(listUrl, {
+      } else {
+        console.warn('Worker Dropbox Attempt A (public settings) failed:', shareData?.error_summary || 'unknown')
+        throw new Error(shareData?.error_summary || 'Attempt A failed')
+      }
+    } catch (errorA) {
+      // Attempt B: Create shared link with default settings (no settings object)
+      try {
+        const shareResponse = await fetch(shareSettingsUrl, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -601,16 +610,84 @@ async function uploadSourceUrlToDropbox({ accessToken, sourceUrl, title, descrip
           },
           body: JSON.stringify({
             path: uploadedPath,
-            direct_only: true,
           }),
         })
-        const listData = await listResponse.json()
-        if (listResponse.ok && listData?.links && listData.links.length > 0) {
-          streamUrl = listData.links[0].url
+
+        const shareData = await shareResponse.json()
+        if (shareResponse.ok) {
+          streamUrl = shareData.url
+        } else {
+          console.warn('Worker Dropbox Attempt B (default settings) failed:', shareData?.error_summary || 'unknown')
+          throw new Error(shareData?.error_summary || 'Attempt B failed')
+        }
+      } catch (errorB) {
+        // Attempt C: List already existing shared links (direct_only: true)
+        try {
+          const listResponse = await fetch(listUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              path: uploadedPath,
+              direct_only: true,
+            }),
+          })
+          const listData = await listResponse.json()
+          if (listResponse.ok && listData?.links && listData.links.length > 0) {
+            streamUrl = listData.links[0].url
+          }
+        } catch (errorC) {
+          console.warn('Worker Dropbox Attempt C (list direct) failed:', errorC?.message)
+        }
+
+        // Attempt D: List already existing shared links without direct_only constraint
+        if (!streamUrl) {
+          try {
+            const listResponse = await fetch(listUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                path: uploadedPath,
+              }),
+            })
+            const listData = await listResponse.json()
+            if (listResponse.ok && listData?.links && listData.links.length > 0) {
+              streamUrl = listData.links[0].url
+            }
+          } catch (errorD) {
+            console.warn('Worker Dropbox Attempt D (list default) failed:', errorD?.message)
+          }
+        }
+
+        // Attempt E: Get temporary link (guaranteed fallback link, valid for 4 hours)
+        if (!streamUrl) {
+          try {
+            const tempResponse = await fetch(tempLinkUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                path: uploadedPath,
+              }),
+            })
+            const tempData = await tempResponse.json()
+            if (tempResponse.ok) {
+              streamUrl = tempData.link
+            } else {
+              console.error('Worker Dropbox Attempt E (get_temporary_link) failed:', tempData?.error_summary || 'unknown')
+            }
+          } catch (errorE) {
+            console.error('Worker Dropbox Attempt E failed:', errorE?.message)
+          }
         }
       }
-    } catch (e) {
-      // ignore
     }
 
     if (streamUrl) {
