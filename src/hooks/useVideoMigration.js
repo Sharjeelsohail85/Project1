@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import apiClient from '../lib/apiClient'
+import { uploadToDropboxAndGetLink } from '../services/dropboxUploadService'
 
 const DEFAULT_PROGRESS_STATE = {
   jobId: '',
@@ -469,6 +470,47 @@ export function useVideoMigration() {
           return { jobId: uploadJobId, videoId: driveFileId, playbackUrl }
         }
 
+        if (provider === 'dropbox') {
+          const dropboxToken = getDropboxAccessTokenSafe()
+          if (!dropboxToken) {
+            throw new Error('Dropbox is not connected. Reconnect Dropbox, then upload again.')
+          }
+          setProgressState((previous) => ({
+            ...previous,
+            stage: 'uploading',
+            progress: 10,
+            completed: false,
+            error: '',
+          }))
+
+          const streamUrl = await uploadToDropboxAndGetLink(localFile, (pct) => {
+            setProgressState((previous) => ({
+              ...previous,
+              progress: pct,
+              stage: pct >= 100 ? 'finalizing' : 'uploading',
+            }))
+          })
+
+          const uploadJobId = `dropbox-upload-${Date.now()}`
+          setProgressState({
+            jobId: uploadJobId,
+            progress: 100,
+            stage: 'finalizing',
+            completed: true,
+            videoId: uploadJobId,
+            playbackUrl: streamUrl,
+            error: '',
+            providerUploadWarning: '',
+          })
+          setValidationResult({
+            valid: true,
+            size: Number(localFile?.size || 0),
+            mime: String(localFile?.type || 'video/mp4'),
+            filename: String(localFile?.name || ''),
+          })
+          return { jobId: uploadJobId, videoId: uploadJobId, playbackUrl: streamUrl }
+        }
+
         setProgressState((previous) => ({
           ...previous,
           stage: 'uploading',
@@ -536,8 +578,8 @@ export function useVideoMigration() {
         }
       }
 
-      const googleAccessToken = (sourceType === 'account' && provider === 'gdrive') ? getGoogleAccessTokenSafe() : ''
-      const dropboxAccessToken = (sourceType === 'account' && provider === 'dropbox') ? getDropboxAccessTokenSafe() : ''
+      const googleAccessToken = (provider === 'gdrive' || provider === 'google') ? getGoogleAccessTokenSafe() : ''
+      const dropboxAccessToken = (provider === 'dropbox') ? getDropboxAccessTokenSafe() : ''
       const headers = {}
       if (googleAccessToken) {
         headers['x-google-access-token'] = googleAccessToken

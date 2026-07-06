@@ -362,6 +362,19 @@ function savePostedVideoForRequest(request, video) {
   return next
 }
 
+function findPostedVideoById(videoId) {
+  const targetId = String(videoId || '').trim()
+  if (!targetId) return null
+
+  for (const [key, videos] of postedVideosByUser.entries()) {
+    if (Array.isArray(videos)) {
+      const found = videos.find(v => String(v.uuid || v.id || '').trim() === targetId)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 function extractGoogleDriveFileId(webViewLink = '') {
   const value = String(webViewLink || '').trim()
   const match = value.match(/\/file\/d\/([^/]+)/i) || value.match(/[?&]id=([^&]+)/i)
@@ -1124,7 +1137,7 @@ export default {
       let playbackUrl = sourceType === 'account' ? normalizeLinkedAccountPlaybackUrl(sourceUrl) : ''
 
       // Handle Google Drive import
-      if (sourceType === 'account' && (provider === 'gdrive' || provider === 'google') && !googleAccessToken) {
+      if ((provider === 'gdrive' || provider === 'google') && !googleAccessToken) {
         return jsonResponse({
           status: 401,
           error_description: ['Google Drive access token missing. Reconnect Google Drive, then start the import again.'],
@@ -1132,7 +1145,7 @@ export default {
         }, 401)
       }
 
-      if (sourceType === 'account' && (provider === 'gdrive' || provider === 'google') && googleAccessToken && sourceUrl) {
+      if ((provider === 'gdrive' || provider === 'google') && googleAccessToken && sourceUrl) {
         try {
           driveFile = await uploadSourceUrlToGoogleDrive({
             accessToken: googleAccessToken,
@@ -1152,7 +1165,7 @@ export default {
       }
 
       // Handle Dropbox import
-      if (sourceType === 'account' && provider === 'dropbox' && !dropboxAccessToken) {
+      if (provider === 'dropbox' && !dropboxAccessToken) {
         return jsonResponse({
           status: 401,
           error_description: ['Dropbox access token missing. Reconnect Dropbox, then start the import again.'],
@@ -1160,7 +1173,7 @@ export default {
         }, 401)
       }
 
-      if (sourceType === 'account' && provider === 'dropbox' && dropboxAccessToken && sourceUrl) {
+      if (provider === 'dropbox' && dropboxAccessToken && sourceUrl) {
         try {
           dropboxFile = await uploadSourceUrlToDropbox({
             accessToken: dropboxAccessToken,
@@ -1304,21 +1317,25 @@ export default {
 
       const streamUrlVideoId = extractPathParam(requestPath, /^\/(?:api\/v1\/)?videos\/([^/]+)\/stream-url$/i)
       if (streamUrlVideoId) {
+        const foundVideo = findPostedVideoById(streamUrlVideoId)
+        const realStreamUrl = foundVideo?.video_url || foundVideo?.source_url || foundVideo?.url || DEMO_MIGRATION_STREAM_URL
         return jsonResponse({
           status: 200,
           data: {
             videoId: streamUrlVideoId,
-            streamUrl: DEMO_MIGRATION_STREAM_URL,
-            playbackUrl: DEMO_MIGRATION_STREAM_URL,
-            message: 'Using demo playback stream URL.',
-            fallback_mode: true,
+            streamUrl: realStreamUrl,
+            playbackUrl: realStreamUrl,
+            message: foundVideo ? 'Using real saved stream URL.' : 'Using demo playback stream URL.',
+            fallback_mode: !foundVideo,
           },
         })
       }
 
       const migrationStreamVideoId = extractPathParam(requestPath, /^\/(?:api\/v1\/)?video\/migration\/stream\/([^/]+)$/i)
       if (migrationStreamVideoId) {
-        return Response.redirect(DEMO_MIGRATION_STREAM_URL, 302)
+        const foundVideo = findPostedVideoById(migrationStreamVideoId)
+        const realStreamUrl = foundVideo?.video_url || foundVideo?.source_url || foundVideo?.url || DEMO_MIGRATION_STREAM_URL
+        return Response.redirect(realStreamUrl, 302)
       }
     }
 

@@ -967,8 +967,16 @@ function App() {
 
         const payload = response?.data || response || {}
         const resolvedStreamUrl = String(payload?.streamUrl || payload?.playbackUrl || '').trim()
-        if (resolvedStreamUrl) {
-          applyWatchSource(resolvedStreamUrl)
+        const localVideo = findLocalWatchVideo()
+        const localStreamUrl = String(localVideo?.video_url || localVideo?.source_url || '').trim()
+
+        let finalStreamUrl = resolvedStreamUrl
+        if (localStreamUrl && (!resolvedStreamUrl || resolvedStreamUrl.includes('flower.mp4'))) {
+          finalStreamUrl = localStreamUrl
+        }
+
+        if (finalStreamUrl) {
+          applyWatchSource(finalStreamUrl)
           return
         }
 
