@@ -904,8 +904,8 @@ export default {
 
       // Non-Google providers: check for configured secrets
       if (provider === 'dropbox') {
-        const dropboxClientId = data?.custom_client_id || env?.DROPBOX_CLIENT_ID || 'hczocrkw8l7dl21'
-        const dropboxClientSecret = data?.custom_client_secret || env?.DROPBOX_CLIENT_SECRET || '46visk1tvrmnxgl'
+        const dropboxClientId = data?.custom_client_id || env?.DROPBOX_CLIENT_ID || 'dcuykx3y074l3er'
+        const dropboxClientSecret = data?.custom_client_secret || env?.DROPBOX_CLIENT_SECRET || 'gocxthugoa2i6am'
 
         if (!dropboxClientSecret) {
           return jsonResponse({
@@ -1061,8 +1061,8 @@ export default {
         const searchParams = new URL(request.url).searchParams
         const customClientId = searchParams.get('custom_client_id')
         const customClientSecret = searchParams.get('custom_client_secret')
-        const finalClientId = customClientId || env?.DROPBOX_CLIENT_ID || 'hczocrkw8l7dl21'
-        const finalClientSecret = customClientSecret || env?.DROPBOX_CLIENT_SECRET || '46visk1tvrmnxgl'
+        const finalClientId = customClientId || env?.DROPBOX_CLIENT_ID || 'dcuykx3y074l3er'
+        const finalClientSecret = customClientSecret || env?.DROPBOX_CLIENT_SECRET || 'gocxthugoa2i6am'
 
         if (finalClientSecret) {
           const state = createRandomId()

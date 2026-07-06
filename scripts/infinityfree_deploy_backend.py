@@ -76,8 +76,8 @@ def build_stage_env(cfg: dict) -> str:
         "CORS_ALLOWED_METHODS=GET, POST, PUT, PATCH, DELETE, OPTIONS",
         "CORS_ALLOWED_HEADERS=Content-Type, Authorization, X-Requested-With, token, client_id, Accept",
         "CORS_MAX_AGE=3600",
-        "DROPBOX_CLIENT_ID=hczocrkw8l7dl21",
-        "DROPBOX_CLIENT_SECRET=46visk1tvrmnxgl",
+        "DROPBOX_CLIENT_ID=dcuykx3y074l3er",
+        "DROPBOX_CLIENT_SECRET=gocxthugoa2i6am",
         "DROPBOX_REDIRECT_URI=https://octopussol.com/api/v1/oauth/dropbox/callback",
     ]
     return "\n".join(lines) + "\n"

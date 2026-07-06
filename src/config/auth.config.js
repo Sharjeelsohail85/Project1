@@ -100,7 +100,7 @@ export const authConfig = {
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
   },
   dropbox: {
-    clientId: import.meta.env.VITE_DROPBOX_CLIENT_ID || 'hczocrkw8l7dl21',
+    clientId: import.meta.env.VITE_DROPBOX_CLIENT_ID || 'dcuykx3y074l3er',
     redirectUri: resolveRedirectUri(import.meta.env.VITE_DROPBOX_REDIRECT_URI, '/auth/dropbox/callback'),
     scope: 'account_info.read files.content.write files.content.read sharing.write sharing.read',
     authUrl: 'https://www.dropbox.com/oauth2/authorize',
