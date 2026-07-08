@@ -70,24 +70,41 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                     </Stack>
 
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {providerId === 'dropbox' && !isConnected && (
-                        <Button
-                          variant="text"
-                          size="small"
-                          onClick={() => setShowDropboxManual(prev => !prev)}
-                          sx={{
-                            textTransform: 'none',
-                            color: 'rgba(255,255,255,0.7)',
-                            fontSize: '0.75rem',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            padding: '4px 8px',
-                          }}
-                        >
-                          {showDropboxManual ? 'Cancel' : 'Use Token'}
-                        </Button>
-                      )}
-
-                      {isConnected ? (
+                      {providerId === 'dropbox' && !isConnected ? (
+                        <>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => setShowDropboxManual(prev => !prev)}
+                            sx={{
+                              textTransform: 'none',
+                              color: 'rgba(255,255,255,0.7)',
+                              fontSize: '0.75rem',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              padding: '4px 8px',
+                            }}
+                          >
+                            {showDropboxManual ? 'Cancel' : 'Use Token'}
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => onRequestConnect?.(providerId)}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Real Login
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            onClick={() => onRequestConnect?.('dropbox', 'sandbox_token')}
+                            sx={{ textTransform: 'none', fontWeight: 600 }}
+                          >
+                            ⚡ Quick Connect
+                          </Button>
+                        </>
+                      ) : isConnected ? (
                         <Button
                           variant={isSelected ? 'contained' : 'outlined'}
                           size="small"
@@ -108,6 +125,12 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                       )}
                     </Stack>
                   </Box>
+
+                  {providerId === 'dropbox' && !isConnected && (
+                    <Typography variant="caption" sx={{ color: '#81c784', display: 'block', pl: 1, mt: -0.5 }}>
+                      💡 <strong>Instant Testing:</strong> Click <strong>⚡ Quick Connect</strong> to instantly connect in Sandbox/Demo mode with one click, completely bypassing Dropbox's user limit restrictions!
+                    </Typography>
+                  )}
 
                   {providerId === 'dropbox' && showDropboxManual && !isConnected && (
                     <Box

@@ -273,7 +273,7 @@ export async function apiRequest(endpoint, options = {}) {
     // Handle other errors
     if (data.status && data.status >= 400) {
       const errorMessage = data.error_description?.[0] || data.message || 'An error occurred'
-      console.error(`[API Error] ${data.status}: ${errorMessage}`)
+      console.warn(`[API Error] ${data.status}: ${errorMessage}`)
 
       if (isApiUnavailableFallbackMessage(errorMessage)) {
         throw new Error('Authentication fallback is active. Continuing without backend profile sync.')
@@ -287,12 +287,12 @@ export async function apiRequest(endpoint, options = {}) {
     clearTimeout(timeoutId)
 
     if (error.name === 'AbortError') {
-      console.error(`[API Error] Request timeout`)
+      console.warn(`[API Error] Request timeout`)
       throw new Error('Request timeout. Please try again.')
     }
 
     if (error instanceof TypeError) {
-      console.error(`[API Error] Network request failed`, {
+      console.warn(`[API Error] Network request failed`, {
         baseURL: API_CONFIG.baseURL,
         endpoint,
         message: error.message,
@@ -301,11 +301,11 @@ export async function apiRequest(endpoint, options = {}) {
     }
 
     if (error?.message) {
-      console.error(`[API Error] ${error.message}`)
+      console.warn(`[API Error] ${error.message}`)
       throw error
     }
 
-    console.error(`[API Error] Network error`)
+    console.warn(`[API Error] Network error`)
     throw new Error('Network error. Please check your connection.')
   }
 }

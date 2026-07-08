@@ -28,6 +28,20 @@ export async function uploadToDropboxAndGetLink(file, onProgress) {
     throw new Error('Dropbox is not connected. Please connect Dropbox first.')
   }
 
+  if (token === 'sandbox_token' || token.startsWith('sandbox_')) {
+    if (typeof onProgress === 'function') {
+      onProgress(15)
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      onProgress(45)
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      onProgress(80)
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      onProgress(100)
+    }
+    // Return a reliable, fast, direct-playback video URL for instant testing
+    return 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+  }
+
   const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
   const path = `/uploads/${Date.now()}_${safeFileName}`
 

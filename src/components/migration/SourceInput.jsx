@@ -49,10 +49,12 @@ const SourceInput = memo(function SourceInput({
               fullWidth
               error={Boolean(validationError)}
               helperText={validationError || 'Must resolve to a direct video mime type (not playlist).'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">https://</InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">https://</InputAdornment>
+                  ),
+                }
               }}
             />
           ) : null}
@@ -64,7 +66,9 @@ const SourceInput = memo(function SourceInput({
                 value={localFile ? `${localFile.name} (${Math.round(localFile.size / (1024 * 1024))} MB)` : ''}
                 placeholder="Choose a local video file"
                 fullWidth
-                InputProps={{ readOnly: true }}
+                slotProps={{
+                  input: { readOnly: true }
+                }}
               />
               <Box sx={{ mt: 1 }}>
                 <input

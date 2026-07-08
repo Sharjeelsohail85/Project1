@@ -735,11 +735,13 @@ const Upload = memo(function Upload({
                 placeholder="Title"
                 error={Boolean(fieldErrors.title)}
                 helperText={fieldErrors.title || 'Required'}
-                FormHelperTextProps={helperTextNoShadowProps}
                 variant="filled"
                 sx={step2FieldSx}
-                InputProps={{ disableUnderline: true }}
-                inputProps={{ className: 'input', 'aria-label': 'Video title' }}
+                slotProps={{
+                  helperText: helperTextNoShadowProps,
+                  input: { disableUnderline: true },
+                  htmlInput: { className: 'input', 'aria-label': 'Video title' }
+                }}
               />
             </Box>
 
@@ -754,11 +756,13 @@ const Upload = memo(function Upload({
                 onChange={handleChange('privacy')}
                 error={Boolean(fieldErrors.privacy)}
                 helperText={fieldErrors.privacy || 'Privacy'}
-                FormHelperTextProps={helperTextNoShadowProps}
                 variant="filled"
                 sx={step2FieldSx}
-                InputProps={{ disableUnderline: true }}
-                inputProps={{ className: 'input', 'aria-label': 'Video privacy' }}
+                slotProps={{
+                  helperText: helperTextNoShadowProps,
+                  input: { disableUnderline: true },
+                  htmlInput: { className: 'input', 'aria-label': 'Video privacy' }
+                }}
               >
                 {PRIVACY_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -820,11 +824,13 @@ const Upload = memo(function Upload({
                 placeholder="Paste Reddit discussion link (optional)"
                 error={Boolean(fieldErrors.discussion_link)}
                 helperText={fieldErrors.discussion_link || 'Optional'}
-                FormHelperTextProps={helperTextNoShadowProps}
                 variant="filled"
                 sx={step2FieldSx}
-                InputProps={{ disableUnderline: true }}
-                inputProps={{ className: 'input', 'aria-label': 'Discussion link' }}
+                slotProps={{
+                  helperText: helperTextNoShadowProps,
+                  input: { disableUnderline: true },
+                  htmlInput: { className: 'input', 'aria-label': 'Discussion link' }
+                }}
               />
             </Box>
           </Box>
@@ -843,11 +849,13 @@ const Upload = memo(function Upload({
               placeholder="Description"
               error={Boolean(fieldErrors.description)}
               helperText={fieldErrors.description || 'Optional'}
-              FormHelperTextProps={helperTextNoShadowProps}
               variant="filled"
               sx={step2DescriptionFieldSx}
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: 'input', 'aria-label': 'Video description' }}
+              slotProps={{
+                helperText: helperTextNoShadowProps,
+                input: { disableUnderline: true },
+                htmlInput: { className: 'input', 'aria-label': 'Video description' }
+              }}
             />
           </div>
         </Box>

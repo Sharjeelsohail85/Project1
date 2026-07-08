@@ -822,8 +822,10 @@ const Signup = memo(function Signup({
             variant="standard"
             hiddenLabel
             fullWidth
-            InputProps={{ disableUnderline: true }}
-            inputProps={{ className: 'upload-link-input input', 'aria-label': 'Username' }}
+            slotProps={{
+              input: { disableUnderline: true },
+              htmlInput: { className: 'upload-link-input input', 'aria-label': 'Username' }
+            }}
           />
         </Box>
 
@@ -842,8 +844,10 @@ const Signup = memo(function Signup({
             variant="standard"
             hiddenLabel
             fullWidth
-            InputProps={{ disableUnderline: true }}
-            inputProps={{ className: 'upload-link-input input', 'aria-label': 'Email' }}
+            slotProps={{
+              input: { disableUnderline: true },
+              htmlInput: { className: 'upload-link-input input', 'aria-label': 'Email' }
+            }}
           />
         </div>
 
@@ -883,8 +887,10 @@ const Signup = memo(function Signup({
                   handlePasswordSignup()
                 }
               }}
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: 'upload-link-input input', 'aria-label': 'Password' }}
+              slotProps={{
+                input: { disableUnderline: true },
+                htmlInput: { className: 'upload-link-input input', 'aria-label': 'Password' }
+              }}
             />
             <Button 
               className="upload-go active" 

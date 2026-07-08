@@ -89,7 +89,7 @@ axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (IS_DEV) {
-      console.error('[upload-debug] response-error', {
+      console.warn('[upload-debug] response-error', {
         status: error?.response?.status,
         url: error?.config?.url,
         message: error?.message,
@@ -100,7 +100,7 @@ axiosClient.interceptors.response.use(
 
     // Handle timeout explicitly
     if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-      console.error('⏱️ API Request Timeout - Backend may not be running or is too slow')
+      console.warn('⏱️ API Request Timeout - Backend may not be running or is too slow')
     }
 
     if (error?.response?.status === 401) {

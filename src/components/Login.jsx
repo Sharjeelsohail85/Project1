@@ -247,8 +247,10 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
               variant="standard"
               hiddenLabel
               fullWidth
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: styles.passwordInput, 'aria-label': 'Username or email' }}
+              slotProps={{
+                input: { disableUnderline: true },
+                htmlInput: { className: styles.passwordInput, 'aria-label': 'Username or email' }
+              }}
             />
           </div>
           <div className={styles.inputWrapper}>
@@ -269,8 +271,10 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
                   handlePasswordLogin()
                 }
               }}
-              InputProps={{ disableUnderline: true }}
-              inputProps={{ className: styles.passwordInput, 'aria-label': 'Password' }}
+              slotProps={{
+                input: { disableUnderline: true },
+                htmlInput: { className: styles.passwordInput, 'aria-label': 'Password' }
+              }}
             />
             <Button
               className={styles.submitButton}
