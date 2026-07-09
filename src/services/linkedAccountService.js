@@ -256,6 +256,53 @@ export async function fetchVideosFromAccount(provider, options = {}) {
     }
   }
 
+  if (provider === 'onedrive' && accessToken) {
+    try {
+      console.log('Fetching live OneDrive videos directly from the frontend...')
+      // Search for video files or list files in drive
+      const response = await axios.get("https://graph.microsoft.com/v1.0/me/drive/root/search(q='')", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      })
+
+      const items = response.data?.value || []
+      
+      // Filter for video files or files with video extensions
+      const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.mkv', '.avi']
+      const videoItems = items.filter(item => {
+        if (item.folder) return false
+        const name = String(item.name || '').toLowerCase()
+        return videoExtensions.some(ext => name.endsWith(ext)) || item.video
+      })
+
+      // Map to video objects
+      const videos = videoItems.map(item => {
+        // Use downloadUrl as stream link, with direct item stream URL as fallback
+        const streamUrl = item['@microsoft.graph.downloadUrl'] || `https://graph.microsoft.com/v1.0/me/drive/items/${item.id}/content?access_token=${accessToken}`
+        return {
+          id: item.id,
+          title: item.name,
+          url: streamUrl,
+          thumbnail: item.thumbnails?.[0]?.medium?.url || '',
+          duration: 'Video',
+          publishedAt: item.createdDateTime ? item.createdDateTime.split('T')[0] : 'Recent',
+        }
+      })
+
+      return {
+        videos,
+        total: videos.length,
+        page: 1,
+        perPage: 100,
+        hasMore: false,
+      }
+    } catch (onedriveFetchError) {
+      console.error('Failed to fetch videos directly from OneDrive API:', onedriveFetchError?.response?.data || onedriveFetchError?.message)
+      // Fallback to backend or demo mode
+    }
+  }
+
   // Try backend endpoint first
   try {
 
@@ -343,6 +390,10 @@ const DEMO_VIDEOS = {
     { title: 'Event Highlights', url: 'https://dropbox.com/s/demo2/video.mp4', thumbnail: '', duration: '5:45', publishedAt: '2026-05-30' },
     { title: 'Course Introduction', url: 'https://dropbox.com/s/demo3/video.mp4', thumbnail: '', duration: '10:00', publishedAt: '2026-05-25' },
     { title: 'Behind the Scenes', url: 'https://dropbox.com/s/demo4/video.mp4', thumbnail: '', duration: '3:20', publishedAt: '2026-05-18' },
+  ],
+  onedrive: [
+    { title: 'OneDrive Project Presentation', url: 'https://onedrive.live.com/download?id=demo1', thumbnail: '', duration: '15:10', publishedAt: '2026-06-15' },
+    { title: 'OneDrive Outdoor Activity', url: 'https://onedrive.live.com/download?id=demo2', thumbnail: '', duration: '9:40', publishedAt: '2026-06-10' },
   ],
 }
 

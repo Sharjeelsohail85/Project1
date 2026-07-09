@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import axios from "axios";
 import {
   getConnectedAccounts,
   connectAccount,
@@ -12,10 +13,111 @@ import { saveLocalChannelVideo } from "../services/videoService";
 import { resolveDropboxStreamLink } from "../services/dropboxUploadService";
 import CircularProgress from "@mui/material/CircularProgress";
 
+function getOneDriveOAuthClientId() {
+  try {
+    const customId = localStorage.getItem('custom_onedrive_client_id')
+    if (customId && customId.trim()) return customId.trim()
+  } catch {
+    // ignore
+  }
+  return import.meta.env.VITE_ONEDRIVE_CLIENT_ID || 'cbd562b5-eb12-4eb9-a868-b7eb42323a6c'
+}
+
+function connectOneDriveWithImplicitToken() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('OneDrive connect is only available in a browser.'))
+      return
+    }
+
+    const state = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    const redirectUri = `${window.location.origin}/auth/onedrive/callback`
+    const params = new URLSearchParams({
+      client_id: getOneDriveOAuthClientId(),
+      redirect_uri: redirectUri,
+      response_type: 'token',
+      scope: 'openid profile email files.readwrite files.readwrite.all',
+      state,
+    })
+
+    const popup = window.open(`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`, 'onedrive-token', 'width=560,height=720')
+    if (!popup) {
+      reject(new Error('Popup blocked for OneDrive. Please allow popups and try again.'))
+      return
+    }
+
+    const cleanup = () => {
+      window.removeEventListener('message', onMessage)
+      clearInterval(timer)
+    }
+
+    const finish = (callbackUrl) => {
+      const parsed = new URL(callbackUrl)
+      const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+      const search = new URLSearchParams(parsed.search)
+      const accessToken = String(hash.get('access_token') || search.get('access_token') || '').trim()
+      const error = String(hash.get('error') || search.get('error') || '').trim()
+      if (error) throw new Error(`OneDrive OAuth error: ${error}`)
+      if (!accessToken) throw new Error('OneDrive did not return an upload token.')
+
+      const user = {
+        uuid: `onedrive-${Date.now()}`,
+        first_name: 'OneDrive',
+        last_name: 'User',
+        email: 'onedrive@connected.local',
+        registration_type: 'onedrive',
+        active: 1,
+        onedrive_access_token: accessToken,
+        access_token: accessToken,
+      }
+      
+      const accounts = getConnectedAccounts()
+      const filtered = accounts.filter(a => a.provider !== 'onedrive')
+      filtered.push({ provider: 'onedrive', connected: true, user })
+      saveConnectedAccounts(filtered)
+
+      resolve(user)
+    }
+
+    function onMessage(event) {
+      if (event.data?.type !== 'oauth-callback' || !event.data?.url) return
+      try {
+        finish(event.data.url)
+        cleanup()
+        popup.close()
+      } catch (error) {
+        cleanup()
+        popup.close()
+        reject(error)
+      }
+    }
+
+    window.addEventListener('message', onMessage)
+    const timer = setInterval(() => {
+      try {
+        if (popup.closed) {
+          cleanup()
+          reject(new Error('OneDrive popup closed before connection completed.'))
+          return
+        }
+        const href = popup.location.href
+        if (href && (href.includes('/auth/onedrive/callback') || href.includes('access_token='))) {
+          finish(href)
+          cleanup()
+          popup.close()
+        }
+      } catch {
+        // ignore cross-origin until callback
+      }
+    }, 250)
+  })
+}
+
 const PROVIDER_META = {
   google: { icon: "cloud_queue", label: "Google Drive", color: "#4285F4" },
   facebook: { icon: "facebook", label: "Facebook", color: "#1877F2" },
   dropbox: { icon: "folder_shared", label: "Dropbox", color: "#0061FF" },
+  onedrive: { icon: "cloud", label: "OneDrive", color: "#0078D4" },
 };
 
 const LinkedAccountImport = memo(function LinkedAccountImport({
@@ -33,6 +135,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [dropboxManualToken, setDropboxManualToken] = useState("");
   const [showGoogleManual, setShowGoogleManual] = useState(false);
   const [googleManualToken, setgoogleManualToken] = useState("");
+  const [showOnedriveManual, setShowOnedriveManual] = useState(false);
+  const [onedriveManualToken, setOnedriveManualToken] = useState("");
   const [resolvingVideoId, setResolvingVideoId] = useState(null);
 
   const refreshAccounts = useCallback(() => {
@@ -47,6 +151,11 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
     async (provider) => {
       setLoadingProvider(provider);
       try {
+        if (provider === "onedrive") {
+          await connectOneDriveWithImplicitToken();
+          refreshAccounts();
+          return;
+        }
         await connectAccount(provider);
         refreshAccounts();
       } catch (err) {
@@ -117,6 +226,36 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
         }
       }
 
+      if (selectedProvider === "onedrive") {
+        setResolvingVideoId(video.id);
+        try {
+          const onedriveAccount = accounts.find((a) => a.provider === "onedrive");
+          const token = onedriveAccount?.user?.onedrive_access_token
+            || onedriveAccount?.user?.access_token
+            || "";
+          
+          if (!token) {
+            throw new Error("OneDrive account is not connected or token is missing.");
+          }
+
+          console.log(`Resolving direct stream URL for OneDrive video: ${video.id}`);
+          const itemRes = await axios.get(`https://graph.microsoft.com/v1.0/me/drive/items/${video.id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          resolvedUrl = itemRes.data['@microsoft.graph.downloadUrl'] || `https://graph.microsoft.com/v1.0/me/drive/items/${video.id}/content?access_token=${token}`;
+          console.log(`Successfully resolved OneDrive stream URL: ${resolvedUrl}`);
+        } catch (err) {
+          console.error("Failed to resolve OneDrive stream URL:", err);
+          onError?.(err.message || "Failed to resolve stream link for OneDrive video.");
+          setResolvingVideoId(null);
+          return;
+        } finally {
+          setResolvingVideoId(null);
+        }
+      }
+
       const importedVideo = {
         uuid: video.id,
         id: video.id,
@@ -129,7 +268,9 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
               ? "Facebook"
               : selectedProvider === "dropbox"
                 ? "Dropbox"
-                : "Direct Link",
+                : selectedProvider === "onedrive"
+                  ? "OneDrive"
+                  : "Direct Link",
         source_url: resolvedUrl,
         video_url: resolvedUrl,
         description: video.description || "",
@@ -147,7 +288,9 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
               ? "uploadFacebook"
               : selectedProvider === "dropbox"
                 ? "uploadDropbox"
-                : "uploadLink",
+                : selectedProvider === "onedrive"
+                  ? "uploadOnedrive"
+                  : "uploadLink",
         sourceUrl: resolvedUrl,
         title: video.title,
       });
@@ -311,6 +454,23 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                         {showGoogleManual ? "Cancel" : "Use Token"}
                       </Button>
                     )}
+                    {provider === 'onedrive' && (
+                      <Button
+                        onClick={() => setShowOnedriveManual(prev => !prev)}
+                        variant="text"
+                        color="inherit"
+                        sx={{
+                          minWidth: 0,
+                          padding: "4px 8px",
+                          textTransform: "none",
+                          color: "rgba(255,255,255,0.7)",
+                          fontSize: "0.75rem",
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {showOnedriveManual ? "Cancel" : "Use Token"}
+                      </Button>
+                    )}
                     <Button
                       className="linked-account-btn connect-btn"
                       onClick={() => handleConnect(provider)}
@@ -465,6 +625,81 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                             refreshAccounts();
                             setDropboxManualToken('');
                             setShowDropboxManual(false);
+                          } catch (err) {
+                            onError?.("Failed to save token: " + err.message);
+                          }
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: '#03DAC6',
+                          fontSize: '0.8rem',
+                          border: '1px solid rgba(3, 218, 198, 0.3)',
+                          padding: '4px 10px'
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {provider === 'onedrive' && showOnedriveManual && (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
+                      Enter your OneDrive <strong>OAuth Access Token</strong> to connect directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="password"
+                        placeholder="Paste OneDrive token..."
+                        value={onedriveManualToken}
+                        onChange={(e) => setOnedriveManualToken(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (!onedriveManualToken.trim()) {
+                            onError?.("Please enter a valid token.");
+                            return;
+                          }
+                          try {
+                            const accounts = getConnectedAccounts();
+                            const newAccount = {
+                              provider: 'onedrive',
+                              connected: true,
+                              user: {
+                                uuid: `onedrive-user-manual-${Date.now()}`,
+                                first_name: 'OneDrive',
+                                last_name: 'User (Manual)',
+                                email: `onedrive.${Date.now()}@manual.local`,
+                                registration_type: 'onedrive',
+                                active: 1,
+                                onedrive_access_token: onedriveManualToken.trim(),
+                                access_token: onedriveManualToken.trim(),
+                              }
+                            };
+                            const filtered = accounts.filter(a => a.provider !== 'onedrive');
+                            filtered.push(newAccount);
+                            saveConnectedAccounts(filtered);
+                            refreshAccounts();
+                            setOnedriveManualToken('');
+                            setShowOnedriveManual(false);
                           } catch (err) {
                             onError?.("Failed to save token: " + err.message);
                           }

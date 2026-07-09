@@ -202,6 +202,16 @@ export function resolvePlaybackSource({ sourceType, sourceUrl, title } = {}) {
     };
   }
 
+  if (type === "uploadonedrive" || type === "onedrive" || /onedrive\.live\.com|graph\.microsoft\.com/i.test(url)) {
+    return {
+      mode: "html5",
+      src: url,
+      title: toStringSafe(title),
+      provider: "onedrive",
+      openUrl: url,
+    };
+  }
+
   if (
     type === "uploadLink" ||
     type === "direct" ||

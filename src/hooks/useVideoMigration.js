@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import axios from 'axios'
 import apiClient from '../lib/apiClient'
 import { uploadToDropboxAndGetLink } from '../services/dropboxUploadService'
 
@@ -90,6 +91,38 @@ function getDropboxAccessTokenSafe() {
   }
 }
 
+function getOneDriveAccessTokenSafe() {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const rawAccounts = localStorage.getItem('connected_accounts')
+    const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
+    if (Array.isArray(accounts)) {
+      const onedriveAccount = accounts.find((account) => {
+        const provider = String(account?.provider || '').toLowerCase()
+        return account?.connected && ['onedrive'].includes(provider)
+      })
+      const accountToken = String(
+        onedriveAccount?.user?.onedrive_access_token
+          || onedriveAccount?.user?.access_token
+          || onedriveAccount?.onedrive_access_token
+          || '',
+      ).trim()
+      if (accountToken) return accountToken
+    }
+  } catch {
+    // continue to user_info fallback
+  }
+
+  try {
+    const rawUser = localStorage.getItem('user_info')
+    const user = rawUser ? JSON.parse(rawUser) : null
+    return String(user?.onedrive_access_token || user?.access_token || '').trim()
+  } catch {
+    return ''
+  }
+}
+
 async function uploadLocalFileToGoogleDrive({ file, accessToken, title, description }) {
   if (!file || !accessToken) {
     throw new Error('Google Drive is not connected. Reconnect Google Drive, then upload again.')
@@ -127,6 +160,74 @@ ${delimiter}Content-Type: ${metadata.mimeType}\r
   }
 
   return payload
+}
+
+async function uploadLocalFileToOneDrive({ file, accessToken, title, onProgress }) {
+  if (!file || !accessToken) {
+    throw new Error('OneDrive is not connected. Reconnect OneDrive, then upload again.')
+  }
+
+  const fileName = String(title || file.name || `video-${Date.now()}.mp4`).trim()
+  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+  
+  // 1. Create an upload session
+  const sessionUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/Apps/Octopussol/${encodeURIComponent(sanitizedFileName)}:/createUploadSession`
+  const sessionRes = await axios.post(sessionUrl, {
+    item: {
+      "@microsoft.graph.conflictBehavior": "rename",
+      name: sanitizedFileName
+    }
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const uploadUrl = sessionRes.data?.uploadUrl
+  if (!uploadUrl) {
+    throw new Error('OneDrive did not return an upload session URL.')
+  }
+
+  // 2. Upload the file in chunks of ~5MB (must be a multiple of 327,680 bytes)
+  const CHUNK_SIZE = 327680 * 16 // ~5.24MB chunks
+  const fileSize = file.size
+  let start = 0
+  let fileData = null
+
+  while (start < fileSize) {
+    const end = Math.min(start + CHUNK_SIZE, fileSize)
+    const chunk = file.slice(start, end)
+    
+    const headers = {
+      'Content-Length': chunk.size,
+      'Content-Range': `bytes ${start}-${end - 1}/${fileSize}`
+    }
+    
+    const response = await axios.put(uploadUrl, chunk, {
+      headers,
+      onUploadProgress: (progressEvent) => {
+        if (onProgress) {
+          const chunkProgress = progressEvent.loaded / (progressEvent.total || chunk.size)
+          const totalUploaded = start + (chunkProgress * chunk.size)
+          const percentage = Math.round((totalUploaded / fileSize) * 100)
+          onProgress(Math.min(99, percentage))
+        }
+      }
+    })
+
+    if (response.status === 201 || response.status === 200) {
+      fileData = response.data
+    }
+    
+    start = end
+  }
+
+  if (onProgress) {
+    onProgress(100)
+  }
+
+  return fileData
 }
 
 function requireMigrationAuthParams() {
@@ -560,6 +661,73 @@ export function useVideoMigration() {
             filename: String(localFile?.name || ''),
           })
           return { jobId: uploadJobId, videoId: uploadJobId, playbackUrl: streamUrl }
+        }
+
+        if (provider === 'onedrive') {
+          const onedriveToken = getOneDriveAccessTokenSafe()
+          if (!onedriveToken) {
+            throw new Error('OneDrive is not connected. Reconnect OneDrive, then upload again.')
+          }
+          setProgressState((previous) => ({
+            ...previous,
+            stage: 'uploading',
+            progress: 10,
+            completed: false,
+            error: '',
+          }))
+
+          const uploadedFile = await uploadLocalFileToOneDrive({
+            file: localFile,
+            accessToken: onedriveToken,
+            title: metadata.title,
+            onProgress: (pct) => {
+              setProgressState((previous) => ({
+                ...previous,
+                progress: pct,
+                stage: pct >= 100 ? 'finalizing' : 'uploading',
+              }))
+            }
+          })
+
+          const fileId = String(uploadedFile?.id || '').trim()
+          if (!fileId) {
+            throw new Error('OneDrive upload did not return a file id.')
+          }
+
+          let streamUrl = ''
+          try {
+            const itemRes = await axios.get(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}`, {
+              headers: {
+                Authorization: `Bearer ${onedriveToken}`
+              }
+            })
+            streamUrl = itemRes.data['@microsoft.graph.downloadUrl'] || ''
+          } catch (err) {
+            console.error('Failed to get downloadUrl from OneDrive:', err)
+          }
+
+          if (!streamUrl) {
+            streamUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/content?access_token=${encodeURIComponent(onedriveToken)}`
+          }
+
+          const uploadJobId = `onedrive-upload-${fileId}`
+          setProgressState({
+            jobId: uploadJobId,
+            progress: 100,
+            stage: 'finalizing',
+            completed: true,
+            videoId: fileId,
+            playbackUrl: streamUrl,
+            error: '',
+            providerUploadWarning: '',
+          })
+          setValidationResult({
+            valid: true,
+            size: Number(localFile?.size || 0),
+            mime: String(localFile?.type || 'video/mp4'),
+            filename: String(uploadedFile?.name || localFile?.name || ''),
+          })
+          return { jobId: uploadJobId, videoId: fileId, playbackUrl: streamUrl }
         }
 
         setProgressState((previous) => ({
