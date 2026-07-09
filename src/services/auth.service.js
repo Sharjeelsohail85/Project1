@@ -2,6 +2,7 @@
 // Handles OAuth flows for Google, Facebook, and Dropbox
 // Now integrated with Laravel backend
 
+import axios from 'axios'
 import { getOAuthRedirectUri, getOAuthUrl, storeOAuthState, verifyOAuthState } from '../config/auth.config'
 import { authAPI } from './api.service'
 import { getAuthTokens, saveAuthTokens } from '../config/api.config'
@@ -307,6 +308,93 @@ export async function handleOAuthCallback(provider, params) {
   }
 
   // Exchange code for tokens via Laravel backend API
+  if (provider === 'dropbox') {
+    try {
+      let clientId = 'dcuykx3y074l3er' // default
+      let clientSecret = ''
+      try {
+        const customId = localStorage.getItem('custom_dropbox_client_id')
+        const customSecret = localStorage.getItem('custom_dropbox_client_secret')
+        if (customId && customId.trim()) {
+          clientId = customId.trim()
+        }
+        if (customSecret && customSecret.trim()) {
+          clientSecret = customSecret.trim()
+        }
+      } catch {
+        // ignore
+      }
+
+      const redirectUri = getOAuthRedirectUri(provider)
+
+      const params = new URLSearchParams()
+      params.append('code', code)
+      params.append('grant_type', 'authorization_code')
+      params.append('redirect_uri', redirectUri)
+      params.append('client_id', clientId)
+      if (clientSecret) {
+        params.append('client_secret', clientSecret)
+      }
+
+      console.log('Exchanging Dropbox auth code on frontend...', { clientId, redirectUri, hasSecret: Boolean(clientSecret) })
+
+      const tokenResponse = await axios.post('https://api.dropboxapi.com/oauth2/token', params, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+
+      const tokenData = tokenResponse.data
+      const accessToken = tokenData.access_token
+      const refreshToken = tokenData.refresh_token
+
+      if (!accessToken) {
+        throw new Error('No access token returned from Dropbox')
+      }
+
+      // Fetch user info from Dropbox
+      const userResponse = await axios.post('https://api.dropboxapi.com/2/users/get_current_account', null, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const dAccount = userResponse.data
+      const user = {
+        uuid: dAccount.account_id || `dropbox-user-${Date.now()}`,
+        first_name: dAccount.name?.given_name || 'Dropbox',
+        last_name: dAccount.name?.surname || 'User',
+        email: dAccount.email || 'dropbox@connected.local',
+        registration_type: 'dropbox',
+        active: 1,
+        dropbox_access_token: accessToken,
+        dropbox_refresh_token: refreshToken || '',
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      }
+
+      // Store in local storage
+      setLocalStorageItem('user_info', JSON.stringify(user))
+
+      // Also update connected_accounts in localStorage!
+      const rawAccounts = localStorage.getItem('connected_accounts')
+      const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
+      const existingIdx = accounts.findIndex(a => a.provider === 'dropbox')
+      const newAcc = { provider: 'dropbox', connected: true, user }
+      if (existingIdx > -1) {
+        accounts[existingIdx] = newAcc
+      } else {
+        accounts.push(newAcc)
+      }
+      localStorage.setItem('connected_accounts', JSON.stringify(accounts))
+
+      return user
+    } catch (err) {
+      console.error('Dropbox frontend exchange failed:', err?.response?.data || err?.message)
+      throw new Error(`Failed to complete Dropbox authentication: ${err?.response?.data?.error_description || err?.message}`)
+    }
+  }
+
   try {
     const redirectUri = getOAuthRedirectUri(provider)
     const response = await authAPI.oauthCallback(provider, code, state, redirectUri)

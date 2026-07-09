@@ -420,3 +420,132 @@ export async function uploadToDropboxAndGetLink(file, onProgress) {
 
   return streamUrl
 }
+
+/**
+ * Resolves a live streamable link for a given Dropbox file path
+ * @param {string} path - Dropbox path (e.g., /video.mp4)
+ * @param {string} token - Dropbox access token
+ * @returns {Promise<string>} Streamable URL
+ */
+export async function resolveDropboxStreamLink(path, token) {
+  if (!token) throw new Error('No access token provided')
+  
+  const validatedToken = await validateTokenAndRefreshIfNeeded(token)
+
+  const shareSettingsUrl = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
+  const listUrl = 'https://api.dropboxapi.com/2/sharing/list_shared_links'
+  const tempLinkUrl = 'https://api.dropboxapi.com/2/files/get_temporary_link'
+
+  let streamUrl = ''
+
+  // Attempt A: Create shared link with public visibility
+  try {
+    const shareResponse = await axios.post(
+      shareSettingsUrl,
+      {
+        path: path,
+        settings: {
+          requested_visibility: 'public',
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${validatedToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+    streamUrl = shareResponse?.data?.url || ''
+  } catch (errorA) {
+    // Attempt B: Create shared link with default settings
+    try {
+      const shareResponse = await axios.post(
+        shareSettingsUrl,
+        {
+          path: path,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${validatedToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      streamUrl = shareResponse?.data?.url || ''
+    } catch (errorB) {
+      // Attempt C: List already existing shared links (direct_only: true)
+      try {
+        const listResponse = await axios.post(
+          listUrl,
+          {
+            path: path,
+            direct_only: true,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${validatedToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+        const links = listResponse.data?.links || []
+        if (links.length > 0) {
+          streamUrl = links[0].url || ''
+        }
+      } catch (errorC) {
+        // Attempt D: List already existing shared links without direct_only
+        try {
+          const listResponse = await axios.post(
+            listUrl,
+            {
+              path: path,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${validatedToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          )
+          const links = listResponse.data?.links || []
+          if (links.length > 0) {
+            streamUrl = links[0].url || ''
+          }
+        } catch (errorD) {
+          // Attempt E: Get temporary link (guaranteed fallback link, valid for 4 hours)
+          try {
+            const tempResponse = await axios.post(
+              tempLinkUrl,
+              {
+                path: path,
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${validatedToken}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+            streamUrl = tempResponse?.data?.link || ''
+          } catch (errorE) {
+            throw new Error(`Failed to resolve Dropbox stream link: ${errorE.message}`)
+          }
+        }
+      }
+    }
+  }
+
+  // Format resulting stream/playback URL
+  if (streamUrl) {
+    if (streamUrl.includes('?')) {
+      streamUrl = streamUrl.replace('dl=0', 'raw=1')
+      if (!streamUrl.includes('raw=1')) {
+        streamUrl += '&raw=1'
+      }
+    } else {
+      streamUrl += '?raw=1'
+    }
+  }
+
+  return streamUrl
+}

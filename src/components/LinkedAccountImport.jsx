@@ -9,6 +9,8 @@ import {
   saveConnectedAccounts,
 } from "../services/linkedAccountService";
 import { saveLocalChannelVideo } from "../services/videoService";
+import { resolveDropboxStreamLink } from "../services/dropboxUploadService";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const PROVIDER_META = {
   google: { icon: "cloud_queue", label: "Google Drive", color: "#4285F4" },
@@ -28,6 +30,7 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [videoError, setVideoError] = useState("");
   const [showDropboxManual, setShowDropboxManual] = useState(false);
   const [dropboxManualToken, setDropboxManualToken] = useState("");
+  const [resolvingVideoId, setResolvingVideoId] = useState(null);
 
   const refreshAccounts = useCallback(() => {
     setAccounts(getConnectedAccounts());
@@ -79,7 +82,34 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   }, []);
 
   const handleSelectVideo = useCallback(
-    (video) => {
+    async (video) => {
+      let resolvedUrl = video.url;
+
+      if (selectedProvider === "dropbox") {
+        setResolvingVideoId(video.id);
+        try {
+          const dropboxAccount = accounts.find((a) => a.provider === "dropbox");
+          const token = dropboxAccount?.user?.dropbox_access_token
+            || dropboxAccount?.user?.access_token
+            || "";
+          
+          if (!token) {
+            throw new Error("Dropbox account is not connected or token is missing.");
+          }
+
+          console.log(`Resolving direct stream URL for Dropbox video: ${video.path}`);
+          resolvedUrl = await resolveDropboxStreamLink(video.path, token);
+          console.log(`Successfully resolved stream URL: ${resolvedUrl}`);
+        } catch (err) {
+          console.error("Failed to resolve Dropbox stream URL:", err);
+          onError?.(err.message || "Failed to resolve stream link for Dropbox video.");
+          setResolvingVideoId(null);
+          return;
+        } finally {
+          setResolvingVideoId(null);
+        }
+      }
+
       const importedVideo = {
         uuid: video.id,
         id: video.id,
@@ -93,8 +123,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
               : selectedProvider === "dropbox"
                 ? "Dropbox"
                 : "Direct Link",
-        source_url: video.url,
-        video_url: video.url,
+        source_url: resolvedUrl,
+        video_url: resolvedUrl,
         description: video.description || "",
         privacy_option: "public",
         channel_name: "My Channel",
@@ -111,11 +141,11 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
               : selectedProvider === "dropbox"
                 ? "uploadDropbox"
                 : "uploadLink",
-        sourceUrl: video.url,
+        sourceUrl: resolvedUrl,
         title: video.title,
       });
     },
-    [onSelectVideo, selectedProvider],
+    [onSelectVideo, selectedProvider, accounts, onError],
   );
 
   const connectedProviders = useMemo(
@@ -407,6 +437,7 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                   <Button
                     className="linked-account-btn import-btn"
                     onClick={() => handleSelectVideo(video)}
+                    disabled={resolvingVideoId !== null}
                     variant="text"
                     color="inherit"
                     disableElevation
@@ -415,12 +446,17 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                       minWidth: 0,
                       padding: "6px 14px",
                       textTransform: "none",
-                      color: "#03DAC6",
+                      color: resolvingVideoId === video.id ? "rgba(255,255,255,0.4)" : "#03DAC6",
                       fontSize: "0.85rem",
                       flexShrink: 0,
                     }}
                   >
-                    Import
+                    {resolvingVideoId === video.id ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <CircularProgress size={12} color="inherit" />
+                        Linking...
+                      </span>
+                    ) : "Import"}
                   </Button>
                 </div>
               ))}

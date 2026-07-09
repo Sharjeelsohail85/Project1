@@ -2,6 +2,7 @@
  * Linked Account Service
  * Manages connected OAuth accounts and importing videos from them.
  */
+import axios from 'axios'
 import { loginWithOAuth, getCurrentUser } from './auth.service'
 import { apiRequest } from './api.service'
 
@@ -171,6 +172,54 @@ export async function fetchVideosFromAccount(provider, options = {}) {
 
   if (accessToken === 'sandbox_token' || accessToken.startsWith('sandbox_')) {
     return getDemoVideos(provider, page, perPage)
+  }
+
+  if (provider === 'dropbox' && accessToken) {
+    try {
+      console.log('Fetching live Dropbox videos directly from the frontend...')
+      const listFolderUrl = 'https://api.dropboxapi.com/2/files/list_folder'
+      const response = await axios.post(listFolderUrl, {
+        path: '',
+        recursive: true,
+      }, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        }
+      })
+
+      const entries = response.data?.entries || []
+      
+      // Filter for video files by extension
+      const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.mkv', '.avi']
+      const videoEntries = entries.filter(e => {
+        if (e['.tag'] !== 'file') return false
+        const name = String(e.name).toLowerCase()
+        return videoExtensions.some(ext => name.endsWith(ext))
+      })
+
+      // Map to video objects
+      const videos = videoEntries.map(e => ({
+        id: e.id,
+        title: e.name,
+        url: e.path_display, // Store the path so we can resolve its shared link on play/import
+        path: e.path_display,
+        thumbnail: '',
+        duration: 'Video',
+        publishedAt: e.server_modified ? e.server_modified.split('T')[0] : 'Recent',
+      }))
+
+      return {
+        videos,
+        total: videos.length,
+        page: 1,
+        perPage: 100,
+        hasMore: false,
+      }
+    } catch (dropboxFetchError) {
+      console.error('Failed to fetch videos directly from Dropbox API:', dropboxFetchError?.response?.data || dropboxFetchError?.message)
+      // Fallback to backend or demo mode
+    }
   }
 
   // Try backend endpoint first
