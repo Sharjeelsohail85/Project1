@@ -109,6 +109,7 @@ export async function connectAccount(provider) {
     google_access_token: userInfo?.google_access_token || userInfo?.access_token || '',
     google_refresh_token: userInfo?.google_refresh_token || '',
     dropbox_access_token: userInfo?.dropbox_access_token || (provider === 'dropbox' ? userInfo?.access_token : '') || '',
+    dropbox_refresh_token: userInfo?.dropbox_refresh_token || userInfo?.refresh_token || (provider === 'dropbox' ? userInfo?.refresh_token : '') || '',
     facebook_access_token: userInfo?.facebook_access_token || '',
   }
 

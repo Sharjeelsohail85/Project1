@@ -17,18 +17,154 @@ export function isDropboxConnected() {
   return Boolean(getDropboxAccessToken())
 }
 
+export function isDropboxDemoToken(token) {
+  if (!token) return true
+  const t = String(token).trim()
+  return (
+    t === 'sandbox_token' ||
+    t.startsWith('sandbox_') ||
+    t.startsWith('sl.u.AGln-W62G7Iv')
+  )
+}
+
+export async function refreshDropboxAccessToken() {
+  const accounts = getConnectedAccounts()
+  const dropboxAccountIndex = accounts.findIndex(
+    (a) => a.provider === 'dropbox' && a.connected
+  )
+  if (dropboxAccountIndex === -1) {
+    console.warn('No connected Dropbox account found to refresh.')
+    return null
+  }
+
+  const dropboxAccount = accounts[dropboxAccountIndex]
+  const user = dropboxAccount.user || {}
+  
+  // Get the refresh token
+  const refreshToken = user.dropbox_refresh_token || user.refresh_token || ''
+  if (!refreshToken) {
+    console.warn('No Dropbox refresh token found for automatic refresh.')
+    return null
+  }
+
+  // Get client ID and client secret
+  let clientId = 'dcuykx3y074l3er' // default
+  let clientSecret = ''
+  
+  try {
+    const customId = localStorage.getItem('custom_dropbox_client_id')
+    const customSecret = localStorage.getItem('custom_dropbox_client_secret')
+    if (customId && customId.trim()) {
+      clientId = customId.trim()
+    }
+    if (customSecret && customSecret.trim()) {
+      clientSecret = customSecret.trim()
+    }
+  } catch {
+    // ignore
+  }
+
+  console.log('Attempting to refresh Dropbox access token...', { clientId, hasSecret: Boolean(clientSecret) })
+
+  try {
+    const params = new URLSearchParams()
+    params.append('grant_type', 'refresh_token')
+    params.append('refresh_token', refreshToken)
+    params.append('client_id', clientId)
+    if (clientSecret) {
+      params.append('client_secret', clientSecret)
+    }
+
+    const tokenUrl = 'https://api.dropboxapi.com/oauth2/token'
+    const response = await axios.post(tokenUrl, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    })
+
+    const data = response?.data || {}
+    const newAccessToken = data.access_token || ''
+    if (!newAccessToken) {
+      throw new Error('Dropbox refresh response did not contain access_token.')
+    }
+
+    // Update the connected accounts list in localStorage
+    user.dropbox_access_token = newAccessToken
+    user.access_token = newAccessToken
+    
+    if (data.refresh_token) {
+      user.dropbox_refresh_token = data.refresh_token
+      user.refresh_token = data.refresh_token
+    }
+
+    dropboxAccount.user = user
+    accounts[dropboxAccountIndex] = dropboxAccount
+    
+    try {
+      localStorage.setItem('connected_accounts', JSON.stringify(accounts))
+    } catch (err) {
+      console.error('Failed to save refreshed accounts to localStorage:', err)
+    }
+
+    console.log('Successfully refreshed Dropbox access token.')
+    return newAccessToken
+  } catch (refreshError) {
+    console.error('Failed to refresh Dropbox access token:', refreshError?.response?.data || refreshError?.message)
+    throw refreshError
+  }
+}
+
+export async function validateTokenAndRefreshIfNeeded() {
+  let token = getDropboxAccessToken()
+  if (!token) return ''
+
+  if (isDropboxDemoToken(token)) {
+    return token
+  }
+
+  try {
+    // Validate token
+    await axios.post('https://api.dropboxapi.com/2/users/get_current_account', null, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return token
+  } catch (error) {
+    const isExpired = error?.response?.status === 401 ||
+                      String(error?.response?.data?.error_summary || '').toLowerCase().includes('expired_access_token') ||
+                      String(error?.response?.data?.error || '').toLowerCase().includes('expired_access_token')
+
+    if (isExpired) {
+      try {
+        const refreshedToken = await refreshDropboxAccessToken()
+        if (refreshedToken) {
+          return refreshedToken
+        }
+      } catch (refreshErr) {
+        console.error('Failed to auto-refresh token:', refreshErr)
+      }
+    }
+    
+    throw error
+  }
+}
+
 /**
  * Uploads a local file to Dropbox and returns a direct streamable shared link.
  * @param {File} file
  * @param {Function} onProgress
  */
 export async function uploadToDropboxAndGetLink(file, onProgress) {
-  const token = getDropboxAccessToken()
-  if (!token) {
+  const rawToken = getDropboxAccessToken()
+  if (!rawToken) {
     throw new Error('Dropbox is not connected. Please connect Dropbox first.')
   }
 
-  if (token === 'sandbox_token' || token.startsWith('sandbox_')) {
+  // Pre-validate token and refresh if expired
+  const token = await validateTokenAndRefreshIfNeeded()
+
+  if (isDropboxDemoToken(token)) {
     if (typeof onProgress === 'function') {
       onProgress(15)
       await new Promise((resolve) => setTimeout(resolve, 250))
