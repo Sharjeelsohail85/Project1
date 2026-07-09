@@ -21,6 +21,7 @@ const PROVIDER_META = {
 const LinkedAccountImport = memo(function LinkedAccountImport({
   onSelectVideo,
   onError,
+  singleProvider = null,
 }) {
   const [accounts, setAccounts] = useState(() => getConnectedAccounts());
   const [loadingProvider, setLoadingProvider] = useState(null);
@@ -35,6 +36,10 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const refreshAccounts = useCallback(() => {
     setAccounts(getConnectedAccounts());
   }, []);
+
+  useEffect(() => {
+    refreshAccounts();
+  }, [refreshAccounts]);
 
   const handleConnect = useCallback(
     async (provider) => {
@@ -149,15 +154,22 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   );
 
   const connectedProviders = useMemo(
-    () => accounts.filter((a) => a.connected).map((a) => a.provider),
-    [accounts],
+    () => accounts.filter((a) => a.connected && (!singleProvider || a.provider === singleProvider)).map((a) => a.provider),
+    [accounts, singleProvider],
   );
 
   const availableProviders = useMemo(
     () =>
-      Object.keys(PROVIDER_META).filter((p) => !connectedProviders.includes(p)),
-    [connectedProviders],
+      Object.keys(PROVIDER_META)
+        .filter((p) => !connectedProviders.includes(p) && (!singleProvider || p === singleProvider)),
+    [connectedProviders, singleProvider],
   );
+
+  useEffect(() => {
+    if (singleProvider && connectedProviders.includes(singleProvider) && selectedProvider !== singleProvider) {
+      handleBrowseVideos(singleProvider);
+    }
+  }, [singleProvider, connectedProviders, selectedProvider, handleBrowseVideos]);
 
   return (
     <div className="linked-account-import">

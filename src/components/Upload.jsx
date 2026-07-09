@@ -91,6 +91,7 @@ const Upload = memo(function Upload({
   const [selectedSource, setSelectedSource] = useState('')
   const [sourceInputValue, setSourceInputValue] = useState('')
   const [sourceError, setSourceError] = useState('')
+  const [dropboxTab, setDropboxTab] = useState('browse')
 
   const [dropboxConnected, setDropboxConnected] = useState(() => isDropboxConnected())
   const [dropboxLocalFile, setDropboxLocalFile] = useState(null)
@@ -395,7 +396,7 @@ const Upload = memo(function Upload({
           <i className="material-icons" aria-hidden="true">{LINKED_ACCOUNT_SOURCE.icon}</i>
         </Button>
 
-        <div id="uploadLinkBox" className={`upload-link ${selectedSource && selectedSource !== LINKED_ACCOUNT_SOURCE.id ? 'active' : ''}`} style={selectedSource === 'uploadDropbox' ? { height: 'auto', maxHeight: '420px', overflowY: 'auto', padding: '16px' } : undefined}>
+        <div id="uploadLinkBox" className={`upload-link ${selectedSource && selectedSource !== LINKED_ACCOUNT_SOURCE.id ? 'active' : ''}`} style={['uploadDropbox', 'uploadGoogle'].includes(selectedSource) ? { height: 'auto', maxHeight: '480px', overflowY: 'auto', padding: '16px' } : undefined}>
           <Button
             className="upload-link-back"
             onClick={() => {
@@ -417,187 +418,275 @@ const Upload = memo(function Upload({
             <i className="material-icons" aria-hidden="true">arrow_back</i>
           </Button>
 
-          {selectedSource === 'uploadDropbox' ? (
-            <div className="dropbox-upload-container" style={{ width: '100%', maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: '#fff' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <i className="material-icons" style={{ color: '#0061FF' }}>folder_shared</i> Dropbox Upload
+          {selectedSource === 'uploadGoogle' ? (
+            <div className="google-drive-container" style={{ width: '100%', maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: '#fff' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <i className="material-icons" style={{ color: '#4285F4' }}>cloud_queue</i> Google Drive Connection
               </h3>
               
-              {dropboxConnected ? (
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.2)', marginBottom: '16px' }}>
-                  {!isDropboxUploading ? (
-                    <div>
-                      <p style={{ fontSize: '0.9rem', marginBottom: '12px', opacity: 0.8 }}>
-                        Drag &amp; drop a video file or click below to select a video to upload directly to your connected Dropbox.
-                      </p>
-                      
-                      <input
-                        type="file"
-                        accept="video/*"
-                        id="dropbox-file-input"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null
-                          setDropboxLocalFile(file)
-                          setSourceError('')
-                        }}
-                      />
-                      
-                      {dropboxLocalFile ? (
-                        <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
-                            🎥 {dropboxLocalFile.name} ({formatBytes(dropboxLocalFile.size)})
-                          </span>
-                          <Button 
-                            onClick={() => setDropboxLocalFile(null)} 
-                            sx={{ minWidth: 0, color: '#ff5252', textTransform: 'none', fontSize: '0.8rem' }}
-                          >
-                            Remove
-                          </Button>
+              <LinkedAccountImport
+                singleProvider="google"
+                onSelectVideo={(video) => {
+                  setSelectedSource('uploadLink')
+                  setSourceInputValue(video.sourceUrl)
+                  setSourceError('')
+                  if (video.title) {
+                    setFormValues(prev => ({
+                      ...prev,
+                      title: video.title,
+                    }))
+                  }
+                }}
+                onError={(msg) => {
+                  setSourceError(msg)
+                }}
+              />
+
+              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '8px', textAlign: 'center' }}>
+                  — OR —
+                </p>
+                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px', textAlign: 'center' }}>
+                  Paste a direct Google Drive link:
+                </p>
+                <div className="upload-link-wrap" style={{ margin: '0 auto', maxWidth: '480px' }}>
+                  <i className="material-icons upload-label" aria-hidden="true">link</i>
+                  <input
+                    id="uploadLinkInput"
+                    className="upload-link-input input"
+                    placeholder="Paste Google Drive shared link..."
+                    value={sourceInputValue}
+                    onChange={(event) => {
+                      setSourceInputValue(event.target.value)
+                      setSourceError('')
+                    }}
+                    aria-label="Source URL"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : selectedSource === 'uploadDropbox' ? (
+            <div className="dropbox-upload-container" style={{ width: '100%', maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: '#fff' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <i className="material-icons" style={{ color: '#0061FF' }}>folder_shared</i> Dropbox Connection
+              </h3>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+                <Button
+                  variant={dropboxTab === 'browse' ? 'contained' : 'outlined'}
+                  size="small"
+                  onClick={() => setDropboxTab('browse')}
+                  sx={{ textTransform: 'none', fontSize: '0.8rem', borderColor: '#0061FF', bgcolor: dropboxTab === 'browse' ? '#0061FF' : 'transparent', color: '#fff', '&:hover': { bgcolor: dropboxTab === 'browse' ? '#0052D4' : 'rgba(255,255,255,0.05)' } }}
+                >
+                  Browse Existing Videos
+                </Button>
+                <Button
+                  variant={dropboxTab === 'upload' ? 'contained' : 'outlined'}
+                  size="small"
+                  onClick={() => setDropboxTab('upload')}
+                  sx={{ textTransform: 'none', fontSize: '0.8rem', borderColor: '#0061FF', bgcolor: dropboxTab === 'upload' ? '#0061FF' : 'transparent', color: '#fff', '&:hover': { bgcolor: dropboxTab === 'upload' ? '#0052D4' : 'rgba(255,255,255,0.05)' } }}
+                >
+                  Upload Local Video
+                </Button>
+              </div>
+              
+              {dropboxTab === 'browse' ? (
+                <LinkedAccountImport
+                  singleProvider="dropbox"
+                  onSelectVideo={(video) => {
+                    setSelectedSource('uploadLink')
+                    setSourceInputValue(video.sourceUrl)
+                    setSourceError('')
+                    if (video.title) {
+                      setFormValues(prev => ({
+                        ...prev,
+                        title: video.title,
+                      }))
+                    }
+                  }}
+                  onError={(msg) => {
+                    setSourceError(msg)
+                  }}
+                />
+              ) : (
+                <>
+                  {dropboxConnected ? (
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.2)', marginBottom: '16px' }}>
+                      {!isDropboxUploading ? (
+                        <div>
+                          <p style={{ fontSize: '0.9rem', marginBottom: '12px', opacity: 0.8 }}>
+                            Drag &amp; drop a video file or click below to select a video to upload directly to your connected Dropbox.
+                          </p>
+                          
+                          <input
+                            type="file"
+                            accept="video/*"
+                            id="dropbox-file-input"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null
+                              setDropboxLocalFile(file)
+                              setSourceError('')
+                            }}
+                          />
+                          
+                          {dropboxLocalFile ? (
+                            <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                                🎥 {dropboxLocalFile.name} ({formatBytes(dropboxLocalFile.size)})
+                              </span>
+                              <Button 
+                                onClick={() => setDropboxLocalFile(null)} 
+                                sx={{ minWidth: 0, color: '#ff5252', textTransform: 'none', fontSize: '0.8rem' }}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => document.getElementById('dropbox-file-input')?.click()}
+                              sx={{ textTransform: 'none', borderColor: '#0061FF', color: '#fafafa', '&:hover': { borderColor: '#0052D4' } }}
+                            >
+                              Select Video File
+                            </Button>
+                          )}
+
+                          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            <Button
+                              variant="text"
+                              onClick={() => {
+                                disconnectAccount('dropbox')
+                                setDropboxConnected(false)
+                                setDropboxLocalFile(null)
+                              }}
+                              sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', '&:hover': { color: '#ff5252' } }}
+                            >
+                              Disconnect / Change Dropbox Account
+                            </Button>
+                          </div>
                         </div>
                       ) : (
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          onClick={() => document.getElementById('dropbox-file-input')?.click()}
-                          sx={{ textTransform: 'none', borderColor: '#0061FF', color: '#fafafa', '&:hover': { borderColor: '#0052D4' } }}
-                        >
-                          Select Video File
-                        </Button>
+                        <div style={{ textAlign: 'center', padding: '12px' }}>
+                          <p style={{ fontSize: '0.9rem', marginBottom: '12px' }}>
+                            Uploading video to Dropbox... Please do not close this window.
+                          </p>
+                          <LinearProgress variant="determinate" value={dropboxProgress} style={{ height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: '#0061FF' }} />
+                          <span style={{ display: 'block', marginTop: '8px', fontSize: '0.8rem', opacity: 0.7 }}>
+                            {dropboxProgress}% completed
+                          </span>
+                        </div>
                       )}
-
-                      <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                        <Button
-                          variant="text"
-                          onClick={() => {
-                            disconnectAccount('dropbox')
-                            setDropboxConnected(false)
-                            setDropboxLocalFile(null)
-                          }}
-                          sx={{ textTransform: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', '&:hover': { color: '#ff5252' } }}
-                        >
-                          Disconnect / Change Dropbox Account
-                        </Button>
-                      </div>
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: '12px' }}>
-                      <p style={{ fontSize: '0.9rem', marginBottom: '12px' }}>
-                        Uploading video to Dropbox... Please do not close this window.
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                      <p style={{ fontSize: '0.9rem', marginBottom: '12px', opacity: 0.8 }}>
+                        Connect your Dropbox account to upload local video files directly from your computer.
                       </p>
-                      <LinearProgress variant="determinate" value={dropboxProgress} style={{ height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: '#0061FF' }} />
-                      <span style={{ display: 'block', marginTop: '8px', fontSize: '0.8rem', opacity: 0.7 }}>
-                        {dropboxProgress}% completed
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                  <p style={{ fontSize: '0.9rem', marginBottom: '12px', opacity: 0.8 }}>
-                    Connect your Dropbox account to upload local video files directly from your computer.
-                  </p>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                    <Button
-                      variant="contained"
-                      onClick={async () => {
-                        setSourceError('')
-                        try {
-                          await connectAccount('dropbox')
-                          setDropboxConnected(true)
-                        } catch (err) {
-                          setSourceError(err.message || 'Failed to connect Dropbox.')
-                        }
-                      }}
-                      sx={{ textTransform: 'none', background: '#0061FF', color: '#fff', '&:hover': { background: '#004ecb' } }}
-                    >
-                      Connect Dropbox Account
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        setShowManualInput(prev => !prev)
-                        setSourceError('')
-                      }}
-                      sx={{ textTransform: 'none', color: '#fff', borderColor: 'rgba(255,255,255,0.3)', '&:hover': { borderColor: '#fff', background: 'rgba(255,255,255,0.1)' } }}
-                    >
-                      {showManualInput ? 'Hide Token Entry' : 'Use Access Token / CLI Token'}
-                    </Button>
-                  </div>
-
-                  {showManualInput && (
-                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                      <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '8px', textAlign: 'left' }}>
-                        If you encounter a <strong>user limit</strong> error on the login popup, you can bypass it completely by pasting a <strong>Personal Access Token</strong> (used by CLI tools like <code>dbxcli</code>) from your Dropbox Developer Console:
-                      </p>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <input
-                          type="password"
-                          placeholder="Paste Dropbox Personal Access Token..."
-                          value={manualToken}
-                          onChange={(e) => setManualToken(e.target.value)}
-                          className="input"
-                          style={{
-                            flex: 1,
-                            background: 'rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '4px',
-                            color: '#fff',
-                            padding: '6px 12px',
-                            fontSize: '0.85rem'
-                          }}
-                        />
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px', justifyContent: 'center' }}>
                         <Button
                           variant="contained"
                           onClick={async () => {
-                            if (!manualToken.trim()) {
-                              setSourceError('Please enter a valid token.')
-                              return
-                            }
+                            setSourceError('')
                             try {
-                              const accounts = getConnectedAccounts()
-                              const newAccount = {
-                                provider: 'dropbox',
-                                connected: true,
-                                user: {
-                                  uuid: `dropbox-user-manual-${Date.now()}`,
-                                  first_name: 'Dropbox',
-                                  last_name: 'User (Manual)',
-                                  email: `dropbox.${Date.now()}@manual.local`,
-                                  registration_type: 'dropbox',
-                                  active: 1,
-                                  dropbox_access_token: manualToken.trim(),
-                                  access_token: manualToken.trim(),
-                                }
-                              }
-                              const filtered = accounts.filter(a => a.provider !== 'dropbox')
-                              filtered.push(newAccount)
-                              saveConnectedAccounts(filtered)
+                              await connectAccount('dropbox')
                               setDropboxConnected(true)
-                              setManualToken('')
-                              setShowManualInput(false)
                             } catch (err) {
-                              setSourceError('Failed to save manual token: ' + err.message)
+                              setSourceError(err.message || 'Failed to connect Dropbox.')
                             }
                           }}
-                          sx={{ textTransform: 'none', background: '#2e7d32', color: '#fff', '&:hover': { background: '#1b5e20' } }}
+                          sx={{ textTransform: 'none', background: '#0061FF', color: '#fff', '&:hover': { background: '#004ecb' } }}
                         >
-                          Connect Token
+                          Connect Dropbox Account
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            setShowManualInput(prev => !prev)
+                            setSourceError('')
+                          }}
+                          sx={{ textTransform: 'none', color: '#fff', borderColor: 'rgba(255,255,255,0.3)', '&:hover': { borderColor: '#fff', background: 'rgba(255,255,255,0.1)' } }}
+                        >
+                          {showManualInput ? 'Hide Token Entry' : 'Use Access Token / CLI Token'}
                         </Button>
                       </div>
-                      <p style={{ fontSize: '0.75rem', opacity: 0.6, textAlign: 'left', lineHeight: '1.4' }}>
-                        💡 <strong>How to get this?</strong><br />
-                        1. Go to the <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noreferrer" style={{ color: '#0061FF', textDecoration: 'underline' }}>Dropbox App Console</a>.<br />
-                        2. Click your App name (or create a temporary personal app with Scopes: <code>files.metadata.read</code>, <code>files.content.read</code>, <code>files.content.write</code>, <code>sharing.write</code>, <code>sharing.read</code>).<br />
-                        3. Scroll down to the <strong>Generated access token</strong> section, and click <strong>Generate</strong>. Copy and paste it here.
-                      </p>
+
+                      {showManualInput && (
+                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                          <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '8px', textAlign: 'left' }}>
+                            If you encounter a <strong>user limit</strong> error on the login popup, you can bypass it completely by pasting a <strong>Personal Access Token</strong> (used by CLI tools like <code>dbxcli</code>) from your Dropbox Developer Console:
+                          </p>
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                            <input
+                              type="password"
+                              placeholder="Paste Dropbox Personal Access Token..."
+                              value={manualToken}
+                              onChange={(e) => setManualToken(e.target.value)}
+                              className="input"
+                              style={{
+                                flex: 1,
+                                background: 'rgba(0,0,0,0.3)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '4px',
+                                color: '#fff',
+                                padding: '6px 12px',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                            <Button
+                              variant="contained"
+                              onClick={async () => {
+                                if (!manualToken.trim()) {
+                                  setSourceError('Please enter a valid token.')
+                                  return
+                                }
+                                try {
+                                  const accounts = getConnectedAccounts()
+                                  const newAccount = {
+                                    provider: 'dropbox',
+                                    connected: true,
+                                    user: {
+                                      uuid: `dropbox-user-manual-${Date.now()}`,
+                                      first_name: 'Dropbox',
+                                      last_name: 'User (Manual)',
+                                      email: `dropbox.${Date.now()}@manual.local`,
+                                      registration_type: 'dropbox',
+                                      active: 1,
+                                      dropbox_access_token: manualToken.trim(),
+                                      access_token: manualToken.trim(),
+                                    }
+                                  }
+                                  const filtered = accounts.filter(a => a.provider !== 'dropbox')
+                                  filtered.push(newAccount)
+                                  saveConnectedAccounts(filtered)
+                                  setDropboxConnected(true)
+                                  setManualToken('')
+                                  setShowManualInput(false)
+                                } catch (err) {
+                                  setSourceError('Failed to save manual token: ' + err.message)
+                                }
+                              }}
+                              sx={{ textTransform: 'none', background: '#2e7d32', color: '#fff', '&:hover': { background: '#1b5e20' } }}
+                            >
+                              Connect Token
+                            </Button>
+                          </div>
+                          <p style={{ fontSize: '0.75rem', opacity: 0.6, textAlign: 'left', lineHeight: '1.4' }}>
+                            💡 <strong>How to get this?</strong><br />
+                            1. Go to the <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noreferrer" style={{ color: '#0061FF', textDecoration: 'underline' }}>Dropbox App Console</a>.<br />
+                            2. Click your App name (or create a temporary personal app with Scopes: <code>files.metadata.read</code>, <code>files.content.read</code>, <code>files.content.write</code>, <code>sharing.write</code>, <code>sharing.read</code>).<br />
+                            3. Scroll down to the <strong>Generated access token</strong> section, and click <strong>Generate</strong>. Copy and paste it here.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
 
               {!isDropboxUploading && (
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                   <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '8px' }}>
                     — OR —
                   </p>

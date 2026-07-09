@@ -23,6 +23,8 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
 }) {
   const [showDropboxManual, setShowDropboxManual] = useState(false)
   const [dropboxManualToken, setDropboxManualToken] = useState('')
+  const [showGdriveManual, setShowGdriveManual] = useState(false)
+  const [gdriveManualToken, setGdriveManualToken] = useState('')
 
   const connectedSet = new Set(
     (Array.isArray(connectedProviders) ? connectedProviders : [])
@@ -70,12 +72,18 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                     </Stack>
 
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {providerId === 'dropbox' && !isConnected ? (
+                      {(providerId === 'dropbox' || providerId === 'gdrive') && !isConnected ? (
                         <>
                           <Button
                             variant="text"
                             size="small"
-                            onClick={() => setShowDropboxManual(prev => !prev)}
+                            onClick={() => {
+                              if (providerId === 'gdrive') {
+                                setShowGdriveManual(prev => !prev)
+                              } else {
+                                setShowDropboxManual(prev => !prev)
+                              }
+                            }}
                             sx={{
                               textTransform: 'none',
                               color: 'rgba(255,255,255,0.7)',
@@ -84,7 +92,7 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                               padding: '4px 8px',
                             }}
                           >
-                            {showDropboxManual ? 'Cancel' : 'Use Token'}
+                            {(providerId === 'gdrive' ? showGdriveManual : showDropboxManual) ? 'Cancel' : 'Use Token'}
                           </Button>
                           <Button
                             variant="outlined"
@@ -98,7 +106,7 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                             variant="contained"
                             color="success"
                             size="small"
-                            onClick={() => onRequestConnect?.('dropbox', 'sandbox_token')}
+                            onClick={() => onRequestConnect?.(providerId, 'sandbox_token')}
                             sx={{ textTransform: 'none', fontWeight: 600 }}
                           >
                             ⚡ Quick Connect
@@ -126,9 +134,9 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                     </Stack>
                   </Box>
 
-                  {providerId === 'dropbox' && !isConnected && (
+                  {(providerId === 'dropbox' || providerId === 'gdrive') && !isConnected && (
                     <Typography variant="caption" sx={{ color: '#81c784', display: 'block', pl: 1, mt: -0.5 }}>
-                      💡 <strong>Instant Testing:</strong> Click <strong>⚡ Quick Connect</strong> to instantly connect in Sandbox/Demo mode with one click, completely bypassing Dropbox's user limit restrictions!
+                      💡 <strong>Instant Testing:</strong> Click <strong>⚡ Quick Connect</strong> to instantly connect {providerId === 'gdrive' ? 'Google Drive' : 'Dropbox'} in Sandbox/Demo mode with one click!
                     </Typography>
                   )}
 
@@ -172,6 +180,55 @@ const StorageProviderSelector = memo(function StorageProviderSelector({
                             onRequestConnect?.('dropbox', dropboxManualToken.trim())
                             setDropboxManualToken('')
                             setShowDropboxManual(false)
+                          }}
+                          sx={{ textTransform: 'none', fontSize: '0.8rem' }}
+                        >
+                          Submit
+                        </Button>
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {providerId === 'gdrive' && showGdriveManual && !isConnected && (
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        bgcolor: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: 1.5,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>
+                        Enter Google Drive Access Token to connect directly:
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <input
+                          type="password"
+                          placeholder="Paste Google Drive token..."
+                          value={gdriveManualToken}
+                          onChange={(e) => setGdriveManualToken(e.target.value)}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: '4px',
+                            color: '#fff',
+                            padding: '6px 10px',
+                            fontSize: '0.8rem',
+                          }}
+                        />
+                        <Button
+                          variant="contained"
+                          color="success"
+                          size="small"
+                          onClick={() => {
+                            if (!gdriveManualToken.trim()) return
+                            onRequestConnect?.('gdrive', gdriveManualToken.trim())
+                            setGdriveManualToken('')
+                            setShowGdriveManual(false)
                           }}
                           sx={{ textTransform: 'none', fontSize: '0.8rem' }}
                         >

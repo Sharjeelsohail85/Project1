@@ -200,22 +200,45 @@ const MigratePostPage = memo(function MigratePostPage() {
 
     try {
       if (normalized === 'gdrive') {
-        const accounts = await connectGoogleDriveWithImplicitToken().then((user) => [{ provider: 'google', connected: true, user }]).catch(async () => connectAccount('google'))
-        const googleAccount = Array.isArray(accounts)
-          ? accounts.find((account) => {
-            const providerName = String(account?.provider || '').toLowerCase()
-            return account?.connected && ['google', 'gdrive', 'googledrive', 'google-drive'].includes(providerName)
-          })
-          : null
-        const googleToken = String(
-          googleAccount?.user?.google_access_token
-            || googleAccount?.user?.googleAccessToken
-            || googleAccount?.google_access_token
-            || googleAccount?.googleAccessToken
-            || '',
-        ).trim()
+        let token = ''
+        if (manualToken) {
+          const accounts = getConnectedAccounts()
+          const newAccount = {
+            provider: 'google',
+            connected: true,
+            user: {
+              uuid: `google-user-manual-${Date.now()}`,
+              first_name: 'Google',
+              last_name: 'Drive (Manual)',
+              email: `google.${Date.now()}@manual.local`,
+              registration_type: 'google',
+              active: 1,
+              google_access_token: manualToken.trim(),
+              access_token: manualToken.trim(),
+            }
+          }
+          const filtered = accounts.filter(a => a.provider !== 'google')
+          filtered.push(newAccount)
+          saveConnectedAccounts(filtered)
+          token = manualToken.trim()
+        } else {
+          const accounts = await connectGoogleDriveWithImplicitToken().then((user) => [{ provider: 'google', connected: true, user }]).catch(async () => connectAccount('google'))
+          const googleAccount = Array.isArray(accounts)
+            ? accounts.find((account) => {
+              const providerName = String(account?.provider || '').toLowerCase()
+              return account?.connected && ['google', 'gdrive', 'googledrive', 'google-drive'].includes(providerName)
+            })
+            : null
+          token = String(
+            googleAccount?.user?.google_access_token
+              || googleAccount?.user?.googleAccessToken
+              || googleAccount?.google_access_token
+              || googleAccount?.googleAccessToken
+              || '',
+          ).trim()
+        }
 
-        if (!googleToken) {
+        if (!token) {
           setConnectedById((prev) => ({ ...prev, [normalized]: false }))
           setConnectionError('Google Drive connected, but no upload token was received. Reconnect Google Drive and approve Drive file permissions.')
           return
