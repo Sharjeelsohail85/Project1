@@ -1,4 +1,4 @@
-name = "project1-video-app"
+name = "octopus"
 main = "worker.js"
 compatibility_date = "2024-04-03"
 
