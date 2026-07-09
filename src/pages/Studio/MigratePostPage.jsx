@@ -13,6 +13,8 @@ import { videoAPI } from '../../services/api.service'
 import { saveLocalChannelVideo } from '../../services/videoService'
 import { connectAccount, getConnectedAccounts, saveConnectedAccounts } from '../../services/linkedAccountService'
 
+import onedriveAppConfig from '../../config/onedrive_app_id.json'
+
 function getGoogleOAuthClientId() {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID || '989755989766-i7v8a6h95cou5bd9ab9li19mqi06guj1.apps.googleusercontent.com'
 }
@@ -24,7 +26,7 @@ function getOneDriveOAuthClientId() {
   } catch {
     // ignore
   }
-  return import.meta.env.VITE_ONEDRIVE_CLIENT_ID || 'cbd562b5-eb12-4eb9-a868-b7eb42323a6c'
+  return import.meta.env.VITE_ONEDRIVE_CLIENT_ID || onedriveAppConfig?.clientId || 'cbd562b5-eb12-4eb9-a868-b7eb42323a6c'
 }
 
 function connectOneDriveWithImplicitToken() {
