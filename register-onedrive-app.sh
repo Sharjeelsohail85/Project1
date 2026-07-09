@@ -2,7 +2,7 @@
 set -e
 
 # Clear screen
-clear
+# clear
 
 echo "========================================================================="
 echo "      Microsoft OneDrive Custom OAuth App Registration Assistant         "
@@ -20,10 +20,13 @@ echo " 3. Enter the code to authenticate."
 echo " 4. Approve permissions to access Azure Active Directory / Entra ID."
 echo ""
 echo " Press ENTER to start the login process..."
-read -r
 
 # Execute device login
-az login --use-device-code
+if az account show >/dev/null 2>&1; then
+  echo "✔ Already logged into Azure CLI!"
+else
+  az login --use-device-code
+fi
 
 echo ""
 echo "========================================================================="
