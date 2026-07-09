@@ -2,15 +2,44 @@ import axios from 'axios'
 import { getConnectedAccounts } from './linkedAccountService'
 
 export function getDropboxAccessToken() {
+  // 1. Try to get token from main logged-in user in localStorage first
+  try {
+    const rawUser = localStorage.getItem('user_info')
+    if (rawUser) {
+      const user = JSON.parse(rawUser)
+      const userToken = user?.dropbox_access_token || (user?.registration_type === 'dropbox' ? user?.access_token : '')
+      if (userToken && !isDropboxDemoToken(userToken)) {
+        return userToken
+      }
+    }
+  } catch (err) {
+    console.error('Failed to parse user_info in getDropboxAccessToken:', err)
+  }
+
+  // 2. Try to get from connected_accounts
   const accounts = getConnectedAccounts()
-  const dropboxAccount = accounts.find(
+  const dropboxAccounts = accounts.filter(
     (a) => a.provider === 'dropbox' && a.connected
   )
-  return (
-    dropboxAccount?.user?.dropbox_access_token ||
-    dropboxAccount?.user?.access_token ||
-    ''
-  )
+
+  // Prefer a connected account that has a real (non-demo) token
+  for (const acc of dropboxAccounts) {
+    const token = acc?.user?.dropbox_access_token || acc?.user?.access_token || ''
+    if (token && !isDropboxDemoToken(token)) {
+      return token
+    }
+  }
+
+  // Fallback to any Dropbox account token
+  if (dropboxAccounts.length > 0) {
+    return (
+      dropboxAccounts[0]?.user?.dropbox_access_token ||
+      dropboxAccounts[0]?.user?.access_token ||
+      ''
+    )
+  }
+
+  return ''
 }
 
 export function isDropboxConnected() {
@@ -114,8 +143,8 @@ export async function refreshDropboxAccessToken() {
   }
 }
 
-export async function validateTokenAndRefreshIfNeeded() {
-  let token = getDropboxAccessToken()
+export async function validateTokenAndRefreshIfNeeded(customToken) {
+  let token = customToken || getDropboxAccessToken()
   if (!token) return ''
 
   if (isDropboxDemoToken(token)) {
