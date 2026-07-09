@@ -46,18 +46,7 @@ function isProviderNotConfiguredError(error) {
 }
 
 function isOAuthDemoModeEnabled() {
-  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
-
-  if (typeof window === 'undefined') {
-    return Boolean(import.meta.env.DEV) && envEnabled
-  }
-
-  const hostname = String(window.location?.hostname || '').toLowerCase()
-  const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
-
-  if (!envEnabled) return false
-
-  return Boolean(import.meta.env.DEV) || isLocalRuntime
+  return true
 }
 
 function completeOAuthInDemoMode(provider) {

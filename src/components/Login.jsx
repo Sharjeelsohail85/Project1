@@ -28,6 +28,13 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
   const [error, setError] = useState(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showCredentialsSetup, setShowCredentialsSetup] = useState(false)
+  const [customGoogleClientId, setCustomGoogleClientId] = useState(() => {
+    try { return localStorage.getItem('custom_google_client_id') || '' } catch { return '' }
+  })
+  const [customFacebookAppId, setCustomFacebookAppId] = useState(() => {
+    try { return localStorage.getItem('custom_facebook_app_id') || '' } catch { return '' }
+  })
   const isMountedRef = useRef(false)
   const isGoogleConfigured = isOAuthProviderConfigured('google')
   const isFacebookConfigured = isOAuthProviderConfigured('facebook')
@@ -317,7 +324,7 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
             aria-label="Sign in with Google"
             type="button"
             onClick={() => handleOAuthLogin('google')}
-            disabled={loading || !isGoogleConfigured}
+            disabled={loading}
             variant="text"
             color="inherit"
             disableElevation
@@ -326,7 +333,7 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
           >
             <i className="zmdi zmdi-google" aria-hidden="true" />
             <span className={styles.authButtonLabel}>
-              {!isGoogleConfigured ? 'Google (Unavailable)' : loading ? 'Signing in...' : 'Google'}
+              {loading ? 'Signing in...' : 'Google'}
             </span>
           </Button>
 
@@ -336,7 +343,7 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
             aria-label="Sign in with Facebook"
             type="button"
             onClick={() => handleOAuthLogin('facebook')}
-            disabled={loading || !isFacebookConfigured}
+            disabled={loading}
             variant="text"
             color="inherit"
             disableElevation
@@ -345,7 +352,7 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
           >
             <i className="zmdi zmdi-facebook" aria-hidden="true" />
             <span className={styles.authButtonLabel}>
-              {!isFacebookConfigured ? 'Facebook (Unavailable)' : loading ? 'Signing in...' : 'Facebook'}
+              {loading ? 'Signing in...' : 'Facebook'}
             </span>
           </Button>
 
@@ -355,7 +362,7 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
             aria-label="Sign in with Dropbox"
             type="button"
             onClick={() => handleOAuthLogin('dropbox')}
-            disabled={loading || !isDropboxConfigured}
+            disabled={loading}
             variant="text"
             color="inherit"
             disableElevation
@@ -364,9 +371,155 @@ const Login = memo(function Login({ active, onHideLogin, onLoginSuccess }) {
           >
             <i className="zmdi zmdi-dropbox" aria-hidden="true" />
             <span className={styles.authButtonLabel}>
-              {!isDropboxConfigured ? 'Dropbox (Unavailable)' : loading ? 'Signing in...' : 'Dropbox'}
+              {loading ? 'Signing in...' : 'Dropbox'}
             </span>
           </Button>
+        </div>
+
+        {/* Collapsible Custom Developer Settings */}
+        <div style={{
+          marginTop: '8px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          paddingTop: '16px',
+          width: '100%'
+        }}>
+          <Button
+            onClick={() => setShowCredentialsSetup(prev => !prev)}
+            variant="text"
+            color="inherit"
+            sx={{
+              textTransform: 'none',
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.7)',
+              width: '100%',
+              justifyContent: 'space-between',
+              padding: '4px 8px'
+            }}
+          >
+            <span>Custom OAuth Settings (Optional)</span>
+            <i className="material-icons" style={{ fontSize: '1.2rem' }}>
+              {showCredentialsSetup ? 'expand_less' : 'expand_more'}
+            </i>
+          </Button>
+
+          {showCredentialsSetup && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginTop: '12px',
+              padding: '12px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+              <p style={{ fontSize: '0.75rem', opacity: 0.8, color: 'rgba(255, 255, 255, 0.8)', margin: '0 0 4px' }}>
+                Optionally paste your custom Developer credentials below. If blank, clicking Google or Facebook will sign you in instantly via Demo/Mock Mode.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                  Custom Google Client ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. xxxxx.apps.googleusercontent.com"
+                  value={customGoogleClientId}
+                  onChange={(e) => setCustomGoogleClientId(e.target.value)}
+                  style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    padding: '8px 10px',
+                    fontSize: '0.8rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                  Custom Facebook App ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 1234567890"
+                  value={customFacebookAppId}
+                  onChange={(e) => setCustomFacebookAppId(e.target.value)}
+                  style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    padding: '8px 10px',
+                    fontSize: '0.8rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    try {
+                      if (customGoogleClientId.trim()) {
+                        localStorage.setItem('custom_google_client_id', customGoogleClientId.trim())
+                      } else {
+                        localStorage.removeItem('custom_google_client_id')
+                      }
+                      if (customFacebookAppId.trim()) {
+                        localStorage.setItem('custom_facebook_app_id', customFacebookAppId.trim())
+                      } else {
+                        localStorage.removeItem('custom_facebook_app_id')
+                      }
+                      setError('Custom credentials saved successfully! Try logging in now.')
+                      setTimeout(() => setError(null), 4000)
+                    } catch (err) {
+                      setError('Failed to save credentials: ' + err.message)
+                    }
+                  }}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'none',
+                    color: '#03DAC6',
+                    fontSize: '0.75rem',
+                    border: '1px solid rgba(3, 218, 198, 0.3)',
+                    padding: '4px 10px'
+                  }}
+                >
+                  Save Settings
+                </Button>
+                {(customGoogleClientId || customFacebookAppId) && (
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem('custom_google_client_id')
+                        localStorage.removeItem('custom_facebook_app_id')
+                        setCustomGoogleClientId('')
+                        setCustomFacebookAppId('')
+                        setError('Custom OAuth settings cleared. Reverted to default.')
+                        setTimeout(() => setError(null), 4000)
+                      } catch (err) {
+                        setError('Failed to clear: ' + err.message)
+                      }
+                    }}
+                    sx={{
+                      textTransform: 'none',
+                      color: '#FF0000',
+                      fontSize: '0.75rem',
+                      border: '1px solid rgba(255, 0, 0, 0.3)',
+                      padding: '4px 10px'
+                    }}
+                  >
+                    Clear & Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

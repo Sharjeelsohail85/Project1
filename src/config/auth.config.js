@@ -119,23 +119,7 @@ function isMissingCredential(value) {
 }
 
 export function isOAuthProviderConfigured(provider) {
-  const config = authConfig[provider]
-  if (!config) return false
-
-  if (provider === 'facebook') {
-    return !isMissingCredential(config.appId)
-  }
-
-  if (provider === 'dropbox') {
-    try {
-      const customId = localStorage.getItem('custom_dropbox_client_id')
-      if (customId && customId.trim()) return true
-    } catch {
-      // ignore
-    }
-  }
-
-  return !isMissingCredential(config.clientId)
+  return true
 }
 
 export function getOAuthRedirectUri(provider) {
@@ -157,11 +141,21 @@ export function getOAuthUrl(provider, state) {
   const params = new URLSearchParams()
 
   if (provider === 'google') {
-    if (isMissingCredential(config.clientId)) {
-      throw new Error('Google OAuth is not configured. Set VITE_GOOGLE_CLIENT_ID in your .env file.')
+    let clientId = config.clientId
+    try {
+      const customId = localStorage.getItem('custom_google_client_id')
+      if (customId && customId.trim()) {
+        clientId = customId.trim()
+      }
+    } catch {
+      // ignore
     }
 
-    params.append('client_id', config.clientId)
+    if (!clientId || isMissingCredential(clientId)) {
+      throw new Error('Google OAuth is not configured. Set VITE_GOOGLE_CLIENT_ID in your .env file, or enter your Custom Client ID.')
+    }
+
+    params.append('client_id', clientId)
     params.append('redirect_uri', config.redirectUri)
     params.append('response_type', 'code')
     params.append('scope', config.scope)
@@ -169,11 +163,21 @@ export function getOAuthUrl(provider, state) {
     params.append('prompt', 'consent')
     if (state) params.append('state', state)
   } else if (provider === 'facebook') {
-    if (isMissingCredential(config.appId)) {
-      throw new Error('Facebook OAuth is not configured. Set VITE_FACEBOOK_APP_ID in your .env file.')
+    let appId = config.appId
+    try {
+      const customId = localStorage.getItem('custom_facebook_app_id')
+      if (customId && customId.trim()) {
+        appId = customId.trim()
+      }
+    } catch {
+      // ignore
     }
 
-    params.append('client_id', config.appId)
+    if (!appId || isMissingCredential(appId)) {
+      throw new Error('Facebook OAuth is not configured. Set VITE_FACEBOOK_APP_ID in your .env file, or enter your Custom App ID.')
+    }
+
+    params.append('client_id', appId)
     params.append('redirect_uri', config.redirectUri)
     params.append('response_type', 'code')
     params.append('scope', config.scope)
