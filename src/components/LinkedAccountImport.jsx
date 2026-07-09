@@ -31,6 +31,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [videoError, setVideoError] = useState("");
   const [showDropboxManual, setShowDropboxManual] = useState(false);
   const [dropboxManualToken, setDropboxManualToken] = useState("");
+  const [showGoogleManual, setShowGoogleManual] = useState(false);
+  const [googleManualToken, setgoogleManualToken] = useState("");
   const [resolvingVideoId, setResolvingVideoId] = useState(null);
 
   const refreshAccounts = useCallback(() => {
@@ -292,6 +294,23 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                         {showDropboxManual ? "Cancel" : "Use Token"}
                       </Button>
                     )}
+                    {provider === 'google' && (
+                      <Button
+                        onClick={() => setShowGoogleManual(prev => !prev)}
+                        variant="text"
+                        color="inherit"
+                        sx={{
+                          minWidth: 0,
+                          padding: "4px 8px",
+                          textTransform: "none",
+                          color: "rgba(255,255,255,0.7)",
+                          fontSize: "0.75rem",
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {showGoogleManual ? "Cancel" : "Use Token"}
+                      </Button>
+                    )}
                     <Button
                       className="linked-account-btn connect-btn"
                       onClick={() => handleConnect(provider)}
@@ -312,6 +331,82 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                     </Button>
                   </div>
                 </div>
+                {provider === 'google' && showGoogleManual && (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
+                      Enter your Google Drive <strong>OAuth Access Token</strong> to connect directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="password"
+                        placeholder="Paste Google Drive token..."
+                        value={googleManualToken}
+                        onChange={(e) => setgoogleManualToken(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (!googleManualToken.trim()) {
+                            onError?.("Please enter a valid token.");
+                            return;
+                          }
+                          try {
+                            const accounts = getConnectedAccounts();
+                            const newAccount = {
+                              provider: 'google',
+                              connected: true,
+                              user: {
+                                uuid: `google-user-manual-${Date.now()}`,
+                                first_name: 'Google Drive',
+                                last_name: 'User (Manual)',
+                                email: `google.${Date.now()}@manual.local`,
+                                registration_type: 'google',
+                                active: 1,
+                                google_access_token: googleManualToken.trim(),
+                                googleAccessToken: googleManualToken.trim(),
+                                access_token: googleManualToken.trim(),
+                              }
+                            };
+                            const filtered = accounts.filter(a => a.provider !== 'google');
+                            filtered.push(newAccount);
+                            saveConnectedAccounts(filtered);
+                            refreshAccounts();
+                            setgoogleManualToken('');
+                            setShowGoogleManual(false);
+                          } catch (err) {
+                            onError?.("Failed to save token: " + err.message);
+                          }
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: '#03DAC6',
+                          fontSize: '0.8rem',
+                          border: '1px solid rgba(3, 218, 198, 0.3)',
+                          padding: '4px 10px'
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {provider === 'dropbox' && showDropboxManual && (
                   <div style={{
                     padding: '12px',

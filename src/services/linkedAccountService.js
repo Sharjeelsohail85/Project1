@@ -177,7 +177,7 @@ export async function fetchVideosFromAccount(provider, options = {}) {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-        }
+         }
       })
 
       const entries = response.data?.entries || []
@@ -210,6 +210,48 @@ export async function fetchVideosFromAccount(provider, options = {}) {
       }
     } catch (dropboxFetchError) {
       console.error('Failed to fetch videos directly from Dropbox API:', dropboxFetchError?.response?.data || dropboxFetchError?.message)
+      // Fallback to backend or demo mode
+    }
+  }
+
+  if ((provider === 'google' || provider === 'gdrive') && accessToken) {
+    try {
+      console.log('Fetching live Google Drive videos directly from the frontend...')
+      const response = await axios.get('https://www.googleapis.com/drive/v3/files', {
+        params: {
+          q: "mimeType contains 'video/' and trashed = false",
+          fields: 'files(id, name, webContentLink, thumbnailLink, createdTime, size, mimeType)',
+          pageSize: 100,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      })
+
+      const files = response.data?.files || []
+      
+      // Map to video objects
+      const videos = files.map(f => {
+        const streamUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&access_token=${accessToken}`
+        return {
+          id: f.id,
+          title: f.name,
+          url: streamUrl,
+          thumbnail: f.thumbnailLink || '',
+          duration: 'Video',
+          publishedAt: f.createdTime ? f.createdTime.split('T')[0] : 'Recent',
+        }
+      })
+
+      return {
+        videos,
+        total: videos.length,
+        page: 1,
+        perPage: 100,
+        hasMore: false,
+      }
+    } catch (gdriveFetchError) {
+      console.error('Failed to fetch videos directly from Google Drive API:', gdriveFetchError?.response?.data || gdriveFetchError?.message)
       // Fallback to backend or demo mode
     }
   }
