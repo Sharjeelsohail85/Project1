@@ -61,24 +61,6 @@ export function getConnectedAccounts() {
     const raw = storage.getItem(CONNECTED_ACCOUNTS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      const hasDropbox = parsed.some((a) => a.provider === 'dropbox' && a.connected)
-      if (!hasDropbox && shouldUseDemoVideosFallback()) {
-        parsed.push({
-          provider: 'dropbox',
-          connected: true,
-          user: {
-            uuid: 'dropbox-user-manual-auto',
-            first_name: 'Dropbox',
-            last_name: 'User (Auto)',
-            email: 'dropbox.auto@manual.local',
-            registration_type: 'dropbox',
-            active: 1,
-            dropbox_access_token: defaultToken,
-            access_token: defaultToken,
-          }
-        })
-        storage.setItem(CONNECTED_ACCOUNTS_KEY, JSON.stringify(parsed))
-      }
       return parsed
     }
   } catch {
@@ -91,25 +73,6 @@ export function getConnectedAccounts() {
     const accounts = [{ provider: legacyProvider, connected: true, user: null }]
     saveConnectedAccounts(accounts)
     return accounts
-  }
-
-  if (shouldUseDemoVideosFallback()) {
-    const defaultAccounts = [{
-      provider: 'dropbox',
-      connected: true,
-      user: {
-        uuid: 'dropbox-user-manual-auto',
-        first_name: 'Dropbox',
-        last_name: 'User (Auto)',
-        email: 'dropbox.auto@manual.local',
-        registration_type: 'dropbox',
-        active: 1,
-        dropbox_access_token: defaultToken,
-        access_token: defaultToken,
-      }
-    }]
-    saveConnectedAccounts(defaultAccounts)
-    return defaultAccounts
   }
 
   return []

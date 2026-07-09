@@ -43,7 +43,8 @@ export function getDropboxAccessToken() {
 }
 
 export function isDropboxConnected() {
-  return Boolean(getDropboxAccessToken())
+  const token = getDropboxAccessToken()
+  return Boolean(token && !isDropboxDemoToken(token))
 }
 
 export function isDropboxDemoToken(token) {
@@ -132,6 +133,19 @@ export async function refreshDropboxAccessToken() {
     
     try {
       localStorage.setItem('connected_accounts', JSON.stringify(accounts))
+      const rawUser = localStorage.getItem('user_info')
+      if (rawUser) {
+        const parsedUser = JSON.parse(rawUser)
+        if (parsedUser.registration_type === 'dropbox' || parsedUser.dropbox_access_token) {
+          parsedUser.dropbox_access_token = newAccessToken
+          parsedUser.access_token = newAccessToken
+          if (data.refresh_token) {
+            parsedUser.dropbox_refresh_token = data.refresh_token
+            parsedUser.refresh_token = data.refresh_token
+          }
+          localStorage.setItem('user_info', JSON.stringify(parsedUser))
+        }
+      }
     } catch (err) {
       console.error('Failed to save refreshed accounts to localStorage:', err)
     }
