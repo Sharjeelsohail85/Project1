@@ -46,18 +46,27 @@ function isProviderNotConfiguredError(error) {
 }
 
 function isOAuthDemoModeEnabled() {
-  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
-
-  if (typeof window === 'undefined') {
-    return Boolean(import.meta.env.DEV) && envEnabled
-  }
+  if (typeof window === 'undefined') return true
 
   const hostname = String(window.location?.hostname || '').toLowerCase()
   const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  const isWorkersDev = hostname === 'workers.dev' || hostname.endsWith('.workers.dev')
+  
+  if (isLocalRuntime || isWorkersDev) {
+    return true
+  }
 
-  if (!envEnabled) return false
+  const googleId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+  const facebookId = String(import.meta.env.VITE_FACEBOOK_APP_ID || '').trim()
+  const hasRealGoogle = googleId && !googleId.includes('your_google_client_id_here') && !googleId.includes('dummy')
+  const hasRealFacebook = facebookId && !facebookId.includes('your_facebook_app_id_here') && !facebookId.includes('dummy')
 
-  return Boolean(import.meta.env.DEV) || isLocalRuntime
+  if (!hasRealGoogle || !hasRealFacebook) {
+    return true
+  }
+
+  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
+  return Boolean(import.meta.env.DEV) || envEnabled
 }
 
 function completeOAuthInDemoMode(provider) {

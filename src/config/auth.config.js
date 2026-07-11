@@ -88,13 +88,13 @@ function getSessionStorageSafe() {
 
 export const authConfig = {
   google: {
-    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-google-client-id.apps.googleusercontent.com',
     redirectUri: resolveRedirectUri(import.meta.env.VITE_GOOGLE_REDIRECT_URI, '/auth/google/callback'),
     scope: 'openid profile email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   },
   facebook: {
-    appId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
+    appId: import.meta.env.VITE_FACEBOOK_APP_ID || 'dummy-facebook-app-id',
     redirectUri: resolveRedirectUri(import.meta.env.VITE_FACEBOOK_REDIRECT_URI, '/auth/facebook/callback'),
     scope: 'email public_profile',
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
