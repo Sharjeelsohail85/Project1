@@ -104,6 +104,7 @@ export async function connectAccount(provider) {
     dropbox_access_token: userInfo?.dropbox_access_token || (provider === 'dropbox' ? userInfo?.access_token : '') || '',
     dropbox_refresh_token: userInfo?.dropbox_refresh_token || userInfo?.refresh_token || (provider === 'dropbox' ? userInfo?.refresh_token : '') || '',
     facebook_access_token: userInfo?.facebook_access_token || '',
+    onedrive_access_token: userInfo?.onedrive_access_token || (provider === 'onedrive' ? userInfo?.access_token : '') || '',
   }
 
   const existing = accounts.find((a) => a.provider === provider)
@@ -152,18 +153,30 @@ export async function fetchVideosFromAccount(provider, options = {}) {
   }
 
   const accessToken = String(
-    account?.user?.google_access_token
+    account?.user?.onedrive_access_token
+      || account?.user?.google_access_token
       || account?.user?.googleAccessToken
       || account?.user?.dropbox_access_token
       || account?.user?.facebook_access_token
       || account?.google_access_token
       || account?.dropbox_access_token
       || account?.facebook_access_token
+      || account?.onedrive_access_token
       || ''
   ).trim()
 
   if (accessToken === 'sandbox_token' || accessToken.startsWith('sandbox_')) {
     return getDemoVideos(provider, page, perPage)
+  }
+
+  if (provider === 'onedrive' && accessToken) {
+    try {
+      const { fetchVideosFromOneDrive } = await import('./onedriveService')
+      return await fetchVideosFromOneDrive(accessToken)
+    } catch (err) {
+      console.error('Failed to fetch videos from OneDrive:', err)
+      throw err
+    }
   }
 
   if (provider === 'dropbox' && accessToken) {

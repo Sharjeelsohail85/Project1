@@ -90,6 +90,40 @@ function getDropboxAccessTokenSafe() {
   }
 }
 
+function getOneDriveAccessTokenSafe() {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const rawAccounts = localStorage.getItem('connected_accounts')
+    const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
+    if (Array.isArray(accounts)) {
+      const onedriveAccount = accounts.find((account) => {
+        const provider = String(account?.provider || '').toLowerCase()
+        return account?.connected && ['onedrive'].includes(provider)
+      })
+      const accountToken = String(
+        onedriveAccount?.user?.onedrive_access_token
+          || onedriveAccount?.user?.onedriveAccessToken
+          || onedriveAccount?.user?.access_token
+          || onedriveAccount?.onedrive_access_token
+          || onedriveAccount?.onedriveAccessToken
+          || '',
+      ).trim()
+      if (accountToken) return accountToken
+    }
+  } catch {
+    // continue to user_info fallback
+  }
+
+  try {
+    const rawUser = localStorage.getItem('user_info')
+    const user = rawUser ? JSON.parse(rawUser) : null
+    return String(user?.onedrive_access_token || user?.onedriveAccessToken || user?.access_token || '').trim()
+  } catch {
+    return ''
+  }
+}
+
 async function uploadLocalFileToGoogleDrive({ file, accessToken, title, description }) {
   if (!file || !accessToken) {
     throw new Error('Google Drive is not connected. Reconnect Google Drive, then upload again.')
@@ -562,6 +596,52 @@ export function useVideoMigration() {
           return { jobId: uploadJobId, videoId: uploadJobId, playbackUrl: streamUrl }
         }
 
+        if (provider === 'onedrive') {
+          const onedriveToken = getOneDriveAccessTokenSafe()
+          if (!onedriveToken) {
+            throw new Error('Microsoft OneDrive is not connected. Connect OneDrive, then upload again.')
+          }
+          setProgressState((previous) => ({
+            ...previous,
+            stage: 'uploading',
+            progress: 10,
+            completed: false,
+            error: '',
+          }))
+
+          const { uploadLocalFileToOneDrive } = await import('../services/onedriveService')
+          const result = await uploadLocalFileToOneDrive({
+            file: localFile,
+            accessToken: onedriveToken,
+            onProgress: (pct) => {
+              setProgressState((previous) => ({
+                ...previous,
+                progress: pct,
+                stage: pct >= 100 ? 'finalizing' : 'uploading',
+              }))
+            }
+          })
+
+          const uploadJobId = `onedrive-upload-${result.id}`
+          setProgressState({
+            jobId: uploadJobId,
+            progress: 100,
+            stage: 'finalizing',
+            completed: true,
+            videoId: result.id,
+            playbackUrl: result.downloadUrl,
+            error: '',
+            providerUploadWarning: '',
+          })
+          setValidationResult({
+            valid: true,
+            size: Number(localFile?.size || 0),
+            mime: String(result.mimeType || localFile?.type || 'video/mp4'),
+            filename: String(result.name || localFile?.name || ''),
+          })
+          return { jobId: uploadJobId, videoId: result.id, playbackUrl: result.downloadUrl }
+        }
+
         setProgressState((previous) => ({
           ...previous,
           stage: 'uploading',
@@ -631,12 +711,16 @@ export function useVideoMigration() {
 
       const googleAccessToken = (provider === 'gdrive' || provider === 'google') ? getGoogleAccessTokenSafe() : ''
       const dropboxAccessToken = (provider === 'dropbox') ? getDropboxAccessTokenSafe() : ''
+      const onedriveAccessToken = (provider === 'onedrive') ? getOneDriveAccessTokenSafe() : ''
       const headers = {}
       if (googleAccessToken) {
         headers['x-google-access-token'] = googleAccessToken
       }
       if (dropboxAccessToken) {
         headers['x-dropbox-access-token'] = dropboxAccessToken
+      }
+      if (onedriveAccessToken) {
+        headers['x-onedrive-access-token'] = onedriveAccessToken
       }
 
       const response = await apiClient.post('/migration/start', {
@@ -645,6 +729,7 @@ export function useVideoMigration() {
         sourceType,
         googleAccessToken,
         dropboxAccessToken,
+        onedriveAccessToken,
         metadata,
         ...authParams,
       }, {

@@ -119,23 +119,7 @@ function isMissingCredential(value) {
 }
 
 export function isOAuthProviderConfigured(provider) {
-  const config = authConfig[provider]
-  if (!config) return false
-
-  if (provider === 'facebook') {
-    return !isMissingCredential(config.appId)
-  }
-
-  if (provider === 'dropbox') {
-    try {
-      const customId = localStorage.getItem('custom_dropbox_client_id')
-      if (customId && customId.trim()) return true
-    } catch {
-      // ignore
-    }
-  }
-
-  return !isMissingCredential(config.clientId)
+  return true
 }
 
 export function getOAuthRedirectUri(provider) {

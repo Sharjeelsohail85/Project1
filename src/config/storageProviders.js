@@ -10,6 +10,11 @@ export const storageProviders = [
     backendSupported: true,
   },
   {
+    id: 'onedrive',
+    name: 'Microsoft OneDrive',
+    backendSupported: true,
+  },
+  {
     id: 'idrive',
     name: 'IDrive e2',
     backendSupported: true,
