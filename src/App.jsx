@@ -160,6 +160,7 @@ function App() {
   const navigate = useNavigate()
   const location = useLocation()
   const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname === '/faq'
+  const isAuthCallbackRoute = location.pathname.startsWith('/auth/')
   
   // Check authentication status on mount
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -1017,6 +1018,18 @@ function App() {
     setPromoActive(!isAuthenticated)
     navigate('/')
   }, [isAuthenticated, navigate])
+
+  if (isAuthCallbackRoute) {
+    return (
+      <Routes>
+        <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
+        <Route path="/auth/google/callback" element={<OAuthCallback />} />
+        <Route path="/auth/facebook/callback" element={<OAuthCallback />} />
+        <Route path="/auth/dropbox/callback" element={<OAuthCallback />} />
+        <Route path="*" element={<OAuthCallback />} />
+      </Routes>
+    )
+  }
 
   if (isSettingsRoute) {
     return (
