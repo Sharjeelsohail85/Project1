@@ -52,8 +52,6 @@ export function connectOneDriveWithImplicitToken() {
     const redirectUri = `${window.location.origin}/auth/google/callback`
     const scopes = [
       'files.readwrite',
-      'files.readwrite.all',
-      'sites.readwrite.all',
       'openid',
       'profile',
       'User.Read'
