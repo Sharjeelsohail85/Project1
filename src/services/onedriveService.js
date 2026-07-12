@@ -17,9 +17,9 @@ export function getOneDriveClientId() {
 
 export function getOneDriveTenantId() {
   try {
-    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
+    return localStorage.getItem('custom_onedrive_tenant_id') || 'common'
   } catch {
-    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
+    return 'common'
   }
 }
 
