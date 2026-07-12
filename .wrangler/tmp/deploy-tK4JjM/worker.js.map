@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../src/worker.js"],
+  "sourceRoot": "/app/applet/.wrangler/tmp/deploy-tK4JjM",
+  "sourcesContent": ["export default {\n  async fetch(request, env) {\n    const url = new URL(request.url);\n    \n    // We can first try to fetch the asset\n    let response = await env.ASSETS.fetch(request);\n    \n    // If it's a 404 and doesn't have a file extension (e.g. not a .js or .css or image),\n    // serve index.html for SPA routing\n    if (response.status === 404 && !url.pathname.includes('.')) {\n      const indexRequest = new Request(new URL('/index.html', request.url), request);\n      response = await env.ASSETS.fetch(indexRequest);\n    }\n    \n    return response;\n  }\n};\n"],
+  "mappings": ";AAAA,IAAO,iBAAQ;AAAA,EACb,MAAM,MAAM,SAAS,KAAK;AACxB,UAAM,MAAM,IAAI,IAAI,QAAQ,GAAG;AAG/B,QAAI,WAAW,MAAM,IAAI,OAAO,MAAM,OAAO;AAI7C,QAAI,SAAS,WAAW,OAAO,CAAC,IAAI,SAAS,SAAS,GAAG,GAAG;AAC1D,YAAM,eAAe,IAAI,QAAQ,IAAI,IAAI,eAAe,QAAQ,GAAG,GAAG,OAAO;AAC7E,iBAAW,MAAM,IAAI,OAAO,MAAM,YAAY;AAAA,IAChD;AAEA,WAAO;AAAA,EACT;AACF;",
+  "names": []
+}
