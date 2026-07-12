@@ -370,6 +370,9 @@ export function useVideoMigration() {
     const videoIdRaw = payload?.videoId ?? payload?.video_id ?? null
     const playbackUrlRaw = String(payload?.playbackUrl || payload?.playback_url || '').trim()
 
+    // Safely extract background job error message if available
+    const jobError = payload?.error || (payload?.status === 'failed' ? (payload?.message || 'Migration failed.') : '')
+
     setProgressState((previous) => ({
       ...previous,
       jobId: String(jobId || previous.jobId || ''),
@@ -378,7 +381,7 @@ export function useVideoMigration() {
       completed,
       videoId: videoIdRaw == null || String(videoIdRaw).trim() === '' ? previous.videoId : videoIdRaw,
       playbackUrl: playbackUrlRaw || previous.playbackUrl,
-      error: '',
+      error: jobError || previous.error || '',
       providerUploadWarning: Number.isFinite(validationResult?.size)
         && validationResult.size > 2 * 1024 * 1024 * 1024
         ? 'Large file detected (>2GB). Migration may take longer, but you can continue.'
@@ -442,10 +445,26 @@ export function useVideoMigration() {
 
     try {
       const authParams = requireMigrationAuthParams()
+      
+      // Extract all connection tokens so the validator can authenticate with third-party sources if needed
+      const googleAccessToken = getGoogleAccessTokenSafe()
+      const dropboxAccessToken = getDropboxAccessTokenSafe()
+      const onedriveAccessToken = getOneDriveAccessTokenSafe()
+      
+      const headers = {}
+      if (googleAccessToken) headers['x-google-access-token'] = googleAccessToken
+      if (dropboxAccessToken) headers['x-dropbox-access-token'] = dropboxAccessToken
+      if (onedriveAccessToken) headers['x-onedrive-access-token'] = onedriveAccessToken
+
       const response = await apiClient.post('/migration/validate', {
         sourceUrl: String(url || '').trim(),
         provider: normalizedProvider,
+        googleAccessToken,
+        dropboxAccessToken,
+        onedriveAccessToken,
         ...authParams,
+      }, {
+        headers,
       })
 
       const payload = response?.data?.data || response?.data || {}
@@ -709,7 +728,7 @@ export function useVideoMigration() {
         }
       }
 
-      const googleAccessToken = (provider === 'gdrive' || provider === 'google') ? getGoogleAccessTokenSafe() : ''
+      const googleAccessToken = (provider === 'gdrive' || provider === 'google' || sourceType === 'account') ? getGoogleAccessTokenSafe() : ''
       const dropboxAccessToken = (provider === 'dropbox') ? getDropboxAccessTokenSafe() : ''
       const onedriveAccessToken = (provider === 'onedrive') ? getOneDriveAccessTokenSafe() : ''
       const headers = {}
