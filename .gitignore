@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 cloned_repo/
+.wrangler/
+.wrangler*
