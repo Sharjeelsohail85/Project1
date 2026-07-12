@@ -9,7 +9,7 @@ const ONEDRIVE_DEFAULT_CLIENT_ID = '86f4a867-b50a-40a2-9903-a4a350a4d1f2' // Fal
 
 export function getOneDriveClientId() {
   try {
-    return import.meta.env.VITE_ONEDRIVE_CLIENT_ID || localStorage.getItem('custom_onedrive_client_id') || ONEDRIVE_DEFAULT_CLIENT_ID
+    return localStorage.getItem('custom_onedrive_client_id') || import.meta.env.VITE_ONEDRIVE_CLIENT_ID || ONEDRIVE_DEFAULT_CLIENT_ID
   } catch {
     return import.meta.env.VITE_ONEDRIVE_CLIENT_ID || ONEDRIVE_DEFAULT_CLIENT_ID
   }
@@ -17,7 +17,7 @@ export function getOneDriveClientId() {
 
 export function getOneDriveTenantId() {
   try {
-    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || localStorage.getItem('custom_onedrive_tenant_id') || 'common'
+    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
   } catch {
     return import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
   }
