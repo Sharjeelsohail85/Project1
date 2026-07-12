@@ -15,11 +15,22 @@ export function getOneDriveClientId() {
   }
 }
 
-export function saveOneDriveCredentials(clientId, clientSecret = '') {
+export function getOneDriveTenantId() {
+  try {
+    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || localStorage.getItem('custom_onedrive_tenant_id') || 'common'
+  } catch {
+    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
+  }
+}
+
+export function saveOneDriveCredentials(clientId, clientSecret = '', tenantId = '') {
   try {
     localStorage.setItem('custom_onedrive_client_id', String(clientId || '').trim())
     if (clientSecret) {
       localStorage.setItem('custom_onedrive_client_secret', String(clientSecret || '').trim())
+    }
+    if (tenantId) {
+      localStorage.setItem('custom_onedrive_tenant_id', String(tenantId || '').trim())
     }
   } catch (error) {
     console.error('Failed to save OneDrive credentials:', error)
@@ -58,7 +69,8 @@ export function connectOneDriveWithImplicitToken() {
       state,
     })
 
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`
+    const tenantId = getOneDriveTenantId()
+    const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params.toString()}`
     const width = 560
     const height = 720
     const left = window.screenX + (window.outerWidth - width) / 2
@@ -341,6 +353,7 @@ export async function uploadLocalFileToOneDrive({ file, accessToken, onProgress 
 
 export default {
   getOneDriveClientId,
+  getOneDriveTenantId,
   saveOneDriveCredentials,
   connectOneDriveWithImplicitToken,
   fetchVideosFromOneDrive,
