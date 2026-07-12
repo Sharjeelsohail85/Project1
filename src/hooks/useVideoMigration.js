@@ -346,6 +346,8 @@ export function useVideoMigration() {
   const [isPolling, setIsPolling] = useState(false)
   const [validationResult, setValidationResult] = useState(null)
   const pollTimerRef = useRef(null)
+  const activeMigrationParamsRef = useRef(null)
+  const startPollingRef = useRef(null)
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current) {
@@ -406,10 +408,73 @@ export function useVideoMigration() {
     })
     const payload = response?.data?.data || response?.data || {}
 
+    // Check for Microsoft OneDrive licensing errors
+    const errMsg = String(payload?.error || payload?.message || '')
+    const isSPOError = errMsg.includes('SPO') || errMsg.includes('license') || errMsg.includes('Tenant does not have a SPO license')
+
+    if (isSPOError && activeMigrationParamsRef.current && activeMigrationParamsRef.current.provider === 'onedrive') {
+      // Prevent infinite loops of fallbacks
+      activeMigrationParamsRef.current.provider = 'idrive'
+
+      stopPolling()
+
+      setProgressState((previous) => ({
+        ...previous,
+        providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing migration via high-performance server storage fallback...',
+        stage: 'queued',
+        progress: 10,
+        error: '',
+      }))
+
+      try {
+        const fallbackProvider = 'idrive'
+        const googleAccessToken = ''
+        const dropboxAccessToken = ''
+        const onedriveAccessToken = ''
+
+        const fallbackResponse = await apiClient.post('/migration/start', {
+          sourceUrl: activeMigrationParamsRef.current.sourceUrl,
+          provider: fallbackProvider,
+          sourceType: activeMigrationParamsRef.current.sourceType,
+          googleAccessToken,
+          dropboxAccessToken,
+          onedriveAccessToken,
+          metadata: activeMigrationParamsRef.current.metadata,
+          ...authParams,
+        }, {
+          timeout: activeMigrationParamsRef.current.sourceType === 'account' ? 120000 : 30000,
+        })
+
+        const fallbackData = fallbackResponse?.data?.data || fallbackResponse?.data || {}
+        const fallbackJobId = String(fallbackData?.jobId || fallbackData?.job_id || '').trim()
+
+        if (!fallbackJobId) {
+          throw new Error('Fallback migration did not return a jobId.')
+        }
+
+        setProgressState((previous) => ({
+          ...previous,
+          jobId: fallbackJobId,
+          progress: 1,
+          stage: 'queued',
+          error: '',
+        }))
+
+        if (startPollingRef.current) {
+          startPollingRef.current(fallbackJobId)
+        }
+        return fallbackData
+      } catch (fallbackError) {
+        console.error('Fallback migration failed:', fallbackError)
+        updateProgressFromPayload(normalizedJobId, payload)
+        return payload
+      }
+    }
+
     updateProgressFromPayload(normalizedJobId, payload)
 
     return payload
-  }, [updateProgressFromPayload])
+  }, [updateProgressFromPayload, stopPolling])
 
   const startPolling = useCallback((jobId) => {
     const normalizedJobId = String(jobId || '').trim()
@@ -429,6 +494,8 @@ export function useVideoMigration() {
       })
     }, POLL_INTERVAL_MS)
   }, [getProgress, stopPolling])
+
+  startPollingRef.current = startPolling
 
   const validateVideo = useCallback(async (url, provider) => {
     const validation = validateSourceUrl(url)
@@ -530,6 +597,14 @@ export function useVideoMigration() {
       throw new Error('Video title is required.')
     }
 
+    // Save parameters for possible background polling fallback
+    activeMigrationParamsRef.current = {
+      sourceUrl,
+      provider,
+      sourceType,
+      metadata,
+    }
+
     setIsStarting(true)
     setProgressState((previous) => ({
       ...DEFAULT_PROGRESS_STATE,
@@ -628,37 +703,123 @@ export function useVideoMigration() {
             error: '',
           }))
 
-          const { uploadLocalFileToOneDrive } = await import('../services/onedriveService')
-          const result = await uploadLocalFileToOneDrive({
-            file: localFile,
-            accessToken: onedriveToken,
-            onProgress: (pct) => {
+          try {
+            const { uploadLocalFileToOneDrive } = await import('../services/onedriveService')
+            const result = await uploadLocalFileToOneDrive({
+              file: localFile,
+              accessToken: onedriveToken,
+              onProgress: (pct) => {
+                setProgressState((previous) => ({
+                  ...previous,
+                  progress: pct,
+                  stage: pct >= 100 ? 'finalizing' : 'uploading',
+                }))
+              }
+            })
+
+            const uploadJobId = `onedrive-upload-${result.id}`
+            setProgressState({
+              jobId: uploadJobId,
+              progress: 100,
+              stage: 'finalizing',
+              completed: true,
+              videoId: result.id,
+              playbackUrl: result.downloadUrl,
+              error: '',
+              providerUploadWarning: '',
+            })
+            setValidationResult({
+              valid: true,
+              size: Number(localFile?.size || 0),
+              mime: String(result.mimeType || localFile?.type || 'video/mp4'),
+              filename: String(result.name || localFile?.name || ''),
+            })
+            return { jobId: uploadJobId, videoId: result.id, playbackUrl: result.downloadUrl }
+          } catch (onedriveUploadError) {
+            const errStr = String(onedriveUploadError?.message || '')
+            const isSPO = errStr.includes('SPO') || errStr.includes('license') || errStr.includes('Tenant does not have a SPO license')
+            
+            if (isSPO) {
               setProgressState((previous) => ({
                 ...previous,
-                progress: pct,
-                stage: pct >= 100 ? 'finalizing' : 'uploading',
+                providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing upload via high-performance server storage fallback...',
+                stage: 'uploading',
+                progress: 20,
               }))
-            }
-          })
 
-          const uploadJobId = `onedrive-upload-${result.id}`
-          setProgressState({
-            jobId: uploadJobId,
-            progress: 100,
-            stage: 'finalizing',
-            completed: true,
-            videoId: result.id,
-            playbackUrl: result.downloadUrl,
-            error: '',
-            providerUploadWarning: '',
-          })
-          setValidationResult({
-            valid: true,
-            size: Number(localFile?.size || 0),
-            mime: String(result.mimeType || localFile?.type || 'video/mp4'),
-            filename: String(result.name || localFile?.name || ''),
-          })
-          return { jobId: uploadJobId, videoId: result.id, playbackUrl: result.downloadUrl }
+              if (activeMigrationParamsRef.current) {
+                activeMigrationParamsRef.current.provider = 'idrive'
+              }
+
+              const uploadPayload = new FormData()
+              uploadPayload.append('video', localFile)
+              uploadPayload.append('targetProvider', 'idrive')
+              uploadPayload.append('title', metadata.title)
+              uploadPayload.append('description', metadata.description)
+              uploadPayload.append('thumbnail', metadata.thumbnail)
+              uploadPayload.append('visibility', metadata.visibility)
+              uploadPayload.append('tags', JSON.stringify(Array.isArray(metadata.tags) ? metadata.tags : []))
+              uploadPayload.append('token', authParams.token)
+              uploadPayload.append('client_id', authParams.client_id)
+
+              const response = await apiClient.post('/storage/upload', uploadPayload, {
+                timeout: 10 * 60 * 1000,
+                onUploadProgress: (progressEvent) => {
+                  if (progressEvent.total) {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                    setProgressState((previous) => ({
+                      ...previous,
+                      progress: Math.min(99, percentCompleted),
+                    }))
+                  }
+                }
+              })
+
+              const data = response?.data?.data || response?.data || {}
+              const files = Array.isArray(data?.files) ? data.files : []
+              const primaryFile = files[0] || {}
+
+              const videoId = String(
+                primaryFile?.videoUuid
+                || primaryFile?.fileId
+                || primaryFile?.id
+                || `onedrive-fallback-${Date.now()}`
+              ).trim()
+              const playbackUrl = String(primaryFile?.playbackUrl || '').trim()
+
+              if (!playbackUrl) {
+                throw new Error('Fallback server upload did not return a valid video playback link.')
+              }
+
+              const uploadJobId = `onedrive-fallback-${videoId}`
+
+              setProgressState({
+                jobId: uploadJobId,
+                progress: 100,
+                stage: 'finalizing',
+                completed: true,
+                videoId,
+                playbackUrl,
+                error: '',
+                providerUploadWarning: 'OneDrive license issue (Tenant does not have a SPO license). Successfully migrated video via server storage fallback.',
+              })
+
+              setValidationResult({
+                valid: true,
+                size: Number(primaryFile?.size || localFile?.size || 0),
+                mime: String(primaryFile?.mimeType || localFile?.type || 'video/mp4'),
+                filename: String(primaryFile?.originalFilename || localFile?.name || ''),
+              })
+
+              return {
+                jobId: uploadJobId,
+                videoId,
+                playbackUrl,
+              }
+            } else {
+              throw onedriveUploadError;
+            }
+          }
         }
 
         setProgressState((previous) => ({
@@ -742,38 +903,92 @@ export function useVideoMigration() {
         headers['x-onedrive-access-token'] = onedriveAccessToken
       }
 
-      const response = await apiClient.post('/migration/start', {
-        sourceUrl,
-        provider,
-        sourceType,
-        googleAccessToken,
-        dropboxAccessToken,
-        onedriveAccessToken,
-        metadata,
-        ...authParams,
-      }, {
-        headers,
-        timeout: sourceType === 'account' ? 120000 : 30000,
-      })
+      try {
+        const response = await apiClient.post('/migration/start', {
+          sourceUrl,
+          provider,
+          sourceType,
+          googleAccessToken,
+          dropboxAccessToken,
+          onedriveAccessToken,
+          metadata,
+          ...authParams,
+        }, {
+          headers,
+          timeout: sourceType === 'account' ? 120000 : 30000,
+        })
 
-      const data = response?.data?.data || response?.data || {}
-      const jobId = String(data?.jobId || '').trim()
+        const data = response?.data?.data || response?.data || {}
+        const jobId = String(data?.jobId || '').trim()
 
-      if (!jobId) {
-        throw new Error('Migration API did not return a jobId.')
+        if (!jobId) {
+          throw new Error('Migration API did not return a jobId.')
+        }
+
+        setProgressState((previous) => ({
+          ...previous,
+          jobId,
+          progress: 1,
+          stage: 'queued',
+        }))
+
+        await getProgress(jobId)
+        startPolling(jobId)
+
+        return { jobId }
+      } catch (startError) {
+        const errStr = String(startError?.message || startError?.response?.data?.error?.message || '')
+        const isSPO = errStr.includes('SPO') || errStr.includes('license') || errStr.includes('Tenant does not have a SPO license')
+        
+        if (provider === 'onedrive' && isSPO) {
+          setProgressState((previous) => ({
+            ...previous,
+            providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing migration via high-performance server storage fallback...',
+            stage: 'queued',
+            progress: 10,
+            error: '',
+          }))
+
+          if (activeMigrationParamsRef.current) {
+            activeMigrationParamsRef.current.provider = 'idrive'
+          }
+
+          const fallbackResponse = await apiClient.post('/migration/start', {
+            sourceUrl,
+            provider: 'idrive',
+            sourceType,
+            googleAccessToken: '',
+            dropboxAccessToken: '',
+            onedriveAccessToken: '',
+            metadata,
+            ...authParams,
+          }, {
+            timeout: sourceType === 'account' ? 120000 : 30000,
+          })
+
+          const fallbackData = fallbackResponse?.data?.data || fallbackResponse?.data || {}
+          const fallbackJobId = String(fallbackData?.jobId || fallbackData?.job_id || '').trim()
+
+          if (!fallbackJobId) {
+            throw new Error('Fallback migration did not return a jobId.')
+          }
+
+          setProgressState((previous) => ({
+            ...previous,
+            jobId: fallbackJobId,
+            progress: 1,
+            stage: 'queued',
+            error: '',
+          }))
+
+          await getProgress(fallbackJobId)
+          startPolling(fallbackJobId)
+
+          return { jobId: fallbackJobId }
+        } else {
+          throw startError
+        }
       }
-
-      setProgressState((previous) => ({
-        ...previous,
-        jobId,
-        progress: 1,
-        stage: 'queued',
-      }))
-
-      await getProgress(jobId)
-      startPolling(jobId)
-
-      return { jobId }
     } catch (error) {
       const message = getErrorMessage(error, 'Failed to start migration job.')
       setProgressState((previous) => ({

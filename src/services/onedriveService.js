@@ -241,7 +241,18 @@ export async function fetchVideosFromOneDrive(accessToken) {
     }
   } catch (error) {
     console.error('Failed to fetch videos from OneDrive API:', error?.response?.data || error?.message)
-    throw new Error(error?.response?.data?.error?.message || 'Failed to list OneDrive files. Please check connection permissions.')
+    const errMsg = String(error?.response?.data?.error?.message || error?.message || '')
+    if (errMsg.includes('SPO') || errMsg.includes('license') || errMsg.includes('Tenant does not have a SPO license')) {
+      return {
+        videos: [],
+        total: 0,
+        page: 1,
+        perPage: 100,
+        hasMore: false,
+        warning: 'No SharePoint Online (SPO) license found on this account, but you can still migrate local files directly below!'
+      }
+    }
+    throw new Error(errMsg || 'Failed to list OneDrive files. Please check connection permissions.')
   }
 }
 
