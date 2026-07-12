@@ -7,6 +7,7 @@ import Content from './components/Content'
 import SettingsPage from './components/SettingsPage'
 import ChannelPage from './components/ChannelPage'
 import PageFaq from './pages/PageFaq'
+import OAuthCallback from './components/OAuthCallback'
 import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
 import { getLocalChannelVideos } from './services/videoService'
 import { isAuthenticated as checkAuth, logout } from './services/auth.service'
@@ -1179,6 +1180,10 @@ function App() {
         />
         <Route path="/login" element={null} />
         <Route path="/watch/:videoId" element={null} />
+        <Route path="/auth/:provider/callback" element={<OAuthCallback />} />
+        <Route path="/auth/google/callback" element={<OAuthCallback />} />
+        <Route path="/auth/facebook/callback" element={<OAuthCallback />} />
+        <Route path="/auth/dropbox/callback" element={<OAuthCallback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
