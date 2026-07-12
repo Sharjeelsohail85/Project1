@@ -36,6 +36,14 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [googleManualToken, setGoogleManualToken] = useState("");
   const [showOneDriveManual, setShowOneDriveManual] = useState(false);
   const [onedriveManualToken, setOnedriveManualToken] = useState("");
+  const [onedriveSubTab, setOnedriveSubTab] = useState("token"); // 'token' or 'config'
+  const [customOneDriveClientId, setCustomOneDriveClientId] = useState(() => {
+    try {
+      return localStorage.getItem("custom_onedrive_client_id") || "";
+    } catch {
+      return "";
+    }
+  });
   const [resolvingVideoId, setResolvingVideoId] = useState(null);
 
   const refreshAccounts = useCallback(() => {
@@ -514,77 +522,258 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
 
                 {provider === 'onedrive' && showOneDriveManual && (
                   <div style={{
-                    padding: '12px',
-                    borderRadius: '6px',
-                    background: 'rgba(255,255,255,0.03)',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.08)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px'
+                    gap: '12px',
+                    width: '100%',
+                    boxSizing: 'border-box'
                   }}>
-                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
-                      Enter your OneDrive <strong>Personal Access Token</strong> (generated from Azure Portal) to connect directly:
-                    </p>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        type="password"
-                        placeholder="Paste OneDrive token..."
-                        value={onedriveManualToken}
-                        onChange={(e) => setOnedriveManualToken(e.target.value)}
+                    {/* Tab Selection */}
+                    <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                      <button
+                        onClick={() => setOnedriveSubTab('token')}
                         style={{
-                          flex: 1,
-                          background: 'rgba(0,0,0,0.3)',
-                          border: '1px solid rgba(255,255,255,0.15)',
+                          background: onedriveSubTab === 'token' ? 'rgba(3, 218, 198, 0.15)' : 'transparent',
+                          border: onedriveSubTab === 'token' ? '1px solid #03DAC6' : '1px solid transparent',
+                          color: onedriveSubTab === 'token' ? '#03DAC6' : 'rgba(255,255,255,0.6)',
                           borderRadius: '4px',
-                          color: '#fff',
-                          padding: '6px 10px',
-                          fontSize: '0.8rem'
-                        }}
-                      />
-                      <Button
-                        variant="text"
-                        onClick={() => {
-                          if (!onedriveManualToken.trim()) {
-                            onError?.("Please enter a valid token.");
-                            return;
-                          }
-                          try {
-                            const accounts = getConnectedAccounts();
-                            const newAccount = {
-                              provider: 'onedrive',
-                              connected: true,
-                              user: {
-                                uuid: `onedrive-user-manual-${Date.now()}`,
-                                first_name: 'OneDrive',
-                                last_name: 'User (Manual)',
-                                email: `onedrive.${Date.now()}@manual.local`,
-                                registration_type: 'onedrive',
-                                active: 1,
-                                onedrive_access_token: onedriveManualToken.trim(),
-                                access_token: onedriveManualToken.trim(),
-                              }
-                            };
-                            const filtered = accounts.filter(a => a.provider !== 'onedrive');
-                            filtered.push(newAccount);
-                            saveConnectedAccounts(filtered);
-                            refreshAccounts();
-                            setOnedriveManualToken('');
-                            setShowOneDriveManual(false);
-                          } catch (err) {
-                            onError?.("Failed to save token: " + err.message);
-                          }
-                        }}
-                        sx={{
-                          textTransform: 'none',
-                          color: '#03DAC6',
-                          fontSize: '0.8rem',
-                          border: '1px solid rgba(3, 218, 198, 0.3)',
-                          padding: '4px 10px'
+                          padding: '4px 10px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          outline: 'none'
                         }}
                       >
-                        Submit
-                      </Button>
+                        Option A: Personal Access Token
+                      </button>
+                      <button
+                        onClick={() => setOnedriveSubTab('config')}
+                        style={{
+                          background: onedriveSubTab === 'config' ? 'rgba(3, 218, 198, 0.15)' : 'transparent',
+                          border: onedriveSubTab === 'config' ? '1px solid #03DAC6' : '1px solid transparent',
+                          color: onedriveSubTab === 'config' ? '#03DAC6' : 'rgba(255,255,255,0.6)',
+                          borderRadius: '4px',
+                          padding: '4px 10px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          outline: 'none'
+                        }}
+                      >
+                        Option B: Custom Azure Client ID
+                      </button>
                     </div>
+
+                    {onedriveSubTab === 'token' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)', lineHeight: '1.4' }}>
+                          Enter your OneDrive <strong>Personal Access Token</strong> (generated from Microsoft Developer Portal / Graph Explorer) to connect directly:
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="password"
+                            placeholder="Paste OneDrive token..."
+                            value={onedriveManualToken}
+                            onChange={(e) => setOnedriveManualToken(e.target.value)}
+                            style={{
+                              flex: 1,
+                              background: 'rgba(0,0,0,0.3)',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              padding: '6px 10px',
+                              fontSize: '0.8rem'
+                            }}
+                          />
+                          <Button
+                            variant="text"
+                            onClick={() => {
+                              if (!onedriveManualToken.trim()) {
+                                onError?.("Please enter a valid token.");
+                                return;
+                              }
+                              try {
+                                const accounts = getConnectedAccounts();
+                                const newAccount = {
+                                  provider: 'onedrive',
+                                  connected: true,
+                                  user: {
+                                    uuid: `onedrive-user-manual-${Date.now()}`,
+                                    first_name: 'OneDrive',
+                                    last_name: 'User (Manual)',
+                                    email: `onedrive.${Date.now()}@manual.local`,
+                                    registration_type: 'onedrive',
+                                    active: 1,
+                                    onedrive_access_token: onedriveManualToken.trim(),
+                                    access_token: onedriveManualToken.trim(),
+                                  }
+                                };
+                                const filtered = accounts.filter(a => a.provider !== 'onedrive');
+                                filtered.push(newAccount);
+                                saveConnectedAccounts(filtered);
+                                refreshAccounts();
+                                setOnedriveManualToken('');
+                                setShowOneDriveManual(false);
+                              } catch (err) {
+                                onError?.("Failed to save token: " + err.message);
+                              }
+                            }}
+                            sx={{
+                              textTransform: 'none',
+                              color: '#03DAC6',
+                              fontSize: '0.8rem',
+                              border: '1px solid rgba(3, 218, 198, 0.3)',
+                              padding: '4px 10px'
+                            }}
+                          >
+                            Submit
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)', lineHeight: '1.4' }}>
+                          Enter your own Microsoft Azure/Entra <strong>Application (client) ID</strong> below. This allows you to perform the standard OneDrive OAuth login:
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.65rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Required Redirect URI in your Azure Portal (Set as Single-page application):
+                          </span>
+                          <code style={{
+                            display: 'block',
+                            background: 'rgba(0,0,0,0.4)',
+                            padding: '6px 10px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            color: '#81c784',
+                            wordBreak: 'break-all',
+                            fontFamily: 'monospace'
+                          }}>
+                            {window.location.origin}/auth/google/callback
+                          </code>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="text"
+                            placeholder="Azure Application Client ID..."
+                            value={customOneDriveClientId}
+                            onChange={(e) => setCustomOneDriveClientId(e.target.value)}
+                            style={{
+                              flex: 1,
+                              background: 'rgba(0,0,0,0.3)',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              padding: '6px 10px',
+                              fontSize: '0.8rem'
+                            }}
+                          />
+                          <Button
+                            variant="text"
+                            onClick={() => {
+                              if (!customOneDriveClientId.trim()) {
+                                onError?.("Please enter a Client ID.");
+                                return;
+                              }
+                              try {
+                                localStorage.setItem('custom_onedrive_client_id', customOneDriveClientId.trim());
+                                setCustomOneDriveClientId(customOneDriveClientId.trim());
+                                refreshAccounts();
+                                setShowOneDriveManual(false);
+                                onError?.("Azure Client ID saved! Now click the green 'Connect' button to sign in using your custom Azure app registration.");
+                              } catch (err) {
+                                onError?.("Failed to save client ID: " + err.message);
+                              }
+                            }}
+                            sx={{
+                              textTransform: 'none',
+                              color: '#03DAC6',
+                              fontSize: '0.8rem',
+                              border: '1px solid rgba(3, 218, 198, 0.3)',
+                              padding: '4px 10px'
+                            }}
+                          >
+                            Save ID
+                          </Button>
+                        </div>
+
+                        {customOneDriveClientId && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                              variant="text"
+                              onClick={() => {
+                                try {
+                                  localStorage.removeItem('custom_onedrive_client_id');
+                                  setCustomOneDriveClientId('');
+                                  refreshAccounts();
+                                  onError?.("Azure Client ID cleared. Reverted to default.");
+                                } catch (err) {
+                                  onError?.("Failed to clear client ID: " + err.message);
+                                }
+                              }}
+                              sx={{
+                                textTransform: 'none',
+                                color: '#CF6679',
+                                fontSize: '0.75rem',
+                                padding: '2px 8px'
+                              }}
+                            >
+                              Clear & Reset
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Azure Step-by-Step Setup Guide */}
+                        <div style={{
+                          padding: '10px 12px',
+                          background: 'rgba(0,0,0,0.2)',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          color: '#fff',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          lineHeight: '1.45',
+                          marginTop: '4px'
+                        }}>
+                          <strong style={{ color: '#03DAC6', display: 'block', marginBottom: '6px' }}>
+                            🔑 Step-by-Step Microsoft App Setup Guide:
+                          </strong>
+                          <ol style={{ paddingLeft: '16px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <li>
+                              Go to the <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateAppRazorBlade" target="_blank" rel="noreferrer" style={{ color: '#81c784', textDecoration: 'underline' }}>Azure Portal App Registrations</a>.
+                            </li>
+                            <li>
+                              Click <strong>New registration</strong>. Set the name (e.g. <code>Octopussol App</code>).
+                            </li>
+                            <li>
+                              Under <strong>Supported account types</strong>, select: <br />
+                              <strong style={{ color: '#ffb74d' }}>"Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)"</strong>.<br />
+                              <span style={{ opacity: 0.8 }}>⚠️ <em>Failing to select this causes the "unauthorized_client" error for personal OneDrive accounts.</em></span>
+                            </li>
+                            <li>
+                              Under <strong>Redirect URI</strong>, select <strong style={{ color: '#03DAC6' }}>Single-page application (SPA)</strong> and paste:<br />
+                              <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 4px', borderRadius: '3px', color: '#81c784', wordBreak: 'break-all' }}>
+                                {window.location.origin}/auth/google/callback
+                              </code>
+                            </li>
+                            <li>
+                              Click <strong>Register</strong>, then copy the <strong>Application (client) ID</strong>.
+                            </li>
+                            <li>
+                              In the left menu of your Azure app page, click <strong>Authentication</strong>. Under <strong>Implicit grant and hybrid flows</strong>, check <strong style={{ color: '#03DAC6' }}>Access tokens (used for implicit flows)</strong>.
+                            </li>
+                            <li>
+                              Click <strong>Save</strong> at the top of the Authentication page, paste your copied Client ID in the field above, and click <strong>Save ID</strong>!
+                            </li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

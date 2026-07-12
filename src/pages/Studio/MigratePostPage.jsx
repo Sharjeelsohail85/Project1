@@ -668,6 +668,49 @@ const MigratePostPage = memo(function MigratePostPage() {
                         </Button>
                       )}
                     </Stack>
+                    {/* Azure Step-by-Step Setup Guide */}
+                    <Box sx={{
+                      p: 2,
+                      background: 'rgba(0,0,0,0.15)',
+                      borderRadius: 1.5,
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      fontSize: '0.8rem',
+                      color: 'text.secondary',
+                      mt: 1.5,
+                      lineHeight: 1.5
+                    }}>
+                      <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        🔑 Step-by-Step Microsoft App Setup Guide:
+                      </Typography>
+                      <ol style={{ paddingLeft: '16px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <li>
+                          Go to the <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateAppRazorBlade" target="_blank" rel="noreferrer" style={{ color: '#81c784', textDecoration: 'underline' }}>Azure Portal App Registrations</a>.
+                        </li>
+                        <li>
+                          Click <strong>New registration</strong>. Set the name (e.g. <code>Octopussol App</code>).
+                        </li>
+                        <li>
+                          Under <strong>Supported account types</strong>, select: <br />
+                          <strong style={{ color: '#ffb74d' }}>"Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)"</strong>.<br />
+                          <span style={{ opacity: 0.8 }}>⚠️ <em>Failing to select this causes the "unauthorized_client" error for personal OneDrive accounts.</em></span>
+                        </li>
+                        <li>
+                          Under <strong>Redirect URI</strong>, select <strong style={{ color: '#03DAC6' }}>Single-page application (SPA)</strong> and paste:<br />
+                          <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 4px', borderRadius: '3px', color: '#81c784', wordBreak: 'break-all' }}>
+                            {window.location.origin}/auth/google/callback
+                          </code>
+                        </li>
+                        <li>
+                          Click <strong>Register</strong>, then copy the <strong>Application (client) ID</strong>.
+                        </li>
+                        <li>
+                          In the left menu of your Azure app page, click <strong>Authentication</strong>. Under <strong>Implicit grant and hybrid flows</strong>, check <strong style={{ color: '#03DAC6' }}>Access tokens (used for implicit flows)</strong>.
+                        </li>
+                        <li>
+                          Click <strong>Save</strong> at the top of the Authentication page, paste your copied Client ID in the field above, and click <strong>Save Client ID</strong>!
+                        </li>
+                      </ol>
+                    </Box>
                   </Stack>
                 </>
               )}
