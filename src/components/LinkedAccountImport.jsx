@@ -323,13 +323,15 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                     <span className="linked-account-name">{meta.label}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {(provider === 'dropbox' || provider === 'google') && (
+                    {(provider === 'dropbox' || provider === 'google' || provider === 'onedrive') && (
                       <Button
                         onClick={() => {
                           if (provider === 'google') {
                             setShowGoogleManual(prev => !prev);
                           } else if (provider === 'dropbox') {
                             setShowDropboxManual(prev => !prev);
+                          } else if (provider === 'onedrive') {
+                            setShowOneDriveManual(prev => !prev);
                           }
                         }}
                         variant="text"
@@ -343,7 +345,7 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                           border: '1px solid rgba(255,255,255,0.1)'
                         }}
                       >
-                        {(provider === 'google' ? showGoogleManual : showDropboxManual) ? "Cancel" : "Use Token"}
+                        {(provider === 'google' ? showGoogleManual : provider === 'dropbox' ? showDropboxManual : showOneDriveManual) ? "Cancel" : "Use Token"}
                       </Button>
                     )}
                     <Button
@@ -500,6 +502,82 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                             refreshAccounts();
                             setGoogleManualToken('');
                             setShowGoogleManual(false);
+                          } catch (err) {
+                            onError?.("Failed to save token: " + err.message);
+                          }
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: '#03DAC6',
+                          fontSize: '0.8rem',
+                          border: '1px solid rgba(3, 218, 198, 0.3)',
+                          padding: '4px 10px'
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {provider === 'onedrive' && showOneDriveManual && (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
+                      Enter your Microsoft OneDrive <strong>Access Token</strong> to connect directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="password"
+                        placeholder="Paste Microsoft OneDrive token..."
+                        value={onedriveManualToken}
+                        onChange={(e) => setOnedriveManualToken(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (!onedriveManualToken.trim()) {
+                            onError?.("Please enter a valid token.");
+                            return;
+                          }
+                          try {
+                            const accounts = getConnectedAccounts();
+                            const newAccount = {
+                              provider: 'onedrive',
+                              connected: true,
+                              user: {
+                                uuid: `onedrive-user-manual-${Date.now()}`,
+                                first_name: 'OneDrive',
+                                last_name: 'User (Manual)',
+                                email: `onedrive.${Date.now()}@manual.local`,
+                                registration_type: 'onedrive',
+                                active: 1,
+                                onedrive_access_token: onedriveManualToken.trim(),
+                                access_token: onedriveManualToken.trim(),
+                              }
+                            };
+                            const filtered = accounts.filter(a => a.provider !== 'onedrive');
+                            filtered.push(newAccount);
+                            saveConnectedAccounts(filtered);
+                            refreshAccounts();
+                            setOnedriveManualToken('');
+                            setShowOneDriveManual(false);
                           } catch (err) {
                             onError?.("Failed to save token: " + err.message);
                           }
