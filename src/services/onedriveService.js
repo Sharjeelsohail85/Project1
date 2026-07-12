@@ -175,20 +175,29 @@ export function connectOneDriveWithImplicitToken() {
 
     window.addEventListener('message', onMessage)
     const timer = setInterval(() => {
+      let href = null
       try {
         if (popup.closed) {
           cleanup()
           reject(new Error('OneDrive popup closed before connection completed.'))
           return
         }
-        const href = popup.location.href
-        if (href && href.includes('/auth/google/callback')) {
+        href = popup.location.href
+      } catch (e) {
+        // ignore cross-origin security block until popup redirects to callback URI
+        return
+      }
+
+      if (href && (href.includes('/auth/google/callback') || href.includes('access_token=') || href.includes('error='))) {
+        try {
           finish(href)
           cleanup()
           popup.close()
+        } catch (error) {
+          cleanup()
+          popup.close()
+          reject(error)
         }
-      } catch {
-        // ignore cross-origin security block until popup redirects to callback URI
       }
     }, 250)
   })
