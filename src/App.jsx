@@ -39,7 +39,12 @@ const PERSONALIZATION_EFFECT_CLASS_MAP = {
 const DEFAULT_AUTH_SUBSCRIBER_COUNT = 304
 
 function canUseLocalStorage() {
-  return typeof window !== 'undefined' && !!window.localStorage
+  if (typeof window === 'undefined') return false
+  try {
+    return !!window.localStorage
+  } catch {
+    return false
+  }
 }
 
 function parseSubscriberCountValue(value) {

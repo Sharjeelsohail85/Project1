@@ -22,7 +22,11 @@ function getAuthToken() {
     return null
   }
 
-  return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('token') || null
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem('token') || null
+  } catch {
+    return null
+  }
 }
 
 function emitUnauthorizedEvent() {

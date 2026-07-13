@@ -15,7 +15,11 @@ function shouldUseDemoVideosFallback() {
 
 function getStorageSafe() {
   if (typeof window === 'undefined') return null
-  return window.localStorage
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
 }
 
 /**

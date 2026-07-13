@@ -8,7 +8,12 @@ import { authAPI } from './api.service'
 import { getAuthTokens, saveAuthTokens } from '../config/api.config'
 
 function canUseBrowserStorage() {
-  return typeof window !== 'undefined' && !!window.localStorage
+  if (typeof window === 'undefined') return false
+  try {
+    return !!window.localStorage
+  } catch {
+    return false
+  }
 }
 
 function setLocalStorageItem(key, value) {
