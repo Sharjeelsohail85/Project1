@@ -8,6 +8,7 @@ import SettingsPage from './components/SettingsPage'
 import ChannelPage from './components/ChannelPage'
 import PageFaq from './pages/PageFaq'
 import OAuthCallback from './components/OAuthCallback'
+import MigratePostPage from './pages/Studio/MigratePostPage'
 import { DEFAULT_VIDEO_SOURCE } from './utils/videoSource'
 import { getLocalChannelVideos } from './services/videoService'
 import { videoAPI } from './services/api.service'
@@ -1195,7 +1196,7 @@ function App() {
         />
         <Route
           path="/studio/migrate"
-          element={isAuthenticated ? null : <Navigate to="/login" replace />}
+          element={isAuthenticated ? <MigratePostPage /> : <Navigate to="/login" replace />}
         />
         <Route path="/login" element={null} />
         <Route path="/watch/:videoId" element={null} />
