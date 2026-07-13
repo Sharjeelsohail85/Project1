@@ -168,8 +168,14 @@ function requireMigrationAuthParams() {
     throw new Error('Migration API requires an authenticated browser session.')
   }
 
-  const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
-  const clientId = String(localStorage.getItem('client_id') || '').trim()
+  let token = ''
+  let clientId = ''
+  try {
+    token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+    clientId = String(localStorage.getItem('client_id') || '').trim()
+  } catch {
+    // ignore security error in sandboxed iframe
+  }
 
   if (!token || !clientId) {
     throw new Error('Please login first. Missing token/client_id for migration APIs.')

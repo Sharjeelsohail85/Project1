@@ -105,9 +105,13 @@ function connectGoogleDriveWithImplicitToken() {
 
 function hasAuthSession() {
   if (typeof window === 'undefined') return false
-  const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
-  const clientId = String(localStorage.getItem('client_id') || '').trim()
-  return Boolean(token && clientId)
+  try {
+    const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+    const clientId = String(localStorage.getItem('client_id') || '').trim()
+    return Boolean(token && clientId)
+  } catch {
+    return false
+  }
 }
 
 function extractProviderMessage(error, fallback) {
