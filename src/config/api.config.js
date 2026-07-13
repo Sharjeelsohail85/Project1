@@ -209,8 +209,14 @@ export const API_CONFIG = {
 // Helper to get auth tokens from localStorage
 export function getAuthTokens() {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
-    const storedClientId = localStorage.getItem('client_id') || localStorage.getItem('auth_client_id')
+    let token = null
+    let storedClientId = null
+    try {
+      token = localStorage.getItem('token') || localStorage.getItem('auth_token')
+      storedClientId = localStorage.getItem('client_id') || localStorage.getItem('auth_client_id')
+    } catch {
+      // ignore security error in sandboxed iframe
+    }
 
     // Production hardening: stale demo-mode tokens must never be used against live API.
     if (isPublicRuntimeHost() && isDemoTokenValue(token)) {
@@ -241,10 +247,14 @@ export function getAuthTokens() {
 export function saveAuthTokens(token, clientId) {
   if (typeof window !== 'undefined') {
     const normalizedClientId = String(clientId || '').trim() || 'web_client'
-    localStorage.setItem('token', token)
-    localStorage.setItem('auth_token', token)
-    localStorage.setItem('client_id', normalizedClientId)
-    localStorage.setItem('auth_client_id', normalizedClientId)
+    try {
+      localStorage.setItem('token', token)
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('client_id', normalizedClientId)
+      localStorage.setItem('auth_client_id', normalizedClientId)
+    } catch {
+      // ignore security error in sandboxed iframe
+    }
 
     try {
       window.dispatchEvent(new CustomEvent('auth:login'))
@@ -257,12 +267,16 @@ export function saveAuthTokens(token, clientId) {
 // Helper to clear auth tokens
 export function clearAuthTokens() {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('token')
-    localStorage.removeItem('client_id')
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_client_id')
-    localStorage.removeItem('auth_provider')
-    localStorage.removeItem('user_info')
+    try {
+      localStorage.removeItem('token')
+      localStorage.removeItem('client_id')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_client_id')
+      localStorage.removeItem('auth_provider')
+      localStorage.removeItem('user_info')
+    } catch {
+      // ignore security error in sandboxed iframe
+    }
   }
 }
 
