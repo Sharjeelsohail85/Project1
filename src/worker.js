@@ -6,7 +6,7 @@ export default {
     if (url.pathname === '/api/onedrive-config') {
       return new Response(JSON.stringify({
         clientId: env.VITE_ONEDRIVE_CLIENT_ID || 'fac31fe1-c18e-4894-aa70-6589ae18d996',
-        tenantId: env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff',
+        tenantId: env.VITE_ONEDRIVE_TENANT_ID || 'common',
         primaryDomain: env.VITE_ONEDRIVE_PRIMARY_DOMAIN || 'sharjeelsohail85gmail.onmicrosoft.com',
         name: env.VITE_ONEDRIVE_NAME || 'Default Directory',
         license: env.VITE_ONEDRIVE_LICENSE || 'Microsoft Entra ID Free'

@@ -17,9 +17,9 @@ export function getOneDriveClientId() {
 
 export function getOneDriveTenantId() {
   try {
-    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff'
+    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
   } catch {
-    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff'
+    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
   }
 }
 
@@ -40,23 +40,27 @@ export function saveOneDriveCredentials(clientId, clientSecret = '', tenantId = 
 /**
  * Connect with OneDrive using Implicit Grant OAuth Flow
  */
-export function connectOneDriveWithImplicitToken() {
+export function connectOneDriveWithImplicitToken(customClientId = '', customTenantId = '') {
   return new Promise(async (resolve, reject) => {
     if (typeof window === 'undefined') {
       reject(new Error('OneDrive connection is only available in a browser.'))
       return
     }
 
-    try {
-      const configRes = await axios.get('/api/onedrive-config').catch(() => null)
-      if (configRes && configRes.data) {
-        const { clientId, tenantId } = configRes.data
-        if (clientId) {
-          saveOneDriveCredentials(clientId, '', tenantId || 'common')
+    if (customClientId) {
+      saveOneDriveCredentials(customClientId, '', customTenantId || 'common')
+    } else {
+      try {
+        const configRes = await axios.get('/api/onedrive-config').catch(() => null)
+        if (configRes && configRes.data) {
+          const { clientId, tenantId } = configRes.data
+          if (clientId) {
+            saveOneDriveCredentials(clientId, '', tenantId || 'common')
+          }
         }
+      } catch (e) {
+        console.warn('Could not fetch server-side OneDrive config, using local fallbacks:', e)
       }
-    } catch (e) {
-      console.warn('Could not fetch server-side OneDrive config, using local fallbacks:', e)
     }
 
     const clientId = getOneDriveClientId()

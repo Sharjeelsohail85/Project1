@@ -11,7 +11,7 @@ import useVideoUploadForm from '../hooks/useVideoUploadForm'
 import LinkedAccountImport from './LinkedAccountImport'
 import { isDropboxConnected, uploadToDropboxAndGetLink } from '../services/dropboxUploadService'
 import { connectAccount, disconnectAccount, getConnectedAccounts, saveConnectedAccounts } from '../services/linkedAccountService'
-import { connectOneDriveWithImplicitToken, uploadLocalFileToOneDrive } from '../services/onedriveService'
+import { connectOneDriveWithImplicitToken, uploadLocalFileToOneDrive, getOneDriveClientId, getOneDriveTenantId } from '../services/onedriveService'
 import {
   formatBytes,
   MAX_THUMBNAIL_SIZE_BYTES,
@@ -117,6 +117,9 @@ const Upload = memo(function Upload({
   const [onedriveProgress, setOnedriveProgress] = useState(0)
   const [onedriveManualTokenState, setOnedriveManualTokenState] = useState('')
   const [showOneDriveManualInput, setShowOneDriveManualInput] = useState(false)
+  const [onedriveAccountType, setOnedriveAccountType] = useState('personal')
+  const [onedriveCustomClientId, setOnedriveCustomClientId] = useState(() => getOneDriveClientId())
+  const [onedriveCustomTenantId, setOnedriveCustomTenantId] = useState(() => getOneDriveTenantId())
 
   const getOneDriveTokenSafe = () => {
     try {
@@ -932,17 +935,112 @@ const Upload = memo(function Upload({
                       )}
                     </div>
                   ) : (
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                      <p style={{ fontSize: '0.9rem', marginBottom: '12px', opacity: 0.8 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '16px', textAlign: 'left' }}>
+                      <p style={{ fontSize: '0.9rem', marginBottom: '16px', opacity: 0.9 }}>
                         Connect your OneDrive account to upload local video files directly from your computer.
                       </p>
+
+                      {/* Advanced Connection Settings */}
+                      <div style={{ background: 'rgba(0,0,0,0.25)', padding: '14px', borderRadius: '6px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                          <span className="material-icons" style={{ fontSize: '1rem', color: '#0078d4' }}>settings</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>OneDrive OAuth Configuration</span>
+                        </div>
+
+                        {/* Account Type Selection */}
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, marginBottom: '4px' }}>Account Type</label>
+                          <select
+                            value={onedriveAccountType}
+                            onChange={(e) => {
+                              const type = e.target.value
+                              setOnedriveAccountType(type)
+                              if (type === 'personal') {
+                                setOnedriveCustomTenantId('common')
+                              } else {
+                                setOnedriveCustomTenantId('9e7c38c3-66a5-4f8d-bdca-a8d195af3fff')
+                              }
+                            }}
+                            className="input"
+                            style={{
+                              width: '100%',
+                              background: 'rgba(0,0,0,0.4)',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              padding: '6px 10px',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            <option value="personal">Personal / Consumer Account (Free OneDrive - Recommended)</option>
+                            <option value="work">Work, School or Enterprise (Needs SPO License)</option>
+                          </select>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={{ flex: '1 1 200px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, marginBottom: '4px' }}>Client ID</label>
+                            <input
+                              type="text"
+                              value={onedriveCustomClientId}
+                              onChange={(e) => setOnedriveCustomClientId(e.target.value)}
+                              placeholder="Azure App Client ID"
+                              className="input"
+                              style={{
+                                width: '100%',
+                                background: 'rgba(0,0,0,0.4)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '4px',
+                                color: '#fff',
+                                padding: '6px 10px',
+                                fontSize: '0.8rem'
+                              }}
+                            />
+                          </div>
+                          <div style={{ flex: '1 1 200px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, marginBottom: '4px' }}>Tenant ID</label>
+                            <input
+                              type="text"
+                              value={onedriveCustomTenantId}
+                              onChange={(e) => setOnedriveCustomTenantId(e.target.value)}
+                              placeholder="e.g. common, consumers, or Tenant UUID"
+                              className="input"
+                              style={{
+                                width: '100%',
+                                background: 'rgba(0,0,0,0.4)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '4px',
+                                color: '#fff',
+                                padding: '6px 10px',
+                                fontSize: '0.8rem'
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {onedriveAccountType === 'personal' && (
+                          <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(0, 120, 212, 0.1)', borderLeft: '3px solid #0078d4', borderRadius: '4px' }}>
+                            <p style={{ fontSize: '0.75rem', margin: 0, opacity: 0.95, lineHeight: 1.4 }}>
+                              💡 <strong>Personal Accounts Tip:</strong> Personal Microsoft accounts (like outlook.com) come with a free OneDrive. Ensure your Azure App Registration has <strong>"Supported account types"</strong> set to <em>"Accounts in any organizational directory and personal Microsoft accounts"</em> in the Azure portal.
+                            </p>
+                          </div>
+                        )}
+                        {onedriveAccountType === 'work' && (
+                          <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(239, 83, 80, 0.1)', borderLeft: '3px solid #ef5350', borderRadius: '4px' }}>
+                            <p style={{ fontSize: '0.75rem', margin: 0, opacity: 0.95, lineHeight: 1.4 }}>
+                              ⚠️ <strong>License Required:</strong> Your Azure Active Directory / Entra tenant <em>must</em> have an active Office 365 or SharePoint Online (SPO) subscription. Without this, Microsoft APIs will block video storage and uploads.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px', justifyContent: 'center' }}>
                         <Button
                           variant="contained"
                           onClick={async () => {
                             setSourceError('')
                             try {
-                              await connectOneDriveWithImplicitToken()
+                              await connectOneDriveWithImplicitToken(onedriveCustomClientId, onedriveCustomTenantId)
                               setOnedriveConnected(true)
                             } catch (err) {
                               setSourceError(err.message || 'Failed to connect OneDrive.')
