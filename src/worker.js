@@ -2,6 +2,24 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
+    // Serve dynamic OneDrive and Azure configuration
+    if (url.pathname === '/api/onedrive-config') {
+      return new Response(JSON.stringify({
+        clientId: env.VITE_ONEDRIVE_CLIENT_ID || 'fac31fe1-c18e-4894-aa70-6589ae18d996',
+        tenantId: env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff',
+        primaryDomain: env.VITE_ONEDRIVE_PRIMARY_DOMAIN || 'sharjeelsohail85gmail.onmicrosoft.com',
+        name: env.VITE_ONEDRIVE_NAME || 'Default Directory',
+        license: env.VITE_ONEDRIVE_LICENSE || 'Microsoft Entra ID Free'
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': '*'
+        }
+      });
+    }
+
     // Intercept MEGA API/upload requests to proxy them and add CORS headers
     if (url.pathname.startsWith('/api/mega-proxy')) {
       // CORS preflight

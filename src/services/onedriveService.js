@@ -5,7 +5,7 @@ import axios from 'axios'
  * Handles OAuth, browsing, chunked session-based uploads, and direct stream URL retrieval.
  */
 
-const ONEDRIVE_DEFAULT_CLIENT_ID = '86f4a867-b50a-40a2-9903-a4a350a4d1f2' // Fallback Client ID
+const ONEDRIVE_DEFAULT_CLIENT_ID = 'fac31fe1-c18e-4894-aa70-6589ae18d996' // Fallback Client ID
 
 export function getOneDriveClientId() {
   try {
@@ -17,9 +17,9 @@ export function getOneDriveClientId() {
 
 export function getOneDriveTenantId() {
   try {
-    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
+    return localStorage.getItem('custom_onedrive_tenant_id') || import.meta.env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff'
   } catch {
-    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || 'common'
+    return import.meta.env.VITE_ONEDRIVE_TENANT_ID || '9e7c38c3-66a5-4f8d-bdca-a8d195af3fff'
   }
 }
 
@@ -41,10 +41,22 @@ export function saveOneDriveCredentials(clientId, clientSecret = '', tenantId = 
  * Connect with OneDrive using Implicit Grant OAuth Flow
  */
 export function connectOneDriveWithImplicitToken() {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     if (typeof window === 'undefined') {
       reject(new Error('OneDrive connection is only available in a browser.'))
       return
+    }
+
+    try {
+      const configRes = await axios.get('/api/onedrive-config').catch(() => null)
+      if (configRes && configRes.data) {
+        const { clientId, tenantId } = configRes.data
+        if (clientId) {
+          saveOneDriveCredentials(clientId, '', tenantId || 'common')
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch server-side OneDrive config, using local fallbacks:', e)
     }
 
     const clientId = getOneDriveClientId()
