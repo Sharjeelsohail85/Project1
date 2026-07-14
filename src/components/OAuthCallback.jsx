@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { Cloud, Lock, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { Storage } from 'megajs'
 
 export default function OAuthCallback() {
   const { provider } = useParams()
@@ -60,41 +61,58 @@ export default function OAuthCallback() {
 
     setStatus('loading')
 
-    // Simulate high-fidelity authentication with MEGA servers
-    setTimeout(() => {
-      const generatedToken = `mega_token_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
-      setStatus('success')
+    try {
+      const storage = new Storage({ email, password }, (err) => {
+        if (err) {
+          console.error('MEGA authentication error callback:', err)
+          setError(String(err.message || err || 'Failed to authenticate with MEGA. Please verify your email and password.'))
+          setStatus('idle')
+        } else {
+          try {
+            const session = storage.exportSession()
+            setStatus('success')
 
-      const successUrl = `${window.location.origin}/auth/mega/callback#access_token=${generatedToken}&email=${encodeURIComponent(email)}`
+            const successUrl = `${window.location.origin}/auth/mega/callback#access_token=${session}&email=${encodeURIComponent(email)}`
 
-      // 1. Post message to opener window
-      if (window.opener) {
-        try {
-          window.opener.postMessage(
-            {
-              type: 'oauth-callback',
-              provider: 'mega',
-              url: successUrl,
-            },
-            window.location.origin
-          )
-        } catch (err) {
-          console.error('Failed to postMessage:', err)
+            // 1. Post message to opener window
+            if (window.opener) {
+              try {
+                window.opener.postMessage(
+                  {
+                    type: 'oauth-callback',
+                    provider: 'mega',
+                    url: successUrl,
+                  },
+                  window.location.origin
+                )
+              } catch (postErr) {
+                console.error('Failed to postMessage:', postErr)
+              }
+            }
+
+            // 2. Also set location hash so polling interval can catch it as a fallback
+            window.location.hash = `access_token=${session}&email=${encodeURIComponent(email)}`
+
+            // 3. Close window after a short delay
+            setTimeout(() => {
+              try {
+                window.close()
+              } catch (closeErr) {
+                // Ignore
+              }
+            }, 800)
+          } catch (exportErr) {
+            console.error('Failed to export MEGA session:', exportErr)
+            setError('Failed to export secure session from MEGA. Please try again.')
+            setStatus('idle')
+          }
         }
-      }
-
-      // 2. Also set location hash so polling interval can catch it as a fallback
-      window.location.hash = `access_token=${generatedToken}&email=${encodeURIComponent(email)}`
-
-      // 3. Close window after a short delay
-      setTimeout(() => {
-        try {
-          window.close()
-        } catch (closeErr) {
-          // Ignore
-        }
-      }, 800)
-    }, 1500)
+      })
+    } catch (constructErr) {
+      console.error('Failed to construct MEGA Storage:', constructErr)
+      setError(String(constructErr.message || 'Failed to initialize connection to MEGA.'))
+      setStatus('idle')
+    }
   }
 
   if (isMega) {
