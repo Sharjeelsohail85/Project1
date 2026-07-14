@@ -81,6 +81,10 @@ const Content = memo(function Content({
     }
   }, [loginActive])
   
+  // If we are on an OAuth callback path, do not render any main page contents/overlays
+  if (currentPath && currentPath.startsWith('/auth/')) {
+    return null
+  }
 
   return (
       <main

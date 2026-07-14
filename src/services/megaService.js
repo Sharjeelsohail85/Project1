@@ -34,10 +34,9 @@ export function connectMegaWithImplicitToken() {
     }
 
     const state = Math.random().toString(36).slice(2) + Date.now().toString(36)
-    const token = `mega_token_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
     
-    // Open standard OAuth Callback URL directly to simulate authorization popup and utilize postMessage handler
-    const redirectUri = `${window.location.origin}/auth/mega/callback#access_token=${token}&state=${state}`
+    // Open standard OAuth Callback URL directly to render the MEGA login form card
+    const redirectUri = `${window.location.origin}/auth/mega/callback`
     
     const width = 560
     const height = 720
@@ -60,6 +59,7 @@ export function connectMegaWithImplicitToken() {
       const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''))
       const search = new URLSearchParams(parsed.search)
       const accessToken = String(hash.get('access_token') || search.get('access_token') || '').trim()
+      const email = String(hash.get('email') || search.get('email') || 'mega.user@connected.local').trim()
 
       if (!accessToken) {
         throw new Error('MEGA did not return an access token.')
@@ -69,7 +69,7 @@ export function connectMegaWithImplicitToken() {
         uuid: `mega-${Date.now()}`,
         first_name: 'MEGA',
         last_name: 'Cloud Storage',
-        email: 'mega.user@connected.local',
+        email: email,
         registration_type: 'mega',
         active: 1,
         mega_access_token: accessToken,
@@ -118,7 +118,8 @@ export function connectMegaWithImplicitToken() {
         return
       }
 
-      if (href && (href.includes('/auth/mega/callback') || href.includes('access_token='))) {
+      // Polling should ONLY proceed when the URL actually contains the access_token after form submission!
+      if (href && href.includes('access_token=')) {
         try {
           finish(href)
           cleanup()
@@ -142,7 +143,7 @@ export async function fetchVideosFromMega(accessToken) {
   }
 
   // High-quality mock list of videos on the user's MEGA account for direct import/migration
-  const videos = [
+  const defaultVideos = [
     {
       id: 'mega-video-1',
       title: 'MEGA Cloud Storage Tutorial.mp4',
@@ -169,6 +170,18 @@ export async function fetchVideosFromMega(accessToken) {
     },
   ]
 
+  let uploadedVideos = []
+  try {
+    const raw = localStorage.getItem('mega_uploaded_videos')
+    if (raw) {
+      uploadedVideos = JSON.parse(raw)
+    }
+  } catch (e) {
+    console.error('Error loading uploaded MEGA videos:', e)
+  }
+
+  const videos = [...uploadedVideos, ...defaultVideos]
+
   return {
     videos,
     total: videos.length,
@@ -184,6 +197,20 @@ export async function fetchVideosFromMega(accessToken) {
 export async function resolveMegaStreamLink(itemId, accessToken) {
   if (!itemId || !accessToken) {
     throw new Error('MEGA item ID and access token are required.')
+  }
+
+  // Check if it matches an uploaded video
+  try {
+    const raw = localStorage.getItem('mega_uploaded_videos')
+    if (raw) {
+      const uploadedVideos = JSON.parse(raw)
+      const found = uploadedVideos.find(v => v.id === itemId)
+      if (found) {
+        return found.url
+      }
+    }
+  } catch (e) {
+    // ignore
   }
 
   // Returns a working streaming sample video so the watch player works beautifully
@@ -208,12 +235,30 @@ export async function uploadLocalFileToMega({ file, accessToken, onProgress }) {
     }
   }
 
-  return {
+  const newVideo = {
     id: `mega-file-${Date.now()}`,
-    name: file.name || `mega-upload-${Date.now()}.mp4`,
+    title: file.name || `mega-upload-${Date.now()}.mp4`,
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     size: file.size,
+    duration: 'Video',
+    publishedAt: new Date().toISOString().split('T')[0],
+  }
+
+  try {
+    const raw = localStorage.getItem('mega_uploaded_videos')
+    const currentList = raw ? JSON.parse(raw) : []
+    currentList.unshift(newVideo)
+    localStorage.setItem('mega_uploaded_videos', JSON.stringify(currentList))
+  } catch (e) {
+    console.error('Error saving uploaded MEGA video:', e)
+  }
+
+  return {
+    id: newVideo.id,
+    name: newVideo.title,
+    size: newVideo.size,
     mimeType: file.type || 'video/mp4',
-    downloadUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    downloadUrl: newVideo.url,
   }
 }
 
