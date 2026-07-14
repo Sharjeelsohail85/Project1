@@ -388,12 +388,60 @@
 
 /* Responsive Styles */
 @media only screen and (max-width: 800px) {
+	.browserNav {
+		overflow-x: auto !important;
+		-webkit-overflow-scrolling: touch !important;
+		white-space: nowrap !important;
+		display: flex !important;
+		justify-content: flex-start !important;
+		padding: 6px 12px !important;
+		height: 52px !important;
+		align-items: center !important;
+		box-sizing: border-box !important;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+	}
+	.browserNav::-webkit-scrollbar {
+		display: none !important;
+	}
+	.browserNavFuck {
+		display: flex !important;
+		width: max-content !important;
+		height: auto !important;
+		align-items: center !important;
+	}
 	.browserNavItem {
-		display: block;
-		width: 100%;
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		width: auto !important;
+		padding: 6px 16px !important;
+		margin: 0 6px !important;
+		flex-shrink: 0 !important;
+		height: 36px !important;
+		border-radius: 18px !important;
+		background: rgba(255, 255, 255, 0.12) !important;
+		border: none !important;
+		color: #ffffff !important;
+		font-size: 13px !important;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+	}
+	.browserNavItem.active {
+		background: #ffffff !important;
+		color: var(--theme-color) !important;
+		font-weight: 600 !important;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+	}
+	.browserNavItem:hover {
+		border: none !important;
+		background: rgba(255, 255, 255, 0.25) !important;
+	}
+	.browserNavItem .materialIcons {
+		margin-right: 6px !important;
+		font-size: 18px !important;
+		top: 0 !important;
 	}
 	.browserContentPage {
-		margin-top: 230px;
+		margin-top: 60px !important;
 	}
 }
 

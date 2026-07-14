@@ -93,17 +93,11 @@
 	min-width: 32px;
 }
 
-@media only screen and (max-width: 430px) {
+@media only screen and (max-width: 768px) {
 	.slideout {
-		top: 100px;
+		top: 60px !important;
 	}
 	.slideoutBottom {
-		bottom: 108px;
-	}
-}
-
-@media only screen and (max-width: 370px) {
-	.slideout {
-		top: 100px;
+		bottom: 60px !important;
 	}
 }

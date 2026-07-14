@@ -158,8 +158,47 @@
 	display: none !important;
 }
 
+/* Modern responsive mobile titlebar */
+@media only screen and (max-width: 768px) {
+	.titlebar {
+		height: 60px !important;
+	}
+	.titlebarBox {
+		margin-left: 8px !important;
+		margin-right: 8px !important;
+	}
+	/* Hide text labels for icon-only compact layout */
+	.titlebarItem span {
+		display: none !important;
+	}
+	.titlebarItem.button,
+	.titlebarItem .button {
+		width: 48px !important;
+		min-width: 48px !important;
+		padding: 0 !important;
+		height: 48px !important;
+		display: inline-flex !important;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50% !important;
+	}
+	.titlebarItem .materialIcons {
+		top: 0 !important;
+		margin: 0 !important;
+	}
+	/* Hide the auth buttons in titlebar; users access via hamburger slideout */
+	.titlebarBox div[role="group"] {
+		display: none !important;
+	}
+	/* Center adjustments */
+	.titlebarCenter {
+		left: 50% !important;
+		transform: translateX(-50%) !important;
+	}
+}
+
 @media only screen and (max-width: 430px) {
 	.titlebar {
-		height: 100px;
+		height: 60px !important;
 	}
 }
