@@ -613,6 +613,29 @@ export function useVideoMigration() {
     }))
 
     try {
+      if (provider === 'onedrive') {
+        const onedriveToken = getOneDriveAccessTokenSafe()
+        if (onedriveToken) {
+          try {
+            const axios = (await import('axios')).default
+            await axios.get('https://graph.microsoft.com/v1.0/me', {
+              headers: { Authorization: `Bearer ${onedriveToken}` }
+            })
+          } catch (checkErr) {
+            const checkErrMsg = String(checkErr?.response?.data?.error?.message || checkErr?.message || '')
+            if (checkErr?.response?.status === 401 || checkErrMsg.includes('expired') || checkErrMsg.includes('validation failed') || checkErrMsg.includes('Unauthorized')) {
+              console.warn('OneDrive token expired during pre-check. Requesting re-auth...')
+              try {
+                const { connectOneDriveWithImplicitToken } = await import('../services/onedriveService')
+                await connectOneDriveWithImplicitToken()
+              } catch (authErr) {
+                throw new Error('OneDrive login expired. Please reconnect OneDrive and try again.')
+              }
+            }
+          }
+        }
+      }
+
       const authParams = requireMigrationAuthParams()
 
       if (sourceType === 'local') {

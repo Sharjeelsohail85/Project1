@@ -242,6 +242,21 @@ export async function fetchVideosFromOneDrive(accessToken) {
   } catch (error) {
     console.error('Failed to fetch videos from OneDrive API:', error?.response?.data || error?.message)
     const errMsg = String(error?.response?.data?.error?.message || error?.message || '')
+    const isExpired = error?.response?.status === 401 || errMsg.includes('expired') || errMsg.includes('validation failed') || errMsg.includes('Unauthorized')
+    
+    if (isExpired && typeof window !== 'undefined') {
+      try {
+        console.warn('OneDrive access token expired. Prompting user to reconnect...')
+        const user = await connectOneDriveWithImplicitToken()
+        if (user?.onedrive_access_token) {
+          // Retry fetching with the new token!
+          return await fetchVideosFromOneDrive(user.onedrive_access_token)
+        }
+      } catch (authErr) {
+        console.error('Failed to automatically reconnect OneDrive:', authErr)
+      }
+    }
+
     if (errMsg.includes('SPO') || errMsg.includes('license') || errMsg.includes('Tenant does not have a SPO license')) {
       return {
         videos: [],
@@ -279,6 +294,22 @@ export async function resolveOneDriveStreamLink(itemId, accessToken) {
     return downloadUrl
   } catch (error) {
     console.error('Failed to resolve OneDrive downloadUrl:', error?.response?.data || error?.message)
+    const errMsg = String(error?.response?.data?.error?.message || error?.message || '')
+    const isExpired = error?.response?.status === 401 || errMsg.includes('expired') || errMsg.includes('validation failed') || errMsg.includes('Unauthorized')
+    
+    if (isExpired && typeof window !== 'undefined') {
+      try {
+        console.warn('OneDrive access token expired. Prompting user to reconnect...')
+        const user = await connectOneDriveWithImplicitToken()
+        if (user?.onedrive_access_token) {
+          // Retry with new token!
+          return await resolveOneDriveStreamLink(itemId, user.onedrive_access_token)
+        }
+      } catch (authErr) {
+        console.error('Failed to automatically reconnect OneDrive:', authErr)
+      }
+    }
+
     throw new Error('Failed to resolve streaming URL from Microsoft OneDrive.')
   }
 }
@@ -365,6 +396,22 @@ export async function uploadLocalFileToOneDrive({ file, accessToken, onProgress 
     }
   } catch (error) {
     console.error('Failed to upload file to OneDrive:', error?.response?.data || error?.message)
+    const errMsg = String(error?.response?.data?.error?.message || error?.message || '')
+    const isExpired = error?.response?.status === 401 || errMsg.includes('expired') || errMsg.includes('validation failed') || errMsg.includes('Unauthorized')
+    
+    if (isExpired && typeof window !== 'undefined') {
+      try {
+        console.warn('OneDrive access token expired. Prompting user to reconnect...')
+        const user = await connectOneDriveWithImplicitToken()
+        if (user?.onedrive_access_token) {
+          // Retry with new token!
+          return await uploadLocalFileToOneDrive({ file, accessToken: user.onedrive_access_token, onProgress })
+        }
+      } catch (authErr) {
+        console.error('Failed to automatically reconnect OneDrive:', authErr)
+      }
+    }
+
     throw new Error(error?.response?.data?.error?.message || 'Unable to upload video file to OneDrive.')
   }
 }
