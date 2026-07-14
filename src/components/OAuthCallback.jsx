@@ -62,7 +62,20 @@ export default function OAuthCallback() {
     setStatus('loading')
 
     try {
-      const storage = new Storage({ email, password }, (err) => {
+      const storage = new Storage({
+        email,
+        password,
+        gateway: `${window.location.origin}/api/mega-proxy/`,
+        fetch: async (url, opts) => {
+          let targetUrl = url;
+          if (typeof url === 'string') {
+            if (!url.startsWith(window.location.origin) && !url.startsWith('/')) {
+              targetUrl = `${window.location.origin}/api/mega-proxy?url=${encodeURIComponent(url)}`;
+            }
+          }
+          return fetch(targetUrl, opts);
+        }
+      }, (err) => {
         if (err) {
           console.error('MEGA authentication error callback:', err)
           setError(String(err.message || err || 'Failed to authenticate with MEGA. Please verify your email and password.'))

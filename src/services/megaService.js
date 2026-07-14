@@ -139,7 +139,19 @@ export function connectMegaWithImplicitToken() {
 export function loginToMegaWithSession(sessionStr) {
   return new Promise((resolve, reject) => {
     try {
-      const storage = new Storage({ session: sessionStr }, (err) => {
+      const storage = new Storage({
+        session: sessionStr,
+        gateway: `${window.location.origin}/api/mega-proxy/`,
+        fetch: async (url, opts) => {
+          let targetUrl = url;
+          if (typeof url === 'string') {
+            if (!url.startsWith(window.location.origin) && !url.startsWith('/')) {
+              targetUrl = `${window.location.origin}/api/mega-proxy?url=${encodeURIComponent(url)}`;
+            }
+          }
+          return fetch(targetUrl, opts);
+        }
+      }, (err) => {
         if (err) {
           reject(err)
         } else {
