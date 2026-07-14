@@ -1,0 +1,323 @@
+/* ============================================
+   BUTTON COMPONENT STYLES
+   ============================================ */
+
+/* Standard Button */
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 40px;
+	background: var(--theme-gradient);
+	color: var(--theme-on-color) !important;
+	padding: 0 24px;
+	border-radius: 999px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	line-height: 1;
+	min-width: 64px;
+	font-size: 14px;
+	font-weight: 500 !important;
+	margin: 8px 2px;
+	text-align: center;
+	text-transform: uppercase;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	box-shadow: var(--elevation-2);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	gap: 8px;
+}
+
+.button:hover {
+	background: var(--theme-gradient-hover);
+	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+	transform: translateY(-2px) scale(1.02);
+}
+
+.button .materialIcons,
+.buttonFlat .materialIcons,
+.buttonFlat .zmdi {
+	display: inline-block !important;
+	position: relative !important;
+	font-size: 16px !important;
+	margin-right: 6px;
+	top: 3px !important;
+}
+
+.button.hidden,
+.input.hidden {
+	opacity: 0 !important;
+	transform: translateY(10px);
+	pointer-events: none !important;
+}
+
+/* Flat Button */
+.buttonFlat {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 36px;
+	color: var(--theme-on-color);
+	padding: 0 16px;
+	border-radius: 999px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	line-height: 1;
+	min-width: 64px;
+	font-size: 14px;
+	font-weight: 500 !important;
+	margin: 8px 2px;
+	text-align: center;
+	text-transform: uppercase;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	box-shadow: none;
+	background: rgba(255, 255, 255, 0.12);
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	gap: 8px;
+}
+
+.buttonFlat:hover {
+	background: rgba(255, 255, 255, 0.18);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	transform: translateY(-1px);
+}
+
+/* Floating Button */
+.buttonFloat {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	box-shadow: var(--elevation-2);
+	background: var(--theme-gradient);
+	color: var(--theme-on-color);
+	text-align: center;
+	padding: 16px;
+	line-height: 1;
+	cursor: default;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	z-index: 5;
+	opacity: 0;
+	-webkit-transform: scale(0.8);
+	transform: scale(0.8);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.buttonFloat.active {
+	opacity: 1;
+	transform: scale(1);
+	cursor: pointer;
+}
+
+.buttonFloat:hover {
+	background: var(--theme-gradient-hover);
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3), 0 6px 12px rgba(0, 0, 0, 0.2);
+	-webkit-transform: translateY(-4px) scale(1.1);
+	transform: translateY(-4px) scale(1.1);
+}
+
+.buttonFloat .materialIcons,
+.buttonFloat .zmdi {
+	display: inline-block !important;
+	position: relative !important;
+	font-size: 24px !important;
+	top: 3px !important;
+}
+
+/* Float Button Caption */
+.buttonFloatCaption {
+	position: relative;
+	display: inline-block;
+	top: -44px;
+	left: -95px;
+	font-weight: 500;
+	font-size: 15px;
+	text-align: right;
+	padding: 5px;
+	width: auto;
+	line-height: 20px;
+	padding-right: 10px;
+	opacity: 0;
+	text-overflow: ellipsis;
+	max-width: 200px;
+	overflow: hidden;
+	color: #fafafa;
+	-webkit-transition: translate 0.15s ease-in-out opacity 0.33s ease-in-out;
+	transition: translate 0.15s ease-in-out opacity 0.33s ease-in-out;
+}
+
+.buttonFloat:hover .buttonFloatCaption {
+	opacity: 1;
+}
+
+/* Float Button Label */
+.buttonFloatLabel {
+	color: #fafafa;
+	display: block;
+	font-weight: 500;
+	padding: 2px;
+	height: 34px;
+	line-height: 34px;
+	overflow: hidden;
+	font-size: 12px;
+	text-transform: capitalize;
+	text-align: center;
+	position: absolute;
+	top: 8px;
+	opacity: 0;
+	left: 50%;
+	user-select: none;
+	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+	transition-delay: 0.3s;
+	pointer-events: none;
+	width: 0;
+	padding: 0;
+}
+
+.buttonFloat:hover .buttonFloatLabel {
+	opacity: 1;
+	width: auto;
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.buttonFloatLabel.top {
+	transform: translate(-50%, -110%);
+}
+
+.buttonFloat:hover .buttonFloatLabel.top {
+	transform: translate(-50%, -120%);
+}
+
+.buttonFloatLabel.bottom {
+	transform: translate(-50%, 110%);
+}
+
+.buttonFloat:hover .buttonFloatLabel.bottom {
+	transform: translate(-50%, 120%);
+}
+
+/* Social Buttons */
+.buttonManual.active {}
+
+.buttonGoogle {
+	background: #dd4b39;
+}
+
+.buttonGoogle:hover {
+	background: #ed5b49;
+}
+
+.buttonDropbox {
+	background: #007ee5;
+}
+
+.buttonDropbox:hover {
+	background: #108ef6;
+}
+
+.buttonFacebook {
+	background: #3b5998;
+}
+
+.buttonFacebook:hover {
+	background: #4b69a8;
+}
+
+/* Toggle Button */
+.buttonToggleParent {
+	display: block;
+	margin-top: 5px;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	white-space: nowrap;
+	overflow: hidden;
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 25px;
+	padding-top: 2px;
+}
+
+.buttonToggleLabel {
+	display: block;
+	-webkit-transform: translateY(-1px);
+	transform: translateY(-1px);
+	cursor: default;
+	position: absolute;
+	text-align: left;
+	left: 0;
+}
+
+.buttonToggleParent input:empty {
+	opacity: 0;
+	cursor: default;
+	width: 0;
+	height: 0;
+}
+
+.buttonToggleParent input:empty~label {
+	position: relative;
+	float: right;
+	width: 40px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.buttonToggleParent input:empty~label:before,
+.buttonToggleParent input:empty~label:after {
+	position: absolute;
+	display: block;
+	content: '';
+	transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.buttonToggleParent input:empty~label:before {
+	top: 3px;
+	left: 0px;
+	width: 32px;
+	height: 13px;
+	border-radius: 12px;
+	background-color: #bdbdbd;
+}
+
+.buttonToggleParent input:empty~label:after {
+	top: -1px;
+	left: -9px;
+	width: 1.4em;
+	height: 8px;
+	bottom: 0.1em;
+	margin-left: 0.1em;
+	background-color: #fff;
+	border-radius: 50%;
+	width: 17px;
+	height: 17px;
+	border-radius: 50%;
+	border: solid 2px;
+	border-color: #fff;
+	box-shadow: 0 3px 4px 0 rgba(0, 0, 0, 0.14), 0 3px 3px -2px rgba(0, 0, 0, 0.2), 0 1px 8px 0 rgba(0, 0, 0, 0.12);
+}
+
+.buttonToggleParent input:checked~label:before {
+	background-color: #512DA8;
+}
+
+.buttonToggleParent input:checked~label:after {
+	left: 15px;
+	background-color: #673AB7;
+	border-color: #673AB7;
+}

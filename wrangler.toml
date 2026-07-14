@@ -1,0 +1,12 @@
+name = "project1-video-app"
+main = "src/worker.js"
+compatibility_date = "2024-04-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[vars]
+VITE_ONEDRIVE_CLIENT_ID = "fac31fe1-c18e-4894-aa70-6589ae18d996"
+VITE_ONEDRIVE_TENANT_ID = "9e7c38c3-66a5-4f8d-bdca-a8d195af3fff"
+
