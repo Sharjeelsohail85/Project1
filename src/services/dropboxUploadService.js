@@ -78,33 +78,22 @@ export async function refreshDropboxAccessToken() {
     return null
   }
 
-  // Get client ID and client secret
+  // SECURITY WARNING: Client secrets should never be stored in frontend
   let clientId = 'dcuykx3y074l3er' // default
-  let clientSecret = ''
+  // REMOVED: Reading client secret from localStorage is a critical security vulnerability
+  // In production, token refresh must be done on the backend
   
-  try {
-    const customId = localStorage.getItem('custom_dropbox_client_id')
-    const customSecret = localStorage.getItem('custom_dropbox_client_secret')
-    if (customId && customId.trim()) {
-      clientId = customId.trim()
-    }
-    if (customSecret && customSecret.trim()) {
-      clientSecret = customSecret.trim()
-    }
-  } catch {
-    // ignore
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  if (isDev) {
+    console.log('Attempting to refresh Dropbox access token (DEV MODE)...', { clientId })
   }
-
-  console.log('Attempting to refresh Dropbox access token...', { clientId, hasSecret: Boolean(clientSecret) })
 
   try {
     const params = new URLSearchParams()
     params.append('grant_type', 'refresh_token')
     params.append('refresh_token', refreshToken)
     params.append('client_id', clientId)
-    if (clientSecret) {
-      params.append('client_secret', clientSecret)
-    }
+    // REMOVED: Never send client_secret from frontend in production
 
     const tokenUrl = 'https://api.dropboxapi.com/oauth2/token'
     const response = await axios.post(tokenUrl, params, {
@@ -150,10 +139,14 @@ export async function refreshDropboxAccessToken() {
       console.error('Failed to save refreshed accounts to localStorage:', err)
     }
 
-    console.log('Successfully refreshed Dropbox access token.')
+    if (isDev) {
+      console.log('Successfully refreshed Dropbox access token.')
+    }
     return newAccessToken
   } catch (refreshError) {
-    console.error('Failed to refresh Dropbox access token:', refreshError?.response?.data || refreshError?.message)
+    if (isDev) {
+      console.error('Failed to refresh Dropbox access token:', refreshError?.message)
+    }
     throw refreshError
   }
 }

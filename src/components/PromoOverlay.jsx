@@ -1,4 +1,5 @@
 import { memo, useRef, useEffect } from 'react'
+import DOMPurify from 'dompurify'
 
 const PROMO_SLIDES = [
   {
@@ -87,7 +88,7 @@ const PromoOverlay = memo(function PromoOverlay({
           >
             <p
               className="promoverlay-desc"
-              dangerouslySetInnerHTML={{ __html: slide.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(slide.content) }}
             />
           </div>
         ))}

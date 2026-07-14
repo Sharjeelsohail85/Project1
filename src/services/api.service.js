@@ -1,7 +1,7 @@
 // API Service for Laravel Backend Integration
 // Handles all HTTP requests to the backend API
 
-import { API_CONFIG, getAuthTokens, saveAuthTokens, clearAuthTokens, buildAuthUrl } from '../config/api.config'
+import { API_CONFIG, getAuthTokens, saveAuthTokens, clearAuthTokens, buildAuthUrl, buildAuthHeaders } from '../config/api.config'
 
 function canUseWindow() {
   return typeof window !== 'undefined'
@@ -38,17 +38,15 @@ function normalizeEndpoint(endpoint) {
 
 function buildRequestUrl(endpoint) {
   const normalizedEndpoint = normalizeEndpoint(endpoint)
-  const { token, client_id } = getAuthTokens()
-  const authEndpoint = token && client_id ? buildAuthUrl(normalizedEndpoint) : normalizedEndpoint
 
   // Some legacy endpoint constants already include the API version prefix.
   // Avoid producing duplicated URLs like /api/v1/api/v1/auth/oauth/callback,
   // because the Worker treats those as generic fallback responses.
-  if (authEndpoint.startsWith('/api/v1/')) {
-    return authEndpoint
+  if (normalizedEndpoint.startsWith('/api/v1/')) {
+    return normalizedEndpoint
   }
 
-  return `${API_CONFIG.baseURL}${authEndpoint}`
+  return `${API_CONFIG.baseURL}${normalizedEndpoint}`
 }
 
 function setStorageItemSafe(key, value) {
@@ -191,14 +189,15 @@ export async function apiRequest(endpoint, options = {}) {
 
   const fullUrl = buildRequestUrl(endpoint)
   
+  // Build secure auth headers instead of URL parameters
+  const authHeaders = buildAuthHeaders(options.headers)
+  
   const config = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      ...(token && { 'token': token }),
-      ...(client_id && { 'client_id': client_id }),
-      ...options.headers,
+      ...authHeaders,
     },
   }
 
@@ -207,8 +206,14 @@ export async function apiRequest(endpoint, options = {}) {
   const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
 
   try {
-    console.log(`[API Request] ${config.method || 'GET'} ${fullUrl}`)
-    console.log(`[API Request] Headers:`, config.headers)
+    const isDev = canUseWindow() && window.location.hostname === 'localhost'
+    if (isDev) {
+      console.log(`[API Request] ${config.method || 'GET'} ${fullUrl}`)
+      const safeHeaders = { ...config.headers }
+      if (safeHeaders.token) safeHeaders.token = '[REDACTED]'
+      if (safeHeaders.client_id) safeHeaders.client_id = '[REDACTED]'
+      console.log(`[API Request] Headers:`, safeHeaders)
+    }
     
     const response = await fetch(fullUrl, {
       ...config,
@@ -220,7 +225,9 @@ export async function apiRequest(endpoint, options = {}) {
     // Handle JSON + resilient fallback for text/plain JSON responses
     const contentType = String(response.headers.get('content-type') || '')
     const isJsonResponse = contentType.includes('application/json') || contentType.includes('+json')
-    console.log(`[API Response] Status: ${response.status}, Content-Type: ${contentType}`)
+    if (isDev) {
+      console.log(`[API Response] Status: ${response.status}, Content-Type: ${contentType}`)
+    }
 
     let data = null
     let responseText = ''
@@ -257,7 +264,15 @@ export async function apiRequest(endpoint, options = {}) {
 
     data = normalizeFallbackApiResponse(data)
 
-    console.log(`[API Response] Data:`, data)
+    if (isDev) {
+      const safeData = JSON.parse(JSON.stringify(data), (key, value) => {
+        if (typeof value === 'string' && (key.toLowerCase().includes('token') || key.toLowerCase().includes('secret'))) {
+          return '[REDACTED]'
+        }
+        return value
+      })
+      console.log(`[API Response] Data:`, safeData)
+    }
     
     // Handle authentication errors only when we have an active session.
     // This prevents guest/public flows (like onboarding tags) from being

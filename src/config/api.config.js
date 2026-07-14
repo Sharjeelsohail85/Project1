@@ -266,8 +266,24 @@ export function clearAuthTokens() {
   }
 }
 
-// Helper to build authenticated request URL
+// Helper to build authenticated request headers
+export function buildAuthHeaders(customHeaders = {}) {
+  const { token, client_id } = getAuthTokens()
+  const headers = { ...customHeaders }
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  if (client_id) {
+    headers['X-Client-ID'] = client_id
+  }
+  
+  return headers
+}
+
+// Deprecated: Use buildAuthHeaders instead - tokens in URLs are insecure
 export function buildAuthUrl(endpoint) {
+  console.warn('[DEPRECATED] buildAuthUrl is deprecated. Use buildAuthHeaders for secure authentication.')
   const { token, client_id } = getAuthTokens()
   if (!token || !client_id) return endpoint
   

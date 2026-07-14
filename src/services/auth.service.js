@@ -307,24 +307,17 @@ export async function handleOAuthCallback(provider, params) {
     throw new Error('Invalid state parameter. Possible CSRF attack.')
   }
 
-  // Exchange code for tokens via Laravel backend API
+  // SECURITY WARNING: Dropbox OAuth token exchange should be done on backend only.
+  // Client secrets must NEVER be exposed in frontend code.
+  // This implementation uses PKCE-like flow but still requires backend for production use.
   if (provider === 'dropbox') {
     try {
+      // CRITICAL: Client secret should come from backend only, not localStorage
+      // In production, this entire block should call your backend endpoint instead
       let clientId = 'dcuykx3y074l3er' // default
-      let clientSecret = ''
-      try {
-        const customId = localStorage.getItem('custom_dropbox_client_id')
-        const customSecret = localStorage.getItem('custom_dropbox_client_secret')
-        if (customId && customId.trim()) {
-          clientId = customId.trim()
-        }
-        if (customSecret && customSecret.trim()) {
-          clientSecret = customSecret.trim()
-        }
-      } catch {
-        // ignore
-      }
-
+      // REMOVED: Reading client secret from localStorage is a critical security vulnerability
+      // const customSecret = localStorage.getItem('custom_dropbox_client_secret')
+      
       const redirectUri = getOAuthRedirectUri(provider)
 
       const params = new URLSearchParams()
@@ -332,11 +325,15 @@ export async function handleOAuthCallback(provider, params) {
       params.append('grant_type', 'authorization_code')
       params.append('redirect_uri', redirectUri)
       params.append('client_id', clientId)
-      if (clientSecret) {
-        params.append('client_secret', clientSecret)
-      }
+      // REMOVED: Never send client_secret from frontend
+      // if (clientSecret) {
+      //   params.append('client_secret', clientSecret)
+      // }
 
-      console.log('Exchanging Dropbox auth code on frontend...', { clientId, redirectUri, hasSecret: Boolean(clientSecret) })
+      const isDev = canUseWindow() && window.location.hostname === 'localhost'
+      if (isDev) {
+        console.log('Exchanging Dropbox auth code (DEV MODE)...', { clientId, redirectUri })
+      }
 
       const tokenResponse = await axios.post('https://api.dropboxapi.com/oauth2/token', params, {
         headers: {
@@ -390,7 +387,10 @@ export async function handleOAuthCallback(provider, params) {
 
       return user
     } catch (err) {
-      console.error('Dropbox frontend exchange failed:', err?.response?.data || err?.message)
+      const isDev = canUseWindow() && window.location.hostname === 'localhost'
+      if (isDev) {
+        console.error('Dropbox frontend exchange failed:', err?.message)
+      }
       throw new Error(`Failed to complete Dropbox authentication: ${err?.response?.data?.error_description || err?.message}`)
     }
   }
