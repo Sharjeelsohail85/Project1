@@ -157,23 +157,6 @@ const MigratePostPage = memo(function MigratePostPage() {
     }
   })
 
-  const [showOneDriveTokenInput, setShowOneDriveTokenInput] = useState(false)
-  const [onedriveTokenValue, setOneDriveTokenValue] = useState('')
-  const [onedriveSubTab, setOneDriveSubTab] = useState('token') // 'token' or 'oauth'
-  const [customOneDriveClientId, setCustomOneDriveClientId] = useState(() => {
-    try {
-      return localStorage.getItem('custom_onedrive_client_id') || ''
-    } catch {
-      return ''
-    }
-  })
-  const [customOneDriveTenantId, setCustomOneDriveTenantId] = useState(() => {
-    try {
-      return localStorage.getItem('custom_onedrive_tenant_id') || 'common'
-    } catch {
-      return 'common'
-    }
-  })
   const [connectedById, setConnectedById] = useState(() => {
     const defaults = {}
     ;(Array.isArray(storageProviders) ? storageProviders : []).forEach((provider) => {
@@ -501,34 +484,19 @@ const MigratePostPage = memo(function MigratePostPage() {
           {connectionInfo ? <Alert severity="success">{connectionInfo}</Alert> : null}
           {connectionError ? <Alert severity="error">{connectionError}</Alert> : null}
 
-          {/* Dropbox and OneDrive personal token / custom app helpers */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+          {/* Dropbox personal token / custom app helper */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
             <Button
               variant="outlined"
               size="small"
               onClick={() => {
                 setShowDropboxTokenInput(prev => !prev)
-                setShowOneDriveTokenInput(false)
                 setConnectionError('')
                 setConnectionInfo('')
               }}
               sx={{ textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', borderColor: 'divider' }}
             >
-              {showDropboxTokenInput ? 'Hide Dropbox Options' : 'Dropbox Connection Alternatives'}
-            </Button>
-
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setShowOneDriveTokenInput(prev => !prev)
-                setShowDropboxTokenInput(false)
-                setConnectionError('')
-                setConnectionInfo('')
-              }}
-              sx={{ textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', borderColor: 'divider' }}
-            >
-              {showOneDriveTokenInput ? 'Hide OneDrive Options' : 'OneDrive Connection Alternatives'}
+              {showDropboxTokenInput ? 'Hide Dropbox Options' : 'Dropbox Connection Alternatives (Bypass User Limit)'}
             </Button>
           </Box>
  
@@ -719,195 +687,6 @@ const MigratePostPage = memo(function MigratePostPage() {
                   <Typography variant="caption" color="text.secondary" display="block">
                     💡 <strong>How to set up:</strong> Go to the <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noreferrer" style={{ color: '#90caf9', textDecoration: 'underline' }}>Dropbox App Console</a>, click <strong>Create app</strong>, select <strong>Scoped access</strong>, choose <strong>Full Dropbox</strong> or <strong>App folder</strong>, and click <strong>Create</strong>. Ensure the Scopes tab has <code>files.content.read</code>, <code>files.content.write</code>, <code>sharing.read</code>, and <code>sharing.write</code> checked, and add the Redirect URI displayed above.
                   </Typography>
-                </>
-              )}
-            </Box>
-          )}
-
-          {showOneDriveTokenInput && (
-            <Box sx={{ p: 2.5, border: '1px solid rgba(255, 255, 255, 0.1)', bgcolor: 'rgba(255, 255, 255, 0.02)', borderRadius: 2, mb: 1 }}>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2, borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 1 }}>
-                <Button
-                  variant={onedriveSubTab === 'token' ? 'contained' : 'text'}
-                  size="small"
-                  onClick={() => setOneDriveSubTab('token')}
-                  sx={{ textTransform: 'none', fontSize: '0.75rem' }}
-                >
-                  Option A: Personal Access Token
-                </Button>
-                <Button
-                  variant={onedriveSubTab === 'oauth' ? 'contained' : 'text'}
-                  size="small"
-                  onClick={() => setOneDriveSubTab('oauth')}
-                  sx={{ textTransform: 'none', fontSize: '0.75rem' }}
-                >
-                  Option B: Custom OAuth App
-                </Button>
-              </Box>
-
-              {onedriveSubTab === 'token' ? (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    OneDrive Access Token Connection
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.85rem' }}>
-                    If the normal login popup has permission issues or you want to connect your account directly, you can bypass the OAuth flow by pasting a <strong>OneDrive Access Token</strong>:
-                  </Typography>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 1.5 }}>
-                    <input
-                      type="password"
-                      placeholder="Paste OneDrive Access Token..."
-                      value={onedriveTokenValue}
-                      onChange={(e) => setOneDriveTokenValue(e.target.value)}
-                      style={{
-                        flex: 1,
-                        background: 'rgba(0,0,0,0.2)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '4px',
-                        color: '#fff',
-                        padding: '8px 12px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                    <Button
-                      variant="contained"
-                      color="success"
-                      onClick={() => {
-                        if (!onedriveTokenValue.trim()) {
-                          setConnectionError('Please enter a valid token.')
-                          return
-                        }
-                        try {
-                          const accounts = getConnectedAccounts()
-                          const newAccount = {
-                            provider: 'onedrive',
-                            connected: true,
-                            user: {
-                              uuid: `onedrive-user-manual-${Date.now()}`,
-                              first_name: 'OneDrive',
-                              last_name: 'User (Manual)',
-                              email: `onedrive.${Date.now()}@manual.local`,
-                              registration_type: 'onedrive',
-                              active: 1,
-                              onedrive_access_token: onedriveTokenValue.trim(),
-                              access_token: onedriveTokenValue.trim(),
-                            }
-                          }
-                          const filtered = accounts.filter(a => a.provider !== 'onedrive')
-                          filtered.push(newAccount)
-                          saveConnectedAccounts(filtered)
-                          setConnectedById(prev => ({ ...prev, onedrive: true }))
-                          setConnectionInfo('OneDrive connected via Personal Access Token!')
-                          setOneDriveTokenValue('')
-                          setShowOneDriveTokenInput(false)
-                        } catch (err) {
-                          setConnectionError('Failed to save manual token: ' + err.message)
-                        }
-                      }}
-                      sx={{ textTransform: 'none' }}
-                    >
-                      Connect Token
-                    </Button>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    💡 <strong>Instructions:</strong> Retrieve your access token from the Azure Portal or OneDrive developer resources, ensure it has scopes like <code>files.readwrite</code>, <code>openid</code>, <code>profile</code>, and <code>User.Read</code> enabled!
-                  </Typography>
-                </>
-              ) : (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Connect using your Own Azure/OneDrive Developer App
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.85rem' }}>
-                    Enter your own <strong>Application (Client) ID</strong> and <strong>Directory (Tenant) ID</strong> to run OAuth flows with your custom registration:
-                  </Typography>
-                  <Stack spacing={1.5} sx={{ mb: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Microsoft Redirect URI (Add this as a Web/SPA Redirect URI in Azure App Registration):
-                      </Typography>
-                      <code style={{ display: 'block', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '4px', fontSize: '0.8rem', color: '#81c784', wordBreak: 'break-all' }}>
-                        {`${window.location.origin}/auth/google/callback`}
-                      </code>
-                    </Box>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                      <input
-                        type="text"
-                        placeholder="Application (Client) ID..."
-                        value={customOneDriveClientId}
-                        onChange={(e) => setCustomOneDriveClientId(e.target.value)}
-                        style={{
-                          flex: 1,
-                          background: 'rgba(0,0,0,0.2)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          borderRadius: '4px',
-                          color: '#fff',
-                          padding: '8px 12px',
-                          fontSize: '0.875rem'
-                        }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Directory (Tenant) ID (e.g., 'common', 'organizations')..."
-                        value={customOneDriveTenantId}
-                        onChange={(e) => setCustomOneDriveTenantId(e.target.value)}
-                        style={{
-                          flex: 1,
-                          background: 'rgba(0,0,0,0.2)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          borderRadius: '4px',
-                          color: '#fff',
-                          padding: '8px 12px',
-                          fontSize: '0.875rem'
-                        }}
-                      />
-                    </Stack>
-                    <Stack direction="row" spacing={1.5}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                          if (!customOneDriveClientId.trim()) {
-                            setConnectionError('Please enter an Application (Client) ID.')
-                            return
-                          }
-                          try {
-                            localStorage.setItem('custom_onedrive_client_id', customOneDriveClientId.trim())
-                            localStorage.setItem('custom_onedrive_tenant_id', (customOneDriveTenantId || 'common').trim())
-                            setConnectionInfo('Custom OneDrive App credentials saved! Now click the "Connect" button next to OneDrive to authenticate.')
-                            setConnectionError('')
-                            setShowOneDriveTokenInput(false)
-                          } catch (err) {
-                            setConnectionError('Failed to save custom credentials: ' + err.message)
-                          }
-                        }}
-                        sx={{ textTransform: 'none' }}
-                      >
-                        Save Custom App
-                      </Button>
-                      {(customOneDriveClientId || customOneDriveTenantId !== 'common') && (
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          onClick={() => {
-                            try {
-                              localStorage.removeItem('custom_onedrive_client_id')
-                              localStorage.removeItem('custom_onedrive_tenant_id')
-                              setCustomOneDriveClientId('')
-                              setCustomOneDriveTenantId('common')
-                              setConnectionInfo('Custom OneDrive credentials cleared. Reverted to default app.')
-                              setConnectionError('')
-                            } catch (err) {
-                              setConnectionError('Failed to clear credentials: ' + err.message)
-                            }
-                          }}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Clear & Reset
-                        </Button>
-                      )}
-                    </Stack>
-                  </Stack>
                 </>
               )}
             </Box>
