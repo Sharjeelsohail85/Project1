@@ -105,9 +105,13 @@ function connectGoogleDriveWithImplicitToken() {
 
 function hasAuthSession() {
   if (typeof window === 'undefined') return false
-  const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
-  const clientId = String(localStorage.getItem('client_id') || '').trim()
-  return Boolean(token && clientId)
+  try {
+    const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+    const clientId = String(localStorage.getItem('client_id') || '').trim()
+    return Boolean(token && clientId)
+  } catch {
+    return false
+  }
 }
 
 function extractProviderMessage(error, fallback) {
@@ -156,7 +160,6 @@ const MigratePostPage = memo(function MigratePostPage() {
       return ''
     }
   })
-
   const [connectedById, setConnectedById] = useState(() => {
     const defaults = {}
     ;(Array.isArray(storageProviders) ? storageProviders : []).forEach((provider) => {
@@ -180,6 +183,39 @@ const MigratePostPage = memo(function MigratePostPage() {
     }
     return defaults
   })
+
+  useEffect(() => {
+    const updateConnections = () => {
+      const defaults = {}
+      ;(Array.isArray(storageProviders) ? storageProviders : []).forEach((provider) => {
+        const id = String(provider?.id || '').trim().toLowerCase()
+        if (id) {
+          defaults[id] = false
+        }
+      })
+      try {
+        const accounts = getConnectedAccounts()
+        accounts.forEach((acc) => {
+          const id = String(acc?.provider || '').trim().toLowerCase()
+          if (id === 'google') {
+            defaults['gdrive'] = Boolean(acc.connected)
+          } else if (id) {
+            defaults[id] = Boolean(acc.connected)
+          }
+        })
+      } catch {
+        // ignore
+      }
+      setConnectedById(defaults)
+    }
+
+    window.addEventListener('accounts:updated', updateConnections)
+    window.addEventListener('storage', updateConnections)
+    return () => {
+      window.removeEventListener('accounts:updated', updateConnections)
+      window.removeEventListener('storage', updateConnections)
+    }
+  }, [])
 
   const connectedProviders = useMemo(() => normalizeConnectedProviderIds(connectedById), [connectedById])
 
@@ -334,6 +370,45 @@ const MigratePostPage = memo(function MigratePostPage() {
         return
       }
 
+      if (normalized === 'mega') {
+        let token = ''
+        if (manualToken) {
+          const accounts = getConnectedAccounts()
+          const newAccount = {
+            provider: 'mega',
+            connected: true,
+            user: {
+              uuid: `mega-user-manual-${Date.now()}`,
+              first_name: 'MEGA',
+              last_name: 'User (Manual)',
+              email: `mega.${Date.now()}@manual.local`,
+              registration_type: 'mega',
+              active: 1,
+              mega_access_token: manualToken.trim(),
+              access_token: manualToken.trim(),
+            }
+          }
+          const filtered = accounts.filter(a => a.provider !== 'mega')
+          filtered.push(newAccount)
+          saveConnectedAccounts(filtered)
+          token = manualToken.trim()
+        } else {
+          const { connectMegaWithImplicitToken } = await import('../../services/megaService')
+          const user = await connectMegaWithImplicitToken()
+          token = user?.mega_access_token || ''
+        }
+
+        if (!token) {
+          setConnectedById((prev) => ({ ...prev, [normalized]: false }))
+          setConnectionError('MEGA connected, but no upload token was received. Reconnect MEGA and approve permissions.')
+          return
+        }
+
+        setConnectedById((prev) => ({ ...prev, [normalized]: true }))
+        setConnectionInfo('MEGA connected for uploads.')
+        return
+      }
+
       const provider = (Array.isArray(storageProviders) ? storageProviders : []).find((item) => String(item?.id || '').trim().toLowerCase() === normalized)
       if (provider?.backendSupported === false) {
         setConnectionError(`${provider.name || normalized} is not available yet in backend.`)
@@ -392,7 +467,7 @@ const MigratePostPage = memo(function MigratePostPage() {
     }
   }, [])
 
-  const onMigrationComplete = useCallback(({ videoId, sourceType, sourceUrl, title, description, originalSourceUrl, provider } = {}) => {
+  const onMigrationComplete = useCallback(({ videoId, sourceType, sourceUrl, title, description, originalSourceUrl } = {}) => {
     const resolvedVideoId = String(videoId || '').trim()
     if (!resolvedVideoId) {
       return
@@ -402,26 +477,6 @@ const MigratePostPage = memo(function MigratePostPage() {
     const resolvedSourceUrl = String(sourceUrl || '').trim()
     const resolvedTitle = String(title || '').trim() || 'Migrated video'
     const resolvedDescription = String(description || '').trim()
-    const normalizedProvider = String(provider || '').trim().toLowerCase()
-
-    let displayType = 'Migration'
-    if (normalizedSourceType === 'local') {
-      if (normalizedProvider === 'onedrive') {
-        displayType = 'OneDrive'
-      } else if (normalizedProvider === 'dropbox') {
-        displayType = 'Dropbox'
-      } else {
-        displayType = 'Google Drive'
-      }
-    } else {
-      if (normalizedProvider === 'onedrive') {
-        displayType = 'OneDrive Migration'
-      } else if (normalizedProvider === 'dropbox') {
-        displayType = 'Dropbox Migration'
-      } else {
-        displayType = 'Google Drive Migration'
-      }
-    }
 
     saveLocalChannelVideo({
       uuid: resolvedVideoId,
@@ -432,7 +487,7 @@ const MigratePostPage = memo(function MigratePostPage() {
       source_url: resolvedSourceUrl,
       video_url: resolvedSourceUrl,
       original_source_url: String(originalSourceUrl || '').trim(),
-      type: displayType,
+      type: normalizedSourceType === 'local' ? 'Google Drive' : 'Migration',
       privacy_option: 'public',
     })
 

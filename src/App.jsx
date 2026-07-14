@@ -39,7 +39,12 @@ const PERSONALIZATION_EFFECT_CLASS_MAP = {
 const DEFAULT_AUTH_SUBSCRIBER_COUNT = 304
 
 function canUseLocalStorage() {
-  return typeof window !== 'undefined' && !!window.localStorage
+  if (typeof window === 'undefined') return false
+  try {
+    return !!window.localStorage
+  } catch {
+    return false
+  }
 }
 
 function parseSubscriberCountValue(value) {
@@ -901,46 +906,10 @@ function App() {
     return streamUrl
   }, [])
 
-  const checkAndRefreshOneDriveUrl = useCallback(async (vidId, currentUrl) => {
-    const isOneDrive = String(currentUrl || '').includes('graph.microsoft.com') ||
-                       String(vidId || '').startsWith('onedrive-') ||
-                       String(currentUrl || '').includes('1drv.ms') ||
-                       String(currentUrl || '').includes('sharepoint.com')
-    
-    if (!isOneDrive) return currentUrl
-
-    try {
-      if (String(vidId || '').startsWith('onedrive-fb-')) {
-        // Local client-side fallback URL, keep it!
-        return currentUrl
-      }
-
-      const rawAccounts = localStorage.getItem('connected_accounts')
-      const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
-      const onedriveAccount = accounts?.find(a => String(a?.provider || '').toLowerCase() === 'onedrive')
-      const token = onedriveAccount?.user?.onedrive_access_token || onedriveAccount?.user?.access_token || ''
-      if (!token) return currentUrl
-
-      let itemId = vidId
-      if (itemId.startsWith('onedrive-')) {
-        itemId = itemId.replace('onedrive-upload-', '').replace('onedrive-', '')
-      }
-
-      const { resolveOneDriveStreamLink } = await import('./services/onedriveService')
-      const freshUrl = await resolveOneDriveStreamLink(itemId, token)
-      if (freshUrl) return freshUrl
-    } catch (err) {
-      console.warn('Failed to auto-refresh OneDrive streaming URL:', err)
-    }
-    return currentUrl
-  }, [])
-
   useEffect(() => {
     if (!location.pathname.startsWith('/watch/')) {
       return undefined
     }
-
-    let cancelled = false
 
     const pathParts = String(location.pathname || '').split('/').filter(Boolean)
     const rawVideoId = pathParts.length >= 2 ? pathParts[1] : ''
@@ -973,39 +942,19 @@ function App() {
       const resolvedTitle = String(titleFromQuery || localVideo?.title || localVideo?.name || '').trim() || `Migrated video ${decodedVideoId}`
       const resolvedDescription = String(descriptionFromQuery || localVideo?.description || '').trim()
 
-      checkAndRefreshOneDriveUrl(decodedVideoId, resolvedStreamUrl)
-        .then((finalUrl) => {
-          if (cancelled) return
-          setCurrentVideoSource({
-            sourceType: String(sourceTypeFromQuery || 'creator_migrated'),
-            sourceUrl: finalUrl,
-            title: resolvedTitle,
-            description: resolvedDescription,
-            discussionLink: String(localVideo?.discussion_link || localVideo?.discussionLink || '').trim(),
-          })
-          setPromoActive(false)
-          setSignupActive(false)
-          setLoginActive(false)
-          setUploadActive(false)
-          setDailyActive(true)
-          setActiveBrowserPage('browserContentPicks')
-        })
-        .catch(() => {
-          if (cancelled) return
-          setCurrentVideoSource({
-            sourceType: String(sourceTypeFromQuery || 'creator_migrated'),
-            sourceUrl: resolvedStreamUrl,
-            title: resolvedTitle,
-            description: resolvedDescription,
-            discussionLink: String(localVideo?.discussion_link || localVideo?.discussionLink || '').trim(),
-          })
-          setPromoActive(false)
-          setSignupActive(false)
-          setLoginActive(false)
-          setUploadActive(false)
-          setDailyActive(true)
-          setActiveBrowserPage('browserContentPicks')
-        })
+      setCurrentVideoSource({
+        sourceType: String(sourceTypeFromQuery || 'creator_migrated'),
+        sourceUrl: resolvedStreamUrl,
+        title: resolvedTitle,
+        description: resolvedDescription,
+        discussionLink: String(localVideo?.discussion_link || localVideo?.discussionLink || '').trim(),
+      })
+      setPromoActive(false)
+      setSignupActive(false)
+      setLoginActive(false)
+      setUploadActive(false)
+      setDailyActive(true)
+      setActiveBrowserPage('browserContentPicks')
     }
 
     const searchParams = new URLSearchParams(String(location.search || ''))
@@ -1017,6 +966,8 @@ function App() {
       applyWatchSource(srcFromQuery, titleFromQuery, sourceTypeFromQuery, descriptionFromQuery)
       return undefined
     }
+
+    let cancelled = false
 
     videoAPI.streamUrl(decodedVideoId)
       .then((response) => {

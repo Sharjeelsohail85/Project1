@@ -15,7 +15,11 @@ function shouldUseDemoVideosFallback() {
 
 function getStorageSafe() {
   if (typeof window === 'undefined') return null
-  return window.localStorage
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -154,6 +158,7 @@ export async function fetchVideosFromAccount(provider, options = {}) {
 
   const accessToken = String(
     account?.user?.onedrive_access_token
+      || account?.user?.mega_access_token
       || account?.user?.google_access_token
       || account?.user?.googleAccessToken
       || account?.user?.dropbox_access_token
@@ -162,10 +167,11 @@ export async function fetchVideosFromAccount(provider, options = {}) {
       || account?.dropbox_access_token
       || account?.facebook_access_token
       || account?.onedrive_access_token
+      || account?.mega_access_token
       || ''
   ).trim()
 
-  if (accessToken === 'sandbox_token' || accessToken.startsWith('sandbox_')) {
+  if (accessToken === 'sandbox_token' || accessToken.startsWith('sandbox_') || accessToken.startsWith('mega_token_') || accessToken.startsWith('mega_sandbox_')) {
     return getDemoVideos(provider, page, perPage)
   }
 
@@ -175,6 +181,16 @@ export async function fetchVideosFromAccount(provider, options = {}) {
       return await fetchVideosFromOneDrive(accessToken)
     } catch (err) {
       console.error('Failed to fetch videos from OneDrive:', err)
+      throw err
+    }
+  }
+
+  if (provider === 'mega' && accessToken) {
+    try {
+      const { fetchVideosFromMega } = await import('./megaService')
+      return await fetchVideosFromMega(accessToken)
+    } catch (err) {
+      console.error('Failed to fetch videos from MEGA:', err)
       throw err
     }
   }
@@ -314,6 +330,15 @@ const DEMO_VIDEOS = {
     { title: 'Event Highlights', url: 'https://dropbox.com/s/demo2/video.mp4', thumbnail: '', duration: '5:45', publishedAt: '2026-05-30' },
     { title: 'Course Introduction', url: 'https://dropbox.com/s/demo3/video.mp4', thumbnail: '', duration: '10:00', publishedAt: '2026-05-25' },
     { title: 'Behind the Scenes', url: 'https://dropbox.com/s/demo4/video.mp4', thumbnail: '', duration: '3:20', publishedAt: '2026-05-18' },
+  ],
+  onedrive: [
+    { title: 'OneDrive Project Presentation', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', thumbnail: '', duration: '14:20', publishedAt: '2026-06-12' },
+    { title: 'OneDrive Q3 Planning session', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', thumbnail: '', duration: '35:40', publishedAt: '2026-06-10' },
+  ],
+  mega: [
+    { title: 'MEGA Cloud Storage Tutorial', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', thumbnail: '', duration: '08:45', publishedAt: '2026-07-01' },
+    { title: 'Marketing Strategy Presentation', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', thumbnail: '', duration: '04:12', publishedAt: '2026-06-25' },
+    { title: 'Product Review Walkthrough', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', thumbnail: '', duration: '12:30', publishedAt: '2026-06-18' },
   ],
 }
 

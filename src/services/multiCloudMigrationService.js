@@ -18,8 +18,14 @@ function requireAuthParams() {
     throw new Error('Provider connection requires an authenticated browser session.')
   }
 
-  const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
-  const clientId = String(localStorage.getItem('client_id') || '').trim()
+  let token = ''
+  let clientId = ''
+  try {
+    token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+    clientId = String(localStorage.getItem('client_id') || '').trim()
+  } catch {
+    // ignore security error in sandboxed iframe
+  }
 
   const isDemoToken = isDemoTokenValue(token)
   if (isDemoToken && !isWorkerDemoRuntime()) {

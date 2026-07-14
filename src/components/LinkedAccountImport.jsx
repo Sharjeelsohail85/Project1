@@ -17,6 +17,7 @@ const PROVIDER_META = {
   facebook: { icon: "facebook", label: "Facebook", color: "#1877F2" },
   dropbox: { icon: "folder_shared", label: "Dropbox", color: "#0061FF" },
   onedrive: { icon: "cloud_done", label: "Microsoft OneDrive", color: "#0078d4" },
+  mega: { icon: "cloud_done", label: "MEGA", color: "#cc0000" },
 };
 
 const LinkedAccountImport = memo(function LinkedAccountImport({
@@ -36,6 +37,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
   const [googleManualToken, setGoogleManualToken] = useState("");
   const [showOneDriveManual, setShowOneDriveManual] = useState(false);
   const [onedriveManualToken, setOnedriveManualToken] = useState("");
+  const [showMegaManual, setShowMegaManual] = useState(false);
+  const [megaManualToken, setMegaManualToken] = useState("");
   const [onedriveSubTab, setOnedriveSubTab] = useState("token"); // 'token' or 'config'
   const [customOneDriveClientId, setCustomOneDriveClientId] = useState(() => {
     try {
@@ -61,6 +64,9 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
         if (provider === 'onedrive') {
           const { connectOneDriveWithImplicitToken } = await import("../services/onedriveService");
           await connectOneDriveWithImplicitToken();
+        } else if (provider === 'mega') {
+          const { connectMegaWithImplicitToken } = await import("../services/megaService");
+          await connectMegaWithImplicitToken();
         } else {
           await connectAccount(provider);
         }
@@ -159,6 +165,32 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
         }
       }
 
+      if (selectedProvider === "mega") {
+        setResolvingVideoId(video.id);
+        try {
+          const megaAccount = accounts.find((a) => a.provider === "mega");
+          const token = megaAccount?.user?.mega_access_token
+            || megaAccount?.user?.access_token
+            || "";
+          
+          if (!token) {
+            throw new Error("MEGA account is not connected or token is missing.");
+          }
+
+          console.log(`Resolving direct stream URL for MEGA video: ${video.id}`);
+          const { resolveMegaStreamLink } = await import("../services/megaService");
+          resolvedUrl = await resolveMegaStreamLink(video.id, token);
+          console.log(`Successfully resolved MEGA stream URL: ${resolvedUrl}`);
+        } catch (err) {
+          console.error("Failed to resolve MEGA stream URL:", err);
+          onError?.(err.message || "Failed to resolve stream link for MEGA video.");
+          setResolvingVideoId(null);
+          return;
+        } finally {
+          setResolvingVideoId(null);
+        }
+      }
+
       const importedVideo = {
         uuid: video.id,
         id: video.id,
@@ -173,7 +205,9 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                 ? "Dropbox"
                 : selectedProvider === "onedrive"
                   ? "Microsoft OneDrive"
-                  : "Direct Link",
+                  : selectedProvider === "mega"
+                    ? "MEGA"
+                    : "Direct Link",
         source_url: resolvedUrl,
         video_url: resolvedUrl,
         description: video.description || "",
@@ -193,7 +227,9 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                 ? "uploadDropbox"
                 : selectedProvider === "onedrive"
                   ? "uploadOneDrive"
-                  : "uploadLink",
+                  : selectedProvider === "mega"
+                    ? "uploadMega"
+                    : "uploadLink",
         sourceUrl: resolvedUrl,
         title: video.title,
       });
@@ -323,7 +359,7 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                     <span className="linked-account-name">{meta.label}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {(provider === 'dropbox' || provider === 'google' || provider === 'onedrive') && (
+                    {(provider === 'dropbox' || provider === 'google' || provider === 'onedrive' || provider === 'mega') && (
                       <Button
                         onClick={() => {
                           if (provider === 'google') {
@@ -332,6 +368,8 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                             setShowDropboxManual(prev => !prev);
                           } else if (provider === 'onedrive') {
                             setShowOneDriveManual(prev => !prev);
+                          } else if (provider === 'mega') {
+                            setShowMegaManual(prev => !prev);
                           }
                         }}
                         variant="text"
@@ -345,7 +383,7 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                           border: '1px solid rgba(255,255,255,0.1)'
                         }}
                       >
-                        {(provider === 'google' ? showGoogleManual : provider === 'dropbox' ? showDropboxManual : showOneDriveManual) ? "Cancel" : "Use Token"}
+                        {(provider === 'google' ? showGoogleManual : provider === 'dropbox' ? showDropboxManual : provider === 'onedrive' ? showOneDriveManual : showMegaManual) ? "Cancel" : "Use Token"}
                       </Button>
                     )}
                     <Button
@@ -578,6 +616,82 @@ const LinkedAccountImport = memo(function LinkedAccountImport({
                             refreshAccounts();
                             setOnedriveManualToken('');
                             setShowOneDriveManual(false);
+                          } catch (err) {
+                            onError?.("Failed to save token: " + err.message);
+                          }
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          color: '#03DAC6',
+                          fontSize: '0.8rem',
+                          border: '1px solid rgba(3, 218, 198, 0.3)',
+                          padding: '4px 10px'
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {provider === 'mega' && showMegaManual && (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, margin: 0, color: 'rgba(255,255,255,0.7)' }}>
+                      Enter your MEGA <strong>Access Token</strong> to connect directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="password"
+                        placeholder="Paste MEGA token..."
+                        value={megaManualToken}
+                        onChange={(e) => setMegaManualToken(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (!megaManualToken.trim()) {
+                            onError?.("Please enter a valid token.");
+                            return;
+                          }
+                          try {
+                            const accounts = getConnectedAccounts();
+                            const newAccount = {
+                              provider: 'mega',
+                              connected: true,
+                              user: {
+                                uuid: `mega-user-manual-${Date.now()}`,
+                                first_name: 'MEGA',
+                                last_name: 'User (Manual)',
+                                email: `mega.${Date.now()}@manual.local`,
+                                registration_type: 'mega',
+                                active: 1,
+                                mega_access_token: megaManualToken.trim(),
+                                access_token: megaManualToken.trim(),
+                              }
+                            };
+                            const filtered = accounts.filter(a => a.provider !== 'mega');
+                            filtered.push(newAccount);
+                            saveConnectedAccounts(filtered);
+                            refreshAccounts();
+                            setMegaManualToken('');
+                            setShowMegaManual(false);
                           } catch (err) {
                             onError?.("Failed to save token: " + err.message);
                           }

@@ -15,6 +15,11 @@ export const storageProviders = [
     backendSupported: true,
   },
   {
+    id: 'mega',
+    name: 'MEGA',
+    backendSupported: true,
+  },
+  {
     id: 'idrive',
     name: 'IDrive e2',
     backendSupported: true,

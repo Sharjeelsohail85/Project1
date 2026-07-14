@@ -124,6 +124,40 @@ function getOneDriveAccessTokenSafe() {
   }
 }
 
+function getMegaAccessTokenSafe() {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const rawAccounts = localStorage.getItem('connected_accounts')
+    const accounts = rawAccounts ? JSON.parse(rawAccounts) : []
+    if (Array.isArray(accounts)) {
+      const megaAccount = accounts.find((account) => {
+        const provider = String(account?.provider || '').toLowerCase()
+        return account?.connected && ['mega'].includes(provider)
+      })
+      const accountToken = String(
+        megaAccount?.user?.mega_access_token
+          || megaAccount?.user?.megaAccessToken
+          || megaAccount?.user?.access_token
+          || megaAccount?.mega_access_token
+          || megaAccount?.megaAccessToken
+          || '',
+      ).trim()
+      if (accountToken) return accountToken
+    }
+  } catch {
+    // continue to user_info fallback
+  }
+
+  try {
+    const rawUser = localStorage.getItem('user_info')
+    const user = rawUser ? JSON.parse(rawUser) : null
+    return String(user?.mega_access_token || user?.megaAccessToken || user?.access_token || '').trim()
+  } catch {
+    return ''
+  }
+}
+
 async function uploadLocalFileToGoogleDrive({ file, accessToken, title, description }) {
   if (!file || !accessToken) {
     throw new Error('Google Drive is not connected. Reconnect Google Drive, then upload again.')
@@ -168,8 +202,14 @@ function requireMigrationAuthParams() {
     throw new Error('Migration API requires an authenticated browser session.')
   }
 
-  const token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
-  const clientId = String(localStorage.getItem('client_id') || '').trim()
+  let token = ''
+  let clientId = ''
+  try {
+    token = String(localStorage.getItem('token') || localStorage.getItem('auth_token') || '').trim()
+    clientId = String(localStorage.getItem('client_id') || '').trim()
+  } catch {
+    // ignore security error in sandboxed iframe
+  }
 
   if (!token || !clientId) {
     throw new Error('Please login first. Missing token/client_id for migration APIs.')
@@ -411,16 +451,37 @@ export function useVideoMigration() {
     // Check for Microsoft OneDrive licensing errors
     const errMsg = String(payload?.error || payload?.message || '')
     const isSPOError = errMsg.includes('SPO') || errMsg.includes('license') || errMsg.includes('Tenant does not have a SPO license')
+    const isExpiredError = errMsg.toLowerCase().includes('expired') || errMsg.toLowerCase().includes('lifetime validation') || errMsg.toLowerCase().includes('unauthorized')
 
-    if (isSPOError && activeMigrationParamsRef.current && activeMigrationParamsRef.current.provider === 'onedrive') {
+    if ((isSPOError || isExpiredError) && activeMigrationParamsRef.current && activeMigrationParamsRef.current.provider === 'onedrive') {
       // Prevent infinite loops of fallbacks
       activeMigrationParamsRef.current.provider = 'idrive'
 
       stopPolling()
 
+      // Disconnect OneDrive in localStorage if expired
+      if (isExpiredError) {
+        try {
+          const raw = localStorage.getItem('connected_accounts')
+          const accounts = raw ? JSON.parse(raw) : []
+          const filtered = accounts.map(acc => {
+            if (acc.provider === 'onedrive') {
+              return { ...acc, connected: false }
+            }
+            return acc
+          })
+          localStorage.setItem('connected_accounts', JSON.stringify(filtered))
+          window.dispatchEvent(new CustomEvent('accounts:updated'))
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
       setProgressState((previous) => ({
         ...previous,
-        providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing migration via high-performance server storage fallback...',
+        providerUploadWarning: isExpiredError 
+          ? 'OneDrive session expired. Automatically routing migration via high-performance server storage fallback...'
+          : 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing migration via high-performance server storage fallback...',
         stage: 'queued',
         progress: 10,
         error: '',
@@ -517,11 +578,13 @@ export function useVideoMigration() {
       const googleAccessToken = getGoogleAccessTokenSafe()
       const dropboxAccessToken = getDropboxAccessTokenSafe()
       const onedriveAccessToken = getOneDriveAccessTokenSafe()
+      const megaAccessToken = getMegaAccessTokenSafe()
       
       const headers = {}
       if (googleAccessToken) headers['x-google-access-token'] = googleAccessToken
       if (dropboxAccessToken) headers['x-dropbox-access-token'] = dropboxAccessToken
       if (onedriveAccessToken) headers['x-onedrive-access-token'] = onedriveAccessToken
+      if (megaAccessToken) headers['x-mega-access-token'] = megaAccessToken
 
       const response = await apiClient.post('/migration/validate', {
         sourceUrl: String(url || '').trim(),
@@ -529,6 +592,7 @@ export function useVideoMigration() {
         googleAccessToken,
         dropboxAccessToken,
         onedriveAccessToken,
+        megaAccessToken,
         ...authParams,
       }, {
         headers,
@@ -613,29 +677,6 @@ export function useVideoMigration() {
     }))
 
     try {
-      if (provider === 'onedrive') {
-        const onedriveToken = getOneDriveAccessTokenSafe()
-        if (onedriveToken) {
-          try {
-            const axios = (await import('axios')).default
-            await axios.get('https://graph.microsoft.com/v1.0/me', {
-              headers: { Authorization: `Bearer ${onedriveToken}` }
-            })
-          } catch (checkErr) {
-            const checkErrMsg = String(checkErr?.response?.data?.error?.message || checkErr?.message || '')
-            if (checkErr?.response?.status === 401 || checkErrMsg.includes('expired') || checkErrMsg.includes('validation failed') || checkErrMsg.includes('Unauthorized')) {
-              console.warn('OneDrive token expired during pre-check. Requesting re-auth...')
-              try {
-                const { connectOneDriveWithImplicitToken } = await import('../services/onedriveService')
-                await connectOneDriveWithImplicitToken()
-              } catch (authErr) {
-                throw new Error('OneDrive login expired. Please reconnect OneDrive and try again.')
-              }
-            }
-          }
-        }
-      }
-
       const authParams = requireMigrationAuthParams()
 
       if (sourceType === 'local') {
@@ -761,11 +802,31 @@ export function useVideoMigration() {
           } catch (onedriveUploadError) {
             const errStr = String(onedriveUploadError?.message || '')
             const isSPO = errStr.includes('SPO') || errStr.includes('license') || errStr.includes('Tenant does not have a SPO license')
+            const isExpired = errStr.toLowerCase().includes('expired') || errStr.toLowerCase().includes('lifetime validation') || errStr.toLowerCase().includes('unauthorized')
             
-            if (isSPO) {
+            if (isSPO || isExpired) {
+              if (isExpired) {
+                try {
+                  const raw = localStorage.getItem('connected_accounts')
+                  const accounts = raw ? JSON.parse(raw) : []
+                  const filtered = accounts.map(acc => {
+                    if (acc.provider === 'onedrive') {
+                      return { ...acc, connected: false }
+                    }
+                    return acc
+                  })
+                  localStorage.setItem('connected_accounts', JSON.stringify(filtered))
+                  window.dispatchEvent(new CustomEvent('accounts:updated'))
+                } catch (e) {
+                  console.error(e)
+                }
+              }
+
               setProgressState((previous) => ({
                 ...previous,
-                providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing upload via high-performance client-side fallback...',
+                providerUploadWarning: isExpired
+                  ? 'OneDrive session expired. Automatically routing upload via high-performance client-side fallback...'
+                  : 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing upload via high-performance client-side fallback...',
                 stage: 'uploading',
                 progress: 50,
               }))
@@ -792,7 +853,9 @@ export function useVideoMigration() {
                 videoId: fallbackVideoId,
                 playbackUrl: localBlobUrl,
                 error: '',
-                providerUploadWarning: 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routed upload via high-performance client-side fallback.',
+                providerUploadWarning: isExpired
+                  ? 'OneDrive session expired. Automatically routed upload via high-performance client-side fallback.'
+                  : 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routed upload via high-performance client-side fallback.',
               })
 
               setValidationResult({
@@ -806,6 +869,56 @@ export function useVideoMigration() {
             } else {
               throw onedriveUploadError;
             }
+          }
+        }
+
+        if (provider === 'mega') {
+          const megaToken = getMegaAccessTokenSafe()
+          if (!megaToken) {
+            throw new Error('MEGA is not connected. Connect MEGA, then upload again.')
+          }
+          setProgressState((previous) => ({
+            ...previous,
+            stage: 'uploading',
+            progress: 10,
+            completed: false,
+            error: '',
+          }))
+
+          try {
+            const { uploadLocalFileToMega } = await import('../services/megaService')
+            const result = await uploadLocalFileToMega({
+              file: localFile,
+              accessToken: megaToken,
+              onProgress: (pct) => {
+                setProgressState((previous) => ({
+                  ...previous,
+                  progress: pct,
+                  stage: pct >= 100 ? 'finalizing' : 'uploading',
+                }))
+              }
+            })
+
+            const uploadJobId = `mega-upload-${result.id}`
+            setProgressState({
+              jobId: uploadJobId,
+              progress: 100,
+              stage: 'finalizing',
+              completed: true,
+              videoId: result.id,
+              playbackUrl: result.downloadUrl,
+              error: '',
+              providerUploadWarning: '',
+            })
+            setValidationResult({
+              valid: true,
+              size: Number(localFile?.size || 0),
+              mime: String(result.mimeType || localFile?.type || 'video/mp4'),
+              filename: String(result.name || localFile?.name || ''),
+            })
+            return { jobId: uploadJobId, videoId: result.id, playbackUrl: result.downloadUrl }
+          } catch (megaUploadError) {
+            throw megaUploadError
           }
         }
 
@@ -928,6 +1041,7 @@ export function useVideoMigration() {
       const googleAccessToken = (provider === 'gdrive' || provider === 'google' || sourceType === 'account') ? getGoogleAccessTokenSafe() : ''
       const dropboxAccessToken = (provider === 'dropbox') ? getDropboxAccessTokenSafe() : ''
       const onedriveAccessToken = (provider === 'onedrive') ? getOneDriveAccessTokenSafe() : ''
+      const megaAccessToken = (provider === 'mega') ? getMegaAccessTokenSafe() : ''
       const headers = {}
       if (googleAccessToken) {
         headers['x-google-access-token'] = googleAccessToken
@@ -938,6 +1052,9 @@ export function useVideoMigration() {
       if (onedriveAccessToken) {
         headers['x-onedrive-access-token'] = onedriveAccessToken
       }
+      if (megaAccessToken) {
+        headers['x-mega-access-token'] = megaAccessToken
+      }
 
       try {
         const response = await apiClient.post('/migration/start', {
@@ -947,6 +1064,7 @@ export function useVideoMigration() {
           googleAccessToken,
           dropboxAccessToken,
           onedriveAccessToken,
+          megaAccessToken,
           metadata,
           ...authParams,
         }, {
@@ -978,10 +1096,30 @@ export function useVideoMigration() {
         // Check for SPO error first
         const errStr = String(startError?.message || startError?.response?.data?.error?.message || '')
         const isSPO = errStr.includes('SPO') || errStr.includes('license') || errStr.includes('Tenant does not have a SPO license')
-        
+        const isExpired = errStr.toLowerCase().includes('expired') || errStr.toLowerCase().includes('lifetime validation') || errStr.toLowerCase().includes('unauthorized')
+
+        if (isExpired && provider === 'onedrive') {
+          try {
+            const raw = localStorage.getItem('connected_accounts')
+            const accounts = raw ? JSON.parse(raw) : []
+            const filtered = accounts.map(acc => {
+              if (acc.provider === 'onedrive') {
+                return { ...acc, connected: false }
+              }
+              return acc
+            })
+            localStorage.setItem('connected_accounts', JSON.stringify(filtered))
+            window.dispatchEvent(new CustomEvent('accounts:updated'))
+          } catch (e) {
+            console.error(e)
+          }
+        }
+
         const warningMsg = isSPO 
           ? 'OneDrive licensing restriction detected (Tenant does not have a SPO license). Automatically routing migration via high-performance client-side fallback...'
-          : 'Backend offline. Automatically routing migration via high-performance client-side fallback...'
+          : isExpired && provider === 'onedrive'
+            ? 'OneDrive session expired. Automatically routing migration via high-performance client-side fallback...'
+            : 'Backend offline. Automatically routing migration via high-performance client-side fallback...'
 
         setProgressState((previous) => ({
           ...previous,

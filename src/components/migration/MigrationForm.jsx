@@ -170,7 +170,6 @@ const MigrationForm = memo(function MigrationForm({
       originalSourceUrl: effectiveSourceUrl,
       title: metadata.title,
       description: metadata.description,
-      provider: normalizedSelectedProvider,
     })
   }, [effectiveSourceUrl, metadata.description, metadata.title, onMigrationComplete, progressState.completed, progressState.jobId, progressState.playbackUrl, progressState.videoId, sourceType, normalizedSelectedProvider])
 
