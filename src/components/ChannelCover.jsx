@@ -371,16 +371,20 @@ const BACKGROUND_PRESETS = [
     id: 'solid-slate',
     name: 'Brutalist Matte Charcoal',
     style: { backgroundColor: '#1A1A24' }
+  },
+  {
+    id: 'retro-gold',
+    name: 'Sticker Studio Orange',
+    style: { backgroundColor: '#D47C25' }
   }
 ];
 
 // --- DEFAULT COVER COMPOSTION ---
 const DEFAULT_STICKERS_COMPOSITION = [
-  { id: 'def-t1', type: 'text', text: 'SIGNAL / NOISE LAB', x: 50, y: 44, scale: 1.5, rotate: -3, color: '#FFE500', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 0 },
-  { id: 'def-s1', type: 'sticker', value: 'cool-smiley', x: 16, y: 46, scale: 1.2, rotate: 15, holo: false, peel: 12 },
-  { id: 'def-s2', type: 'sticker', value: 'cassette', x: 84, y: 55, scale: 1.15, rotate: -12, holo: true, peel: 0 },
-  { id: 'def-s3', type: 'sticker', value: 'sparkles', x: 67, y: 30, scale: 0.9, rotate: 10, holo: true, peel: 0 },
-  { id: 'def-s4', type: 'sticker', value: 'alien', x: 34, y: 74, scale: 0.85, rotate: -20, holo: false, peel: 0 }
+  { id: 'def-t1', type: 'text', text: 'GOOD SDASDA', x: 50, y: 44, scale: 1.6, rotate: -2, color: '#F26B50', font: 'Impact', fontStyle: 'retro-3d', holo: false, peel: 0 },
+  { id: 'def-s1', type: 'sticker', value: 'cool-smiley', x: 16, y: 46, scale: 1.25, rotate: 12, holo: false, peel: 0 },
+  { id: 'def-s2', type: 'sticker', value: 'cassette', x: 84, y: 55, scale: 1.2, rotate: -10, holo: true, peel: 0 },
+  { id: 'def-s3', type: 'sticker', value: 'sparkles', x: 67, y: 30, scale: 0.95, rotate: 15, holo: true, peel: 0 }
 ];
 
 // --- START COMPOSITION TEMPLATES ---
@@ -417,13 +421,146 @@ const COMPOSITION_TEMPLATES = [
   }
 ];
 
+// --- HIGH-FIDELITY RETRO STICKER RENDERERS ---
+function renderHighFidelityTextSticker(s) {
+  const lines = s.text ? s.text.split(' ') : ['STIKR'];
+  const F = 38; // Ideal font size for letters
+  const charWidth = F * 0.48; // Overlapping character width
+  
+  return (
+    <div 
+      className="flex flex-col items-center select-none"
+      style={{
+        filter: 'url(#text-die-cut-yellow)',
+        padding: '24px', // Extra breathing room for Morphology filter
+        margin: '-24px', // Counter padding shift
+      }}
+    >
+      {lines.map((line, j) => {
+        const chars = line.split('');
+        const currentLineWidth = (chars.length - 1) * charWidth;
+        const lineXStart = -currentLineWidth / 2;
+        
+        return (
+          <div 
+            key={j} 
+            className="relative flex justify-center items-center select-none"
+            style={{
+              height: `${F * 1.05}px`,
+              marginBottom: j < lines.length - 1 ? '-6px' : '0px', // Pull lines together
+              zIndex: 10 - j, // Layer top lines over bottom lines
+            }}
+          >
+            {chars.map((char, i) => {
+              const p = chars.length > 1 ? i / (chars.length - 1) : 0.5;
+              const yCurve = Math.sin(Math.PI * p) * (-15); // Arch curve
+              const charRot = (p - 0.5) * 18; // Fan out angle
+              const charX = lineXStart + i * charWidth;
+              
+              // 3D extrusion shadows (down-left)
+              const textShadowString = Array.from({ length: 5 }, (_, idx) => {
+                const o = idx + 1;
+                return `-${o}px ${o}px 0px #000`;
+              }).join(', ');
+
+              return (
+                <div
+                  key={i}
+                  className="absolute select-none flex items-center justify-center font-black"
+                  style={{
+                    left: '50%',
+                    transform: `translateX(-50%) translate(${charX}px, ${yCurve}px) rotate(${charRot}deg)`,
+                    fontFamily: s.font || 'Impact, sans-serif',
+                    fontSize: `${F}px`,
+                    color: s.color || '#F26B50',
+                    lineHeight: '1',
+                    whiteSpace: 'nowrap',
+                    textShadow: `
+                      ${textShadowString},
+                      -1px -1px 0px #000,
+                      1px -1px 0px #000,
+                      -1px 1px 0px #000,
+                      1px 1px 0px #000,
+                      0px -1.5px 0px #000,
+                      0px 1.5px 0px #000,
+                      -1.5px 0px 0px #000,
+                      1.5px 0px 0px #000
+                    `,
+                  }}
+                >
+                  <span className="relative select-none block">
+                    {char}
+                    
+                    {/* Cartoony pupils/eyes inside 'O' or 'o' */}
+                    {(char === 'O' || char === 'o') && (
+                      <div 
+                        className="absolute select-none pointer-events-none rounded-full flex items-center justify-center border border-black"
+                        style={{
+                          left: '50%',
+                          top: '48%',
+                          width: `${F * 0.36}px`,
+                          height: `${F * 0.36}px`,
+                          transform: 'translate(-50%, -50%)',
+                          backgroundColor: '#FFE500',
+                          zIndex: 10,
+                        }}
+                      >
+                        <div 
+                          className="absolute bg-black rounded-full"
+                          style={{
+                            width: `${F * 0.16}px`,
+                            height: `${F * 0.16}px`,
+                            left: '12%',
+                            top: '12%',
+                          }}
+                        >
+                          <div 
+                            className="absolute bg-white rounded-full"
+                            style={{
+                              width: `${F * 0.05}px`,
+                              height: `${F * 0.05}px`,
+                              left: '20%',
+                              top: '20%',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderHighFidelityGraphicSticker(s) {
+  const catalogItem = STICKERS_CATALOG.find(c => c.id === s.value);
+  if (!catalogItem) return null;
+  return (
+    <div 
+      style={{
+        filter: 'url(#graphic-die-cut-white)',
+        padding: '16px',
+        margin: '-16px',
+      }}
+      className="w-16 h-16 select-none flex items-center justify-center"
+    >
+      {catalogItem.render()}
+    </div>
+  );
+}
+
 export default function ChannelCover() {
-  const [bgPresetId, setBgPresetId] = useState('retro-sunset');
+  const [bgPresetId, setBgPresetId] = useState('retro-gold');
   const [stickers, setStickers] = useState(DEFAULT_STICKERS_COMPOSITION);
 
   // Studio Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editBgPresetId, setEditBgPresetId] = useState('retro-sunset');
+  const [editBgPresetId, setEditBgPresetId] = useState('retro-gold');
   const [editStickers, setEditStickers] = useState([]);
   const [activeStickerId, setActiveStickerId] = useState(null);
 
@@ -641,15 +778,6 @@ export default function ChannelCover() {
               top: `${s.y}%`,
               transform: transformStyle,
               zIndex: s.zIndex || 10,
-              // Die cut thick white border with outer drop shadow
-              filter: `
-                drop-shadow(1.5px 1.5px 0px #fff) 
-                drop-shadow(-1.5px -1.5px 0px #fff) 
-                drop-shadow(1.5px -1.5px 0px #fff) 
-                drop-shadow(-1.5px 1.5px 0px #fff) 
-                drop-shadow(2px 2px 0px #000)
-                drop-shadow(3px 4px 5px rgba(0,0,0,0.45))
-              `,
               clipPath: clipPathStyle
             };
 
@@ -657,30 +785,9 @@ export default function ChannelCover() {
               <div key={s.id} style={styleBase} className="absolute pointer-events-none select-none">
                 <div className="relative w-full h-full flex items-center justify-center">
                   {s.type === 'text' ? (
-                    <span
-                      style={{
-                        fontFamily: s.font,
-                        color: s.color,
-                        fontSize: '22px',
-                        lineHeight: '1',
-                        fontWeight: 'bold',
-                        whiteSpace: 'nowrap',
-                        textShadow: `
-                          2px 2px 0px #000,
-                          -0.5px -0.5px 0px #000,
-                          0.5px -0.5px 0px #000,
-                          -0.5px 0.5px 0px #000,
-                          0.5px 0.5px 0px #000
-                        `
-                      }}
-                      className="block px-1 select-none"
-                    >
-                      {s.text}
-                    </span>
+                    renderHighFidelityTextSticker(s)
                   ) : (
-                    <div className="w-14 h-14 select-none">
-                      {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
-                    </div>
+                    renderHighFidelityGraphicSticker(s)
                   )}
 
                   {/* Holographic foil overlay filter */}
@@ -833,23 +940,6 @@ export default function ChannelCover() {
                         top: `${s.y}%`,
                         transform: transformStyle,
                         zIndex: isSelected ? 99 : (editStickers.indexOf(s) + 10),
-                        filter: isDragging
-                          ? `
-                            drop-shadow(1.5px 1.5px 0px #fff) 
-                            drop-shadow(-1.5px -1.5px 0px #fff) 
-                            drop-shadow(1.5px -1.5px 0px #fff) 
-                            drop-shadow(-1.5px 1.5px 0px #fff) 
-                            drop-shadow(4px 4px 0px #000)
-                            drop-shadow(8px 12px 14px rgba(0,0,0,0.45))
-                          `
-                          : `
-                            drop-shadow(1.5px 1.5px 0px #fff) 
-                            drop-shadow(-1.5px -1.5px 0px #fff) 
-                            drop-shadow(1.5px -1.5px 0px #fff) 
-                            drop-shadow(-1.5px 1.5px 0px #fff) 
-                            drop-shadow(2px 2px 0px #000)
-                            drop-shadow(3px 4px 5px rgba(0,0,0,0.35))
-                          `,
                         cursor: isDragging ? 'grabbing' : 'grab',
                         clipPath: clipPathStyle
                       };
@@ -867,29 +957,9 @@ export default function ChannelCover() {
                         >
                           <div className="relative w-full h-full flex items-center justify-center">
                             {s.type === 'text' ? (
-                              <span
-                                style={{
-                                  fontFamily: s.font,
-                                  color: s.color,
-                                  fontSize: '20px',
-                                  fontWeight: 'bold',
-                                  whiteSpace: 'nowrap',
-                                  textShadow: `
-                                    2px 2px 0px #000,
-                                    -0.5px -0.5px 0px #000,
-                                    0.5px -0.5px 0px #000,
-                                    -0.5px 0.5px 0px #000,
-                                    0.5px 0.5px 0px #000
-                                  `
-                                }}
-                                className="block select-none"
-                              >
-                                {s.text}
-                              </span>
+                              renderHighFidelityTextSticker(s)
                             ) : (
-                              <div className="w-12 h-12 select-none">
-                                {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
-                              </div>
+                              renderHighFidelityGraphicSticker(s)
                             )}
 
                             {/* Interactive Holographic Gloss Overlay */}
@@ -1250,6 +1320,61 @@ export default function ChannelCover() {
           </div>
         </div>
       )}
+      
+      {/* SVG FILTERS DEFINITIONS */}
+      <svg width="0" height="0" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <defs>
+          <filter id="text-die-cut-yellow" x="-35%" y="-35%" width="170%" height="170%">
+            <feMorphology operator="dilate" radius="10" in="SourceAlpha" result="dilatedAlpha" />
+            <feFlood flood-color="#F4D03F" flood-opacity="1" result="yellowFlood" />
+            <feComposite in="yellowFlood" in2="dilatedAlpha" operator="in" result="backingYellow" />
+            
+            <feMorphology operator="dilate" radius="2.5" in="dilatedAlpha" result="strokeAlpha" />
+            <feFlood flood-color="#000000" flood-opacity="1" result="blackFlood" />
+            <feComposite in="blackFlood" in2="strokeAlpha" operator="in" result="backingStroke" />
+            
+            <feMerge result="combinedBacking">
+              <feMergeNode in="backingStroke" />
+              <feMergeNode in="backingYellow" />
+            </feMerge>
+            
+            <feOffset dx="-5" dy="5" in="backingStroke" result="offsetShadow" />
+            <feFlood flood-color="#000000" flood-opacity="0.65" result="shadowFlood" />
+            <feComposite in="shadowFlood" in2="offsetShadow" operator="in" result="backingShadow" />
+            
+            <feMerge>
+              <feMergeNode in="backingShadow" />
+              <feMergeNode in="combinedBacking" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          <filter id="graphic-die-cut-white" x="-35%" y="-35%" width="170%" height="170%">
+            <feMorphology operator="dilate" radius="8" in="SourceAlpha" result="dilatedAlpha" />
+            <feFlood flood-color="#FFFFFF" flood-opacity="1" result="whiteFlood" />
+            <feComposite in="whiteFlood" in2="dilatedAlpha" operator="in" result="backingWhite" />
+            
+            <feMorphology operator="dilate" radius="2.5" in="dilatedAlpha" result="strokeAlpha" />
+            <feFlood flood-color="#000000" flood-opacity="1" result="blackFlood" />
+            <feComposite in="blackFlood" in2="strokeAlpha" operator="in" result="backingStroke" />
+            
+            <feMerge result="combinedBacking">
+              <feMergeNode in="backingStroke" />
+              <feMergeNode in="backingWhite" />
+            </feMerge>
+            
+            <feOffset dx="-4" dy="4" in="backingStroke" result="offsetShadow" />
+            <feFlood flood-color="#000000" flood-opacity="0.5" result="shadowFlood" />
+            <feComposite in="shadowFlood" in2="offsetShadow" operator="in" result="backingShadow" />
+            
+            <feMerge>
+              <feMergeNode in="backingShadow" />
+              <feMergeNode in="combinedBacking" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 }
