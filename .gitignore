@@ -9,3 +9,5 @@ coverage/
 cloned_repo/
 .wrangler/
 .wrangler*
+bun.lock
+
