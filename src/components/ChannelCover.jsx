@@ -418,17 +418,13 @@ const COMPOSITION_TEMPLATES = [
 ];
 
 export default function ChannelCover() {
-  const [coverType, setCoverType] = useState('stickers'); // 'stickers' | 'upload'
-  const [uploadedImage, setUploadedImage] = useState('');
   const [bgPresetId, setBgPresetId] = useState('retro-sunset');
   const [stickers, setStickers] = useState(DEFAULT_STICKERS_COMPOSITION);
 
   // Studio Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('stickers'); // 'stickers' | 'upload'
   const [editBgPresetId, setEditBgPresetId] = useState('retro-sunset');
   const [editStickers, setEditStickers] = useState([]);
-  const [editUploadedImage, setEditUploadedImage] = useState('');
   const [activeStickerId, setActiveStickerId] = useState(null);
 
   // Scanline CRT visual effect toggle in canvas
@@ -445,13 +441,9 @@ export default function ChannelCover() {
 
   // Load persistence on mount
   useEffect(() => {
-    const savedType = localStorage.getItem('channel_cover_type');
-    const savedImg = localStorage.getItem('channel_cover_image');
     const savedPreset = localStorage.getItem('channel_cover_preset');
     const savedStickersStr = localStorage.getItem('channel_cover_stickers');
 
-    if (savedType) setCoverType(savedType);
-    if (savedImg) setUploadedImage(savedImg);
     if (savedPreset) setBgPresetId(savedPreset);
     if (savedStickersStr) {
       try {
@@ -466,8 +458,6 @@ export default function ChannelCover() {
     playRetroSound('click');
     setEditBgPresetId(bgPresetId);
     setEditStickers(JSON.parse(JSON.stringify(stickers)));
-    setEditUploadedImage(uploadedImage);
-    setActiveTab(coverType);
     setIsModalOpen(true);
     setActiveStickerId(null);
     setTextVal('');
@@ -481,15 +471,11 @@ export default function ChannelCover() {
 
   const saveChanges = () => {
     playRetroSound('stick');
-    setCoverType(activeTab);
     setBgPresetId(editBgPresetId);
     setStickers(editStickers);
-    setUploadedImage(editUploadedImage);
 
-    localStorage.setItem('channel_cover_type', activeTab);
     localStorage.setItem('channel_cover_preset', editBgPresetId);
     localStorage.setItem('channel_cover_stickers', JSON.stringify(editStickers));
-    localStorage.setItem('channel_cover_image', editUploadedImage);
 
     setIsModalOpen(false);
   };
@@ -611,19 +597,6 @@ export default function ChannelCover() {
     setActiveStickerId(null);
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    playRetroSound('spawn');
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setEditUploadedImage(event.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   // Holographic shine mouse tracker on hover
   const handleHoloMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -649,126 +622,104 @@ export default function ChannelCover() {
       
       {/* 1. PUBLIC CHANNEL BANNER DISPLAY */}
       <div
-        style={coverType === 'stickers' ? currentPreset.style : {}}
+        style={currentPreset.style}
         className="w-full h-40 sm:h-48 md:h-56 rounded-2xl border-4 border-[#121216] overflow-hidden relative shadow-2xl transition duration-300"
       >
-        {coverType === 'upload' ? (
-          uploadedImage ? (
-            <img
-              src={uploadedImage}
-              alt="Channel Banner"
-              className="w-full h-full object-cover select-none"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 gap-2">
-              <Camera size={32} className="animate-pulse" />
-              <p className="text-xs font-semibold uppercase tracking-wider font-mono">No Custom Photo Uploaded</p>
-              <button
-                onClick={openDesigner}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-lg border border-indigo-400"
-              >
-                Upload File
-              </button>
-            </div>
-          )
-        ) : (
-          /* Render Stickers Vector Stage */
-          <div className="w-full h-full relative overflow-hidden select-none">
-            {stickers.map((s) => {
-              const transformStyle = `translate(-50%, -50%) scale(${s.scale || 1}) rotate(${s.rotate || 0}deg)`;
-              const peelVal = s.peel || 0;
-              
-              // Vector page curl clipping style
-              const clipPathStyle = peelVal > 0 
-                ? `polygon(0% 0%, ${100 - peelVal}% 0%, 100% ${peelVal}%, 100% 100%, 0% 100%)`
-                : undefined;
+        {/* Render Stickers Vector Stage */}
+        <div className="w-full h-full relative overflow-hidden select-none">
+          {stickers.map((s) => {
+            const transformStyle = `translate(-50%, -50%) scale(${s.scale || 1}) rotate(${s.rotate || 0}deg)`;
+            const peelVal = s.peel || 0;
+            
+            // Vector page curl clipping style
+            const clipPathStyle = peelVal > 0 
+              ? `polygon(0% 0%, ${100 - peelVal}% 0%, 100% ${peelVal}%, 100% 100%, 0% 100%)`
+              : undefined;
 
-              const styleBase = {
-                left: `${s.x}%`,
-                top: `${s.y}%`,
-                transform: transformStyle,
-                zIndex: s.zIndex || 10,
-                // Die cut thick white border with outer drop shadow
-                filter: `
-                  drop-shadow(1.5px 1.5px 0px #fff) 
-                  drop-shadow(-1.5px -1.5px 0px #fff) 
-                  drop-shadow(1.5px -1.5px 0px #fff) 
-                  drop-shadow(-1.5px 1.5px 0px #fff) 
-                  drop-shadow(2px 2px 0px #000)
-                  drop-shadow(3px 4px 5px rgba(0,0,0,0.45))
-                `,
-                clipPath: clipPathStyle
-              };
+            const styleBase = {
+              left: `${s.x}%`,
+              top: `${s.y}%`,
+              transform: transformStyle,
+              zIndex: s.zIndex || 10,
+              // Die cut thick white border with outer drop shadow
+              filter: `
+                drop-shadow(1.5px 1.5px 0px #fff) 
+                drop-shadow(-1.5px -1.5px 0px #fff) 
+                drop-shadow(1.5px -1.5px 0px #fff) 
+                drop-shadow(-1.5px 1.5px 0px #fff) 
+                drop-shadow(2px 2px 0px #000)
+                drop-shadow(3px 4px 5px rgba(0,0,0,0.45))
+              `,
+              clipPath: clipPathStyle
+            };
 
-              return (
-                <div key={s.id} style={styleBase} className="absolute pointer-events-none select-none">
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    {s.type === 'text' ? (
-                      <span
-                        style={{
-                          fontFamily: s.font,
-                          color: s.color,
-                          fontSize: '22px',
-                          lineHeight: '1',
-                          fontWeight: 'bold',
-                          whiteSpace: 'nowrap',
-                          textShadow: `
-                            2px 2px 0px #000,
-                            -0.5px -0.5px 0px #000,
-                            0.5px -0.5px 0px #000,
-                            -0.5px 0.5px 0px #000,
-                            0.5px 0.5px 0px #000
-                          `
-                        }}
-                        className="block px-1 select-none"
-                      >
-                        {s.text}
-                      </span>
-                    ) : (
-                      <div className="w-14 h-14 select-none">
-                        {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
-                      </div>
-                    )}
+            return (
+              <div key={s.id} style={styleBase} className="absolute pointer-events-none select-none">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {s.type === 'text' ? (
+                    <span
+                      style={{
+                        fontFamily: s.font,
+                        color: s.color,
+                        fontSize: '22px',
+                        lineHeight: '1',
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap',
+                        textShadow: `
+                          2px 2px 0px #000,
+                          -0.5px -0.5px 0px #000,
+                          0.5px -0.5px 0px #000,
+                          -0.5px 0.5px 0px #000,
+                          0.5px 0.5px 0px #000
+                        `
+                      }}
+                      className="block px-1 select-none"
+                    >
+                      {s.text}
+                    </span>
+                  ) : (
+                    <div className="w-14 h-14 select-none">
+                      {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
+                    </div>
+                  )}
 
-                    {/* Holographic foil overlay filter */}
-                    {s.holo && (
-                      <div 
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(255,255,255,0) 20%, rgba(255,0,240,0.3) 35%, rgba(0,240,255,0.35) 50%, rgba(255,229,0,0.25) 65%, rgba(255,255,255,0) 80%)',
-                          backgroundSize: '200% 200%',
-                          animation: 'themeInfiniteGridPan 6s linear infinite',
-                          mixBlendMode: 'color-dodge',
-                        }}
-                        className="absolute inset-0 rounded-md pointer-events-none"
-                      />
-                    )}
+                  {/* Holographic foil overlay filter */}
+                  {s.holo && (
+                    <div 
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0) 20%, rgba(255,0,240,0.3) 35%, rgba(0,240,255,0.35) 50%, rgba(255,229,0,0.25) 65%, rgba(255,255,255,0) 80%)',
+                        backgroundSize: '200% 200%',
+                        animation: 'themeInfiniteGridPan 6s linear infinite',
+                        mixBlendMode: 'color-dodge',
+                      }}
+                      className="absolute inset-0 rounded-md pointer-events-none"
+                    />
+                  )}
 
-                    {/* Fold corner backing */}
-                    {peelVal > 0 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '0',
-                          right: '0',
-                          width: `${peelVal}%`,
-                          height: `${peelVal}%`,
-                          background: 'linear-gradient(135deg, #111 0%, #aaa 35%, #fff 70%, #999 100%)',
-                          borderLeft: '1px solid #111',
-                          borderBottom: '1px solid #111',
-                          zIndex: 2,
-                          transformOrigin: 'top right',
-                          transform: 'scaleX(-1) rotate(-90deg)',
-                          boxShadow: '-1px 1px 2px rgba(0,0,0,0.5)'
-                        }}
-                      />
-                    )}
-                  </div>
+                  {/* Fold corner backing */}
+                  {peelVal > 0 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '0',
+                        right: '0',
+                        width: `${peelVal}%`,
+                        height: `${peelVal}%`,
+                        background: 'linear-gradient(135deg, #111 0%, #aaa 35%, #fff 70%, #999 100%)',
+                        borderLeft: '1px solid #111',
+                        borderBottom: '1px solid #111',
+                        zIndex: 2,
+                        transformOrigin: 'top right',
+                        transform: 'scaleX(-1) rotate(-90deg)',
+                        boxShadow: '-1px 1px 2px rgba(0,0,0,0.5)'
+                      }}
+                    />
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
 
         {/* Action customize button overlay */}
         <button
@@ -799,14 +750,14 @@ export default function ChannelCover() {
                 {/* Minimize Button */}
                 <button 
                   onClick={closeModal}
-                  className="w-5 h-5 bg-[#D1D5DB] text-black border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-extrabold flex items-center justify-center"
+                  className="w-5 h-5 bg-[#D1D5DB] text-black border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-extrabold flex items-center justify-center animate-none"
                 >
                   _
                 </button>
                 {/* Close Button */}
                 <button 
                   onClick={closeModal}
-                  className="w-5 h-5 bg-[#D1D5DB] hover:bg-rose-600 hover:text-white text-black border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-extrabold flex items-center justify-center"
+                  className="w-5 h-5 bg-[#D1D5DB] hover:bg-rose-600 hover:text-white text-black border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-extrabold flex items-center justify-center animate-none"
                 >
                   X
                 </button>
@@ -825,30 +776,12 @@ export default function ChannelCover() {
               </div>
             </div>
 
-            {/* Studio Navigation Options */}
-            <div className="flex bg-[#BCBCBC] p-1 gap-1 border-b border-[#888]">
-              <button
-                onClick={() => { playRetroSound('click'); setActiveTab('stickers'); }}
-                className={`flex-1 py-1.5 text-center text-xs font-bold font-mono flex items-center justify-center gap-2 border-2 ${
-                  activeTab === 'stickers'
-                    ? 'border-t-[#555] border-l-[#555] border-r-white border-b-white bg-[#EAEAEA] text-pink-600 shadow-inner'
-                    : 'border-t-white border-l-white border-r-[#555] border-b-[#555] bg-[#D1D5DB] text-gray-800 hover:bg-[#C0C0C0]'
-                }`}
-              >
-                <Palette size={14} />
-                <span>[OPTION A: RETRO DESIGNER]</span>
-              </button>
-              <button
-                onClick={() => { playRetroSound('click'); setActiveTab('upload'); }}
-                className={`flex-1 py-1.5 text-center text-xs font-bold font-mono flex items-center justify-center gap-2 border-2 ${
-                  activeTab === 'upload'
-                    ? 'border-t-[#555] border-l-[#555] border-r-white border-b-white bg-[#EAEAEA] text-pink-600 shadow-inner'
-                    : 'border-t-white border-l-white border-r-[#555] border-b-[#555] bg-[#D1D5DB] text-gray-800 hover:bg-[#C0C0C0]'
-                }`}
-              >
-                <UploadCloud size={14} />
-                <span>[OPTION B: DIRECT IMAGE]</span>
-              </button>
+            {/* Studio Navigation Options Header (Clean 90s bezel) */}
+            <div className="bg-[#BCBCBC] p-1 border-b border-[#888] select-none">
+              <div className="py-2 px-3 text-xs font-bold font-mono text-pink-600 bg-[#EAEAEA] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white shadow-inner flex items-center gap-2">
+                <Palette size={14} className="animate-pulse" />
+                <span>[RETRO STICKER DESIGNER WORKSPACE]</span>
+              </div>
             </div>
 
             {/* Workspace Canvas and Controls Wrapper */}
@@ -869,15 +802,13 @@ export default function ChannelCover() {
                     >
                       CRT Scanlines: {crtEnabled ? 'ON' : 'OFF'}
                     </button>
-                    {activeTab === 'stickers' && (
-                      <span className="text-[#FFE500] animate-pulse">DRAG & CLICK INDIVIDUAL STICKERS TO CONTROL</span>
-                    )}
+                    <span className="text-[#FFE500] animate-pulse">DRAG & CLICK INDIVIDUAL STICKERS TO CONTROL</span>
                   </div>
                 </div>
 
                 <div
                   ref={canvasRef}
-                  style={activeTab === 'stickers' ? editCurrentPreset.style : {}}
+                  style={editCurrentPreset.style}
                   onMouseMove={handleCanvasMouseMove}
                   onTouchMove={handleCanvasMouseMove}
                   onMouseUp={stopDragging}
@@ -885,133 +816,129 @@ export default function ChannelCover() {
                   onMouseLeave={stopDragging}
                   className="w-full h-36 sm:h-44 md:h-52 overflow-hidden relative shadow-inner select-none bg-slate-900 border border-slate-800"
                 >
-                  {activeTab === 'upload' ? (
-                    editUploadedImage ? (
-                      <img
-                        src={editUploadedImage}
-                        alt="Custom cover upload preview"
-                        className="w-full h-full object-cover select-none"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-500 bg-slate-950">
-                        <Camera size={32} className="opacity-50" />
-                        <p className="text-xs font-mono">No Image Uploaded for preview.</p>
-                      </div>
-                    )
-                  ) : (
-                    /* Interactive Drag and Customise Canvas */
-                    <div className="w-full h-full absolute inset-0">
-                      {editStickers.map((s) => {
-                        const isSelected = s.id === activeStickerId;
-                        const transformStyle = `translate(-50%, -50%) scale(${s.scale || 1}) rotate(${s.rotate || 0}deg)`;
-                        const peelVal = s.peel || 0;
-                        const clipPathStyle = peelVal > 0 
-                          ? `polygon(0% 0%, ${100 - peelVal}% 0%, 100% ${peelVal}%, 100% 100%, 0% 100%)`
-                          : undefined;
+                  {/* Interactive Drag and Customise Canvas */}
+                  <div className="w-full h-full absolute inset-0">
+                    {editStickers.map((s) => {
+                      const isSelected = s.id === activeStickerId;
+                      const isDragging = s.id === draggingStickerId;
+                      const currentScale = (s.scale || 1) * (isDragging ? 1.15 : 1);
+                      const transformStyle = `translate(-50%, -50%) scale(${currentScale}) rotate(${s.rotate || 0}deg)`;
+                      const peelVal = s.peel || 0;
+                      const clipPathStyle = peelVal > 0 
+                        ? `polygon(0% 0%, ${100 - peelVal}% 0%, 100% ${peelVal}%, 100% 100%, 0% 100%)`
+                        : undefined;
 
-                        const itemStyle = {
-                          left: `${s.x}%`,
-                          top: `${s.y}%`,
-                          transform: transformStyle,
-                          zIndex: isSelected ? 99 : (editStickers.indexOf(s) + 10),
-                          filter: `
+                      const itemStyle = {
+                        left: `${s.x}%`,
+                        top: `${s.y}%`,
+                        transform: transformStyle,
+                        zIndex: isSelected ? 99 : (editStickers.indexOf(s) + 10),
+                        filter: isDragging
+                          ? `
+                            drop-shadow(1.5px 1.5px 0px #fff) 
+                            drop-shadow(-1.5px -1.5px 0px #fff) 
+                            drop-shadow(1.5px -1.5px 0px #fff) 
+                            drop-shadow(-1.5px 1.5px 0px #fff) 
+                            drop-shadow(4px 4px 0px #000)
+                            drop-shadow(8px 12px 14px rgba(0,0,0,0.45))
+                          `
+                          : `
                             drop-shadow(1.5px 1.5px 0px #fff) 
                             drop-shadow(-1.5px -1.5px 0px #fff) 
                             drop-shadow(1.5px -1.5px 0px #fff) 
                             drop-shadow(-1.5px 1.5px 0px #fff) 
                             drop-shadow(2px 2px 0px #000)
-                            drop-shadow(${isSelected ? '5px 8px 10px rgba(0,0,0,0.5)' : '3px 4px 6px rgba(0,0,0,0.4)'})
+                            drop-shadow(3px 4px 5px rgba(0,0,0,0.35))
                           `,
-                          cursor: 'move',
-                          clipPath: clipPathStyle
-                        };
+                        cursor: isDragging ? 'grabbing' : 'grab',
+                        clipPath: clipPathStyle
+                      };
 
-                        return (
-                          <div
-                            key={s.id}
-                            onMouseDown={(e) => handleStickerStartDrag(e, s.id)}
-                            onTouchStart={(e) => handleStickerStartDrag(e, s.id)}
-                            onMouseMove={s.holo ? handleHoloMouseMove : undefined}
-                            style={itemStyle}
-                            className={`absolute select-none p-1 transition-shadow duration-100 ${
-                              isSelected ? 'ring-2 ring-[#FFE500] ring-offset-2 ring-offset-slate-950 rounded' : ''
-                            }`}
-                          >
-                            <div className="relative w-full h-full flex items-center justify-center">
-                              {s.type === 'text' ? (
-                                <span
-                                  style={{
-                                    fontFamily: s.font,
-                                    color: s.color,
-                                    fontSize: '20px',
-                                    fontWeight: 'bold',
-                                    whiteSpace: 'nowrap',
-                                    textShadow: `
-                                      2px 2px 0px #000,
-                                      -0.5px -0.5px 0px #000,
-                                      0.5px -0.5px 0px #000,
-                                      -0.5px 0.5px 0px #000,
-                                      0.5px 0.5px 0px #000
-                                    `
-                                  }}
-                                  className="block select-none"
-                                >
-                                  {s.text}
-                                </span>
-                              ) : (
-                                <div className="w-12 h-12 select-none">
-                                  {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
-                                </div>
-                              )}
-
-                              {/* Interactive Holographic Gloss Overlay */}
-                              {s.holo && (
-                                <div 
-                                  style={{
-                                    background: 'radial-gradient(circle at var(--holo-x, 50%) var(--holo-y, 50%), rgba(255,255,255,0.7) 0%, rgba(255,0,240,0.3) 30%, rgba(0,240,255,0.3) 60%, rgba(255,255,255,0) 100%)',
-                                    mixBlendMode: 'color-dodge',
-                                  }}
-                                  className="absolute inset-0 rounded pointer-events-none"
-                                />
-                              )}
-
-                              {/* Vector Page peel folded corner */}
-                              {peelVal > 0 && (
-                                <div
-                                  style={{
-                                    position: 'absolute',
-                                    top: '0',
-                                    right: '0',
-                                    width: `${peelVal}%`,
-                                    height: `${peelVal}%`,
-                                    background: 'linear-gradient(135deg, #222 0%, #aaa 35%, #fff 70%, #999 100%)',
-                                    borderLeft: '1px solid #111',
-                                    borderBottom: '1px solid #111',
-                                    zIndex: 2,
-                                    transformOrigin: 'top right',
-                                    transform: 'scaleX(-1) rotate(-90deg)'
-                                  }}
-                                />
-                              )}
-                            </div>
-
-                            {/* Floating individual delete button */}
-                            {isSelected && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteSticker(s.id);
+                      return (
+                        <div
+                          key={s.id}
+                          onMouseDown={(e) => handleStickerStartDrag(e, s.id)}
+                          onTouchStart={(e) => handleStickerStartDrag(e, s.id)}
+                          onMouseMove={s.holo ? handleHoloMouseMove : undefined}
+                          style={itemStyle}
+                          className={`absolute select-none p-1 transition-shadow duration-100 ${
+                            isSelected ? 'ring-2 ring-[#FFE500] ring-offset-2 ring-offset-slate-950 rounded' : ''
+                          }`}
+                        >
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            {s.type === 'text' ? (
+                              <span
+                                style={{
+                                  fontFamily: s.font,
+                                  color: s.color,
+                                  fontSize: '20px',
+                                  fontWeight: 'bold',
+                                  whiteSpace: 'nowrap',
+                                  textShadow: `
+                                    2px 2px 0px #000,
+                                    -0.5px -0.5px 0px #000,
+                                    0.5px -0.5px 0px #000,
+                                    -0.5px 0.5px 0px #000,
+                                    0.5px 0.5px 0px #000
+                                  `
                                 }}
-                                className="absolute -top-3.5 -right-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full p-1 border-2 border-black shadow-lg cursor-pointer transition active:scale-90"
+                                className="block select-none"
                               >
-                                <X size={10} />
-                              </button>
+                                {s.text}
+                              </span>
+                            ) : (
+                              <div className="w-12 h-12 select-none">
+                                {STICKERS_CATALOG.find(c => c.id === s.value)?.render()}
+                              </div>
+                            )}
+
+                            {/* Interactive Holographic Gloss Overlay */}
+                            {s.holo && (
+                              <div 
+                                style={{
+                                  background: 'radial-gradient(circle at var(--holo-x, 50%) var(--holo-y, 50%), rgba(255,255,255,0.7) 0%, rgba(255,0,240,0.3) 30%, rgba(0,240,255,0.3) 60%, rgba(255,255,255,0) 100%)',
+                                  mixBlendMode: 'color-dodge',
+                                }}
+                                className="absolute inset-0 rounded pointer-events-none"
+                              />
+                            )}
+
+                            {/* Vector Page peel folded corner */}
+                            {peelVal > 0 && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: '0',
+                                  right: '0',
+                                  width: `${peelVal}%`,
+                                  height: `${peelVal}%`,
+                                  background: 'linear-gradient(135deg, #222 0%, #aaa 35%, #fff 70%, #999 100%)',
+                                  borderLeft: '1px solid #111',
+                                  borderBottom: '1px solid #111',
+                                  zIndex: 2,
+                                  transformOrigin: 'top right',
+                                  transform: 'scaleX(-1) rotate(-90deg)'
+                                }}
+                              />
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+
+                          {/* Floating individual delete button */}
+                          {isSelected && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteSticker(s.id);
+                              }}
+                              className="absolute -top-3.5 -right-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full p-1 border-2 border-black shadow-lg cursor-pointer transition active:scale-90"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {/* Toggable CRT Retro Screen Scanline Filter Overlay */}
                   {crtEnabled && (
@@ -1031,302 +958,270 @@ export default function ChannelCover() {
               </div>
 
               {/* CONTROLS COLUMNS */}
-              {activeTab === 'upload' ? (
-                /* OPTION B: FILE UPLOADER DRAWER */
-                <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-6 rounded flex flex-col items-center justify-center gap-4 text-center">
-                  <div className="w-14 h-14 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[#FFE500]">
-                    <UploadCloud size={28} />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-900 font-bold font-mono text-sm">CHOOSE CUSTOM BANNER IMAGE</h4>
-                    <p className="text-[10px] text-gray-700 font-mono max-w-md mt-1">
-                      Landscape orientation (e.g. 1200x400px) yields the best fit. Your design is retained locally.
-                    </p>
-                  </div>
-                  <label className="bg-[#C0C0C0] hover:bg-[#A9A9A9] text-gray-900 border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] font-bold font-mono text-xs px-4 py-2 cursor-pointer transition flex items-center gap-1.5 active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white">
-                    <Plus size={14} />
-                    <span>LOAD BANNER FILE...</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {editUploadedImage && (
-                    <div className="text-emerald-700 font-bold font-mono text-[10px] flex items-center gap-1">
-                      <Check size={12} />
-                      <span>IMAGE IMPORTED SUCCESSFULLY! CHOOSE "APPLY BANNER" TO DEPLOY</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* OPTION A: STICKER GENERATOR TOOLBOX */
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                
+                {/* Left Controls Box: Templates, Spawning, Backgrounds */}
+                <div className="md:col-span-8 flex flex-col gap-3">
                   
-                  {/* Left Controls Box: Templates, Spawning, Backgrounds */}
-                  <div className="md:col-span-8 flex flex-col gap-3">
-                    
-                    {/* 1. Quick compositions templates */}
-                    <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
-                      <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Layers size={12} className="text-blue-700" />
-                        <span>Instant Studio Templates</span>
-                      </h4>
-                      <div className="grid grid-cols-3 gap-2">
-                        {COMPOSITION_TEMPLATES.map((tpl) => (
-                          <button
-                            key={tpl.name}
-                            onClick={() => loadTemplate(tpl)}
-                            className="bg-[#C0C0C0] hover:bg-slate-300 border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-bold font-mono text-gray-900 py-1.5 px-2 text-center transition flex items-center justify-center gap-1 cursor-pointer"
-                          >
-                            <span>{tpl.name}</span>
-                          </button>
-                        ))}
-                      </div>
+                  {/* 1. Quick compositions templates */}
+                  <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
+                    <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Layers size={12} className="text-blue-700" />
+                      <span>Instant Studio Templates</span>
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {COMPOSITION_TEMPLATES.map((tpl) => (
+                        <button
+                          key={tpl.name}
+                          onClick={() => loadTemplate(tpl)}
+                          className="bg-[#C0C0C0] hover:bg-slate-300 border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white text-[10px] font-bold font-mono text-gray-900 py-1.5 px-2 text-center transition flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <span>{tpl.name}</span>
+                        </button>
+                      ))}
                     </div>
-
-                    {/* 2. Choose background presets */}
-                    <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
-                      <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Palette size={12} className="text-emerald-700" />
-                        <span>Background Skins Catalog</span>
-                      </h4>
-                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                        {BACKGROUND_PRESETS.map((bg) => (
-                          <button
-                            key={bg.id}
-                            onClick={() => { playRetroSound('click'); setEditBgPresetId(bg.id); }}
-                            style={bg.style}
-                            title={bg.name}
-                            className={`h-9 rounded border-2 transition transform active:scale-95 ${
-                              editBgPresetId === bg.id
-                                ? 'border-white scale-105 shadow-md shadow-black'
-                                : 'border-[#444] hover:border-white'
-                            }`}
-                          >
-                            {editBgPresetId === bg.id && (
-                              <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                                <Check size={14} className="text-white drop-shadow" />
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 3. Sticker catalog box */}
-                    <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
-                      <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Sparkles size={12} className="text-pink-600" />
-                        <span>Stickers Spawner Catalog</span>
-                      </h4>
-                      <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
-                        {STICKERS_CATALOG.map((st) => (
-                          <button
-                            key={st.id}
-                            onClick={() => addStickerToCanvas(st.id)}
-                            title={st.name}
-                            className="bg-[#C0C0C0] hover:bg-[#E0E0E0] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white p-1.5 rounded flex items-center justify-center transition-all transform active:scale-95 cursor-pointer aspect-square"
-                          >
-                            <div className="w-8 h-8 hover:rotate-6 transition">
-                              {st.render()}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 4. Text spawner */}
-                    <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
-                      <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <FileText size={12} className="text-blue-700" />
-                        <span>Retro Text badge Spawner</span>
-                      </h4>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="text"
-                          value={textVal}
-                          onChange={(e) => setTextVal(e.target.value)}
-                          maxLength={32}
-                          placeholder="TYPE RETRO BADGE TEXT..."
-                          className="flex-1 bg-white border border-[#888] font-mono font-bold text-xs px-2.5 py-1.5 focus:outline-none focus:border-pink-500 uppercase"
-                        />
-                        <div className="flex gap-2 justify-between">
-                          <select
-                            value={textFont}
-                            onChange={(e) => setTextFont(e.target.value)}
-                            className="bg-[#D1D5DB] font-mono text-[10px] font-bold border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] px-1.5 py-1"
-                          >
-                            {FONTS_LIST.map(f => (
-                              <option key={f.value} value={f.value}>{f.label}</option>
-                            ))}
-                          </select>
-                          <div className="flex gap-1 items-center bg-white px-1 border border-[#888]">
-                            {['#FFE500', '#FF00F0', '#00F0FF', '#39FF14', '#FFFFFF'].map((c) => (
-                              <button
-                                key={c}
-                                onClick={() => setTextColor(c)}
-                                style={{ backgroundColor: c }}
-                                className={`w-4 h-4 rounded-full border border-black/50 ${
-                                  textColor === c ? 'ring-1 ring-black scale-110' : ''
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <button
-                            onClick={addTextSticker}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-mono font-bold text-[10px] px-3.5 py-1.5 border-2 border-t-indigo-400 border-l-indigo-400 border-r-indigo-900 border-b-indigo-900 cursor-pointer active:scale-95"
-                          >
-                            SPAWN
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
 
-                  {/* Right Controls Box: Selected Active Sticker parameters */}
-                  <div className="md:col-span-4 flex flex-col gap-3">
-                    <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded flex-1 flex flex-col">
-                      <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                        <Settings size={12} className="text-yellow-600" />
-                        <span>Active Controls Panel</span>
-                      </h4>
+                  {/* 2. Choose background presets */}
+                  <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
+                    <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Palette size={12} className="text-emerald-700" />
+                      <span>Background Skins Catalog</span>
+                    </h4>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                      {BACKGROUND_PRESETS.map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() => { playRetroSound('click'); setEditBgPresetId(bg.id); }}
+                          style={bg.style}
+                          title={bg.name}
+                          className={`h-9 rounded border-2 transition transform active:scale-95 relative ${
+                            editBgPresetId === bg.id
+                              ? 'border-white scale-105 shadow-md shadow-black'
+                              : 'border-[#444] hover:border-white'
+                          }`}
+                        >
+                          {editBgPresetId === bg.id && (
+                            <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                              <Check size={14} className="text-white drop-shadow" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                      {activeSticker ? (
-                        <div className="flex-1 flex flex-col gap-4">
-                          {/* Selected Info Card */}
-                          <div className="bg-[#EAEAEA] border border-[#888] p-2 rounded flex items-center gap-2 select-none">
-                            <div className="w-9 h-9 bg-slate-900 border border-slate-700 rounded flex items-center justify-center p-1">
-                              {activeSticker.type === 'text' ? (
-                                <span className="font-mono font-bold text-[9px] text-[#FFE500]">TXT</span>
-                              ) : (
-                                STICKERS_CATALOG.find(c => c.id === activeSticker.value)?.render()
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[8px] font-bold text-gray-500 font-mono">SELECTED ITEM</p>
-                              <p className="text-[11px] font-bold text-black truncate font-mono">
-                                {activeSticker.type === 'text' ? `"${activeSticker.text}"` : STICKERS_CATALOG.find(c => c.id === activeSticker.value)?.name}
-                              </p>
-                            </div>
+                  {/* 3. Sticker catalog box */}
+                  <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
+                    <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-pink-600" />
+                      <span>Stickers Spawner Catalog</span>
+                    </h4>
+                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                      {STICKERS_CATALOG.map((st) => (
+                        <button
+                          key={st.id}
+                          onClick={() => addStickerToCanvas(st.id)}
+                          title={st.name}
+                          className="bg-[#C0C0C0] hover:bg-[#E0E0E0] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white p-1.5 rounded flex items-center justify-center transition-all transform active:scale-95 cursor-pointer aspect-square"
+                        >
+                          <div className="w-8 h-8 hover:rotate-6 transition">
+                            {st.render()}
                           </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                          {/* Holographic foil Toggle */}
-                          <div className="bg-[#EAEAEA] border border-[#888] p-2 rounded flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 select-none">
-                              <Sparkles size={11} className="text-pink-500 animate-pulse" />
-                              <span className="text-[10px] font-bold font-mono text-gray-800">Holographic foil?</span>
-                            </div>
-                            <div className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                id="holoFoilToggle"
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={Boolean(activeSticker.holo)}
-                                onChange={(e) => { playRetroSound('click'); updateActiveSticker('holo', e.target.checked); }}
-                              />
-                              <label htmlFor="holoFoilToggle" className="w-9 h-5 bg-gray-400 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-600 cursor-pointer" />
-                            </div>
-                          </div>
-
-                          {/* Peel Corner Fold Slider */}
-                          <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
-                            <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
-                              <span>Corner Peel fold</span>
-                              <span className="text-pink-600">{activeSticker.peel || 0}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="30"
-                              step="2"
-                              value={activeSticker.peel || 0}
-                              onChange={(e) => updateActiveSticker('peel', parseInt(e.target.value))}
-                              className="w-full cursor-pointer accent-pink-600"
+                  {/* 4. Text spawner */}
+                  <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded">
+                    <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <FileText size={12} className="text-blue-700" />
+                      <span>Retro Text badge Spawner</span>
+                    </h4>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={textVal}
+                        onChange={(e) => setTextVal(e.target.value)}
+                        maxLength={32}
+                        placeholder="TYPE RETRO BADGE TEXT..."
+                        className="flex-1 bg-white border border-[#888] font-mono font-bold text-xs px-2.5 py-1.5 focus:outline-none focus:border-pink-500 uppercase"
+                      />
+                      <div className="flex gap-2 justify-between">
+                        <select
+                          value={textFont}
+                          onChange={(e) => setTextFont(e.target.value)}
+                          className="bg-[#D1D5DB] font-mono text-[10px] font-bold border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] px-1.5 py-1"
+                        >
+                          {FONTS_LIST.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-1 items-center bg-white px-1 border border-[#888]">
+                          {['#FFE500', '#FF00F0', '#00F0FF', '#39FF14', '#FFFFFF'].map((c) => (
+                            <button
+                              key={c}
+                              onClick={() => setTextColor(c)}
+                              style={{ backgroundColor: c }}
+                              className={`w-4 h-4 rounded-full border border-black/50 ${
+                                textColor === c ? 'ring-1 ring-black scale-110' : ''
+                              }`}
                             />
-                          </div>
-
-                          {/* Scale parameter slider */}
-                          <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
-                            <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
-                              <span>Scale Factor</span>
-                              <span className="text-pink-600">{activeSticker.scale ? activeSticker.scale.toFixed(1) : '1.0'}x</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0.5"
-                              max="3.0"
-                              step="0.1"
-                              value={activeSticker.scale || 1.0}
-                              onChange={(e) => updateActiveSticker('scale', parseFloat(e.target.value))}
-                              className="w-full cursor-pointer accent-indigo-600"
-                            />
-                          </div>
-
-                          {/* Rotation slider */}
-                          <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
-                            <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
-                              <span>Rotation angle</span>
-                              <span className="text-pink-600">{activeSticker.rotate || 0}°</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="-180"
-                              max="180"
-                              step="5"
-                              value={activeSticker.rotate || 0}
-                              onChange={(e) => updateActiveSticker('rotate', parseInt(e.target.value))}
-                              className="w-full cursor-pointer accent-emerald-600"
-                            />
-                          </div>
-
-                          {/* Zlayer Depth management */}
-                          <div className="space-y-1.5 bg-[#EAEAEA] border border-[#888] p-2 rounded">
-                            <label className="text-[10px] font-bold font-mono text-gray-800 block select-none">Layer depth Ordering</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => changeStickerLayer('up')}
-                                className="bg-[#D1D5DB] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-1 px-2 text-[10px] font-bold font-mono flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                <MoveUp size={11} className="text-blue-700" />
-                                <span>LAYER UP</span>
-                              </button>
-                              <button
-                                onClick={() => changeStickerLayer('down')}
-                                className="bg-[#D1D5DB] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-1 px-2 text-[10px] font-bold font-mono flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                <MoveDown size={11} className="text-orange-700" />
-                                <span>LAYER DOWN</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex-1" />
-
-                          {/* Trash Delete Action */}
-                          <button
-                            onClick={() => deleteSticker(activeStickerId)}
-                            className="bg-rose-100 hover:bg-rose-200 text-rose-700 hover:text-rose-800 border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-2 px-3 text-[10px] font-bold font-mono flex items-center justify-center gap-1.5 transition cursor-pointer"
-                          >
-                            <Trash2 size={13} />
-                            <span>DELETE SELECTED ITEM</span>
-                          </button>
+                          ))}
                         </div>
-                      ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center text-gray-500 border-2 border-dashed border-[#888] bg-[#EAEAEA] p-4 py-8 rounded select-none">
-                          <Palette size={22} className="opacity-40 animate-bounce" />
-                          <p className="text-[10px] font-bold font-mono max-w-[170px] leading-relaxed">
-                            Click on any sticker inside the workspace stage above to unlock designer parameters!
-                          </p>
-                        </div>
-                      )}
+                        <button
+                          onClick={addTextSticker}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-mono font-bold text-[10px] px-3.5 py-1.5 border-2 border-t-indigo-400 border-l-indigo-400 border-r-indigo-900 border-b-indigo-900 cursor-pointer active:scale-95 animate-none"
+                        >
+                          SPAWN
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                 </div>
-              )}
+
+                {/* Right Controls Box: Selected Active Sticker parameters */}
+                <div className="md:col-span-4 flex flex-col gap-3">
+                  <div className="bg-[#D1D5DB] border-2 border-t-[#555] border-l-[#555] border-r-white border-b-white p-3 rounded flex-1 flex flex-col">
+                    <h4 className="text-[10px] font-bold text-gray-800 font-mono uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Settings size={12} className="text-yellow-600" />
+                      <span>Active Controls Panel</span>
+                    </h4>
+
+                    {activeSticker ? (
+                      <div className="flex-1 flex flex-col gap-4">
+                        {/* Selected Info Card */}
+                        <div className="bg-[#EAEAEA] border border-[#888] p-2 rounded flex items-center gap-2 select-none">
+                          <div className="w-9 h-9 bg-slate-900 border border-slate-700 rounded flex items-center justify-center p-1">
+                            {activeSticker.type === 'text' ? (
+                              <span className="font-mono font-bold text-[9px] text-[#FFE500]">TXT</span>
+                            ) : (
+                              STICKERS_CATALOG.find(c => c.id === activeSticker.value)?.render()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[8px] font-bold text-gray-500 font-mono">SELECTED ITEM</p>
+                            <p className="text-[11px] font-bold text-black truncate font-mono">
+                              {activeSticker.type === 'text' ? `"${activeSticker.text}"` : STICKERS_CATALOG.find(c => c.id === activeSticker.value)?.name}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Holographic foil Toggle */}
+                        <div className="bg-[#EAEAEA] border border-[#888] p-2 rounded flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 select-none">
+                            <Sparkles size={11} className="text-pink-500 animate-pulse" />
+                            <span className="text-[10px] font-bold font-mono text-gray-800">Holographic foil?</span>
+                          </div>
+                          <div className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              id="holoFoilToggle"
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={Boolean(activeSticker.holo)}
+                              onChange={(e) => { playRetroSound('click'); updateActiveSticker('holo', e.target.checked); }}
+                            />
+                            <label htmlFor="holoFoilToggle" className="w-9 h-5 bg-gray-400 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-600 cursor-pointer" />
+                          </div>
+                        </div>
+
+                        {/* Peel Corner Fold Slider */}
+                        <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                          <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                            <span>Corner Peel fold</span>
+                            <span className="text-pink-600">{activeSticker.peel || 0}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="30"
+                            step="2"
+                            value={activeSticker.peel || 0}
+                            onChange={(e) => updateActiveSticker('peel', parseInt(e.target.value))}
+                            className="w-full cursor-pointer accent-pink-600"
+                          />
+                        </div>
+
+                        {/* Scale parameter slider */}
+                        <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                          <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                            <span>Scale Factor</span>
+                            <span className="text-pink-600">{activeSticker.scale ? activeSticker.scale.toFixed(1) : '1.0'}x</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.5"
+                            max="3.0"
+                            step="0.1"
+                            value={activeSticker.scale || 1.0}
+                            onChange={(e) => updateActiveSticker('scale', parseFloat(e.target.value))}
+                            className="w-full cursor-pointer accent-indigo-600"
+                          />
+                        </div>
+
+                        {/* Rotation slider */}
+                        <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                          <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                            <span>Rotation angle</span>
+                            <span className="text-pink-600">{activeSticker.rotate || 0}°</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-180"
+                            max="180"
+                            step="5"
+                            value={activeSticker.rotate || 0}
+                            onChange={(e) => updateActiveSticker('rotate', parseInt(e.target.value))}
+                            className="w-full cursor-pointer accent-emerald-600"
+                          />
+                        </div>
+
+                        {/* Zlayer Depth management */}
+                        <div className="space-y-1.5 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                          <label className="text-[10px] font-bold font-mono text-gray-800 block select-none">Layer depth Ordering</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => changeStickerLayer('up')}
+                              className="bg-[#D1D5DB] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-1 px-2 text-[10px] font-bold font-mono flex items-center justify-center gap-1 cursor-pointer animate-none"
+                            >
+                              <MoveUp size={11} className="text-blue-700" />
+                              <span>LAYER UP</span>
+                            </button>
+                            <button
+                              onClick={() => changeStickerLayer('down')}
+                              className="bg-[#D1D5DB] border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-1 px-2 text-[10px] font-bold font-mono flex items-center justify-center gap-1 cursor-pointer animate-none"
+                            >
+                              <MoveDown size={11} className="text-orange-700" />
+                              <span>LAYER DOWN</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex-1" />
+
+                        {/* Trash Delete Action */}
+                        <button
+                          onClick={() => deleteSticker(activeStickerId)}
+                          className="bg-rose-100 hover:bg-rose-200 text-rose-700 hover:text-rose-800 border-2 border-t-white border-l-white border-r-[#555] border-b-[#555] active:border-t-[#555] active:border-l-[#555] active:border-r-white active:border-b-white py-2 px-3 text-[10px] font-bold font-mono flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                          <span>DELETE SELECTED ITEM</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center text-gray-500 border-2 border-dashed border-[#888] bg-[#EAEAEA] p-4 py-8 rounded select-none">
+                        <Palette size={22} className="opacity-40 animate-bounce" />
+                        <p className="text-[10px] font-bold font-mono max-w-[170px] leading-relaxed">
+                          Click on any sticker inside the workspace stage above to unlock designer parameters!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
 
             </div>
 
@@ -1344,7 +1239,7 @@ export default function ChannelCover() {
                 </button>
                 <button
                   onClick={saveChanges}
-                  className="bg-[#000080] hover:bg-blue-900 text-white text-xs font-bold font-mono px-5 py-2.5 border-2 border-t-[#5050FF] border-l-[#5050FF] border-r-[#000020] border-b-[#000020] flex items-center gap-1.5 shadow active:scale-95 cursor-pointer"
+                  className="bg-[#000080] hover:bg-blue-900 text-white text-xs font-bold font-mono px-5 py-2.5 border-2 border-t-[#5050FF] border-l-[#5050FF] border-r-[#000020] border-b-[#000020] flex items-center gap-1.5 shadow active:scale-95 cursor-pointer animate-none"
                 >
                   <Check size={14} className="text-[#FFE500]" />
                   <span>[APPLY BANNER]</span>
