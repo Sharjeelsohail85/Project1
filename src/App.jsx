@@ -1091,8 +1091,6 @@ function App() {
                       <ChannelPage
                         embedded
                         onOpenVideo={handleOpenVideo}
-                        posterText={channelPosterText}
-                        posterTextEnabled={channelPosterEnabled}
                       />
                     )}
                   />

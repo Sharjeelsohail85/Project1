@@ -1,5 +1,4 @@
 import { memo, useEffect, useMemo, useState, useCallback } from 'react'
-import PosterText from './PosterText'
 import ContentItem from './ContentItem'
 import ChannelCover from './ChannelCover'
 import { videoAPI } from '../services/api.service'
@@ -74,8 +73,6 @@ const ChannelPage = memo(function ChannelPage({
   active = true,
   embedded = false,
   onOpenVideo = noop,
-  posterText = 'THENEEDLEDROP',
-  posterTextEnabled = false,
 }) {
   const [videos, setVideos] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -165,11 +162,7 @@ const handleOpenVideo = useCallback((video) => {
 
         <div className="channel-hero-copy">
           <p className="channel-kicker">Featured Channel</p>
-          {posterTextEnabled ? (
-            <PosterText text={posterText} className="channel-title channel-title-poster" ariaLabel="Channel poster title" />
-          ) : (
-            <h2 className="channel-title">Signal / Noise Lab</h2>
-          )}
+          <h2 className="channel-title">Signal / Noise Lab</h2>
           <p className="channel-tagline">
             Uploaded and migrated videos linked to your account channels appear here.
           </p>

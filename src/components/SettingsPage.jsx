@@ -11,7 +11,6 @@ import Css2Exact from './personalization/Css2Exact'
 import MixingExact from './personalization/MixingExact'
 import TagsPage from './tags/TagsPage'
 import ChannelPage from './ChannelPage'
-import PosterText from './PosterText'
 import { loginWithOAuth, logout } from '../services/auth.service'
 import { isOAuthProviderConfigured } from '../config/auth.config'
 import logoOctopus from '../../resources/logo-octopus.png'
@@ -1015,58 +1014,10 @@ export default function SettingsPage({
                   )}
                   {isChannelRoute && section.id === 'channel-main' && (
                     <>
-                      <div className="channel-settings-panel">
-                        <div className="channel-settings-title">Channel poster text</div>
-                        <div className="channel-settings-subtitle">
-                          Type any text and render it in a poster style like your attached design.
-                        </div>
-
-                        <div className="channel-poster-setting-row channel-poster-setting-row-stack">
-                          <label className="channel-poster-setting-label" htmlFor="channelPosterTextInput">
-                            Poster text variable
-                          </label>
-                          <input
-                            id="channelPosterTextInput"
-                            type="text"
-                            maxLength={28}
-                            className="channel-poster-input input"
-                            value={channelPosterText}
-                            onChange={handleChannelPosterTextInputChange}
-                            placeholder="Type poster text"
-                            aria-label="Poster text variable"
-                          />
-                        </div>
-
-                        <div className="channel-poster-setting-row">
-                          <div className="channel-poster-setting-label">Enable poster title on Channel page</div>
-                          <div className="signup-toggle-parent button-toggle-parent channel-poster-toggle-parent">
-                            <input
-                              id="channelPosterEnabledToggle"
-                              type="checkbox"
-                              className="button-toggle"
-                              checked={Boolean(channelPosterEnabled)}
-                              onChange={handleChannelPosterEnabledToggleChange}
-                            />
-                            <label htmlFor="channelPosterEnabledToggle" />
-                          </div>
-                        </div>
-
-                        <div className="channel-poster-preview" aria-live="polite">
-                          <div className="channel-poster-preview-label">Poster preview</div>
-                          <PosterText
-                            text={channelPosterText || 'THENEEDLEDROP'}
-                            className="channel-poster-preview-logo"
-                            ariaLabel="Channel poster text preview"
-                          />
-                        </div>
-                      </div>
-
                       <div className="section-channel-embed">
                         {channelContent || (
                           <ChannelPage
                             embedded
-                            posterText={channelPosterText}
-                            posterTextEnabled={channelPosterEnabled}
                           />
                         )}
                       </div>
