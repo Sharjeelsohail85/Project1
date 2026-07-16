@@ -423,116 +423,106 @@ const COMPOSITION_TEMPLATES = [
 
 // --- HIGH-FIDELITY RETRO STICKER RENDERERS ---
 function renderHighFidelityTextSticker(s) {
-  const lines = s.text ? s.text.split(' ') : ['STIKR'];
-  const F = 38; // Ideal font size for letters
-  const charWidth = F * 0.48; // Overlapping character width
-  
+  // Replace standard spaces with newlines if needed, or keep spaces.
+  const rawText = s.text || 'GOOD\nMORNING!';
+  const formattedText = String(rawText).replace(/\\n/g, '\n');
+
+  // Resolve customizable design values or fallbacks
+  const colorText = s.colorText || s.color || '#f1593c';
+  const colorStroke = s.colorStroke || '#000000';
+  const colorSticker = s.colorSticker || '#f2b714';
+  const colorShadow = s.colorShadow || '#000000';
+  const shadowTransparent = Boolean(s.shadowTransparent);
+
+  const textSize = s.textSize || 32; // base size
+  const lineHeight = s.lineHeight || 0.95;
+  const stickerSize = s.stickerSize || 54; // background outline stroke size
+  const rotate = s.rotate !== undefined ? s.rotate : -6;
+  const skew = s.skew !== undefined ? s.skew : -4;
+
+  // Since our sticker can be rendered on the banner at various scales/sizes, we scale the strokes proportionally to the actual font-size!
+  // In the original CodePen:
+  // Base font-size = 8.5rem (approx 136px)
+  // Background stroke = 54px (i.e. stickerSize)
+  // 3D stroke = 14px
+  // Front stroke = 6px
+  //
+  // Let's compute these stroke widths dynamically relative to the actual font-size:
+  const baseScale = textSize / 136;
+  const strokeBg = stickerSize * baseScale;
+  const stroke3d = 14 * baseScale;
+  const strokeFront = 6 * baseScale;
+
+  // Let's generate the 3D extrusion text shadow.
+  // In CodePen, text-shadow is from -1px 1px 0 up to -12px 12px 0:
+  // -1px 1px 0 var(--color-stroke), -2px 2px 0 var(--color-stroke), ...
+  const textShadowString = Array.from({ length: 12 }, (_, idx) => {
+    const o = idx + 1;
+    const offset = Math.max(1, Math.round(o * baseScale));
+    return `-${offset}px ${offset}px 0px ${colorStroke}`;
+  }).join(', ');
+
+  // Drop shadow is offset: filter: drop-shadow(-24px 30px 0 var(--color-shadow));
+  const dropShadowOffset = Math.round(18 * baseScale);
+  const dropShadowStyle = shadowTransparent
+    ? 'none'
+    : `drop-shadow(-${dropShadowOffset}px ${dropShadowOffset}px 0px ${colorShadow})`;
+
   return (
-    <div 
-      className="flex flex-col items-center select-none"
+    <div
+      className="relative select-none text-center"
       style={{
-        filter: 'url(#text-die-cut-yellow)',
-        padding: '24px', // Extra breathing room for Morphology filter
-        margin: '-24px', // Counter padding shift
+        transform: `rotate(${rotate}deg) skewX(${skew}deg)`,
+        fontFamily: "'Montserrat', sans-serif",
+        fontWeight: 900,
+        textTransform: 'uppercase',
+        letterSpacing: '-0.04em',
+        lineHeight: lineHeight,
+        whiteSpace: 'pre-line',
       }}
     >
-      {lines.map((line, j) => {
-        const chars = line.split('');
-        const currentLineWidth = (chars.length - 1) * charWidth;
-        const lineXStart = -currentLineWidth / 2;
-        
-        return (
-          <div 
-            key={j} 
-            className="relative flex justify-center items-center select-none"
-            style={{
-              height: `${F * 1.05}px`,
-              marginBottom: j < lines.length - 1 ? '-6px' : '0px', // Pull lines together
-              zIndex: 10 - j, // Layer top lines over bottom lines
-            }}
-          >
-            {chars.map((char, i) => {
-              const p = chars.length > 1 ? i / (chars.length - 1) : 0.5;
-              const yCurve = Math.sin(Math.PI * p) * (-15); // Arch curve
-              const charRot = (p - 0.5) * 18; // Fan out angle
-              const charX = lineXStart + i * charWidth;
-              
-              // 3D extrusion shadows (down-left)
-              const textShadowString = Array.from({ length: 5 }, (_, idx) => {
-                const o = idx + 1;
-                return `-${o}px ${o}px 0px #000`;
-              }).join(', ');
+      {/* Background outline & drop shadow layer */}
+      <div
+        style={{
+          color: colorSticker,
+          WebkitTextStroke: `${strokeBg}px ${colorSticker}`,
+          paintOrder: 'stroke fill',
+          filter: dropShadowStyle,
+          fontSize: `${textSize}px`,
+          transition: 'filter 0.2s ease',
+        }}
+      >
+        {formattedText}
+      </div>
 
-              return (
-                <div
-                  key={i}
-                  className="absolute select-none flex items-center justify-center font-black"
-                  style={{
-                    left: '50%',
-                    transform: `translateX(-50%) translate(${charX}px, ${yCurve}px) rotate(${charRot}deg)`,
-                    fontFamily: s.font || 'Impact, sans-serif',
-                    fontSize: `${F}px`,
-                    color: s.color || '#F26B50',
-                    lineHeight: '1',
-                    whiteSpace: 'nowrap',
-                    textShadow: `
-                      ${textShadowString},
-                      -1px -1px 0px #000,
-                      1px -1px 0px #000,
-                      -1px 1px 0px #000,
-                      1px 1px 0px #000,
-                      0px -1.5px 0px #000,
-                      0px 1.5px 0px #000,
-                      -1.5px 0px 0px #000,
-                      1.5px 0px 0px #000
-                    `,
-                  }}
-                >
-                  <span className="relative select-none block">
-                    {char}
-                    
-                    {/* Cartoony pupils/eyes inside 'O' or 'o' */}
-                    {(char === 'O' || char === 'o') && (
-                      <div 
-                        className="absolute select-none pointer-events-none rounded-full flex items-center justify-center border border-black"
-                        style={{
-                          left: '50%',
-                          top: '48%',
-                          width: `${F * 0.36}px`,
-                          height: `${F * 0.36}px`,
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: '#FFE500',
-                          zIndex: 10,
-                        }}
-                      >
-                        <div 
-                          className="absolute bg-black rounded-full"
-                          style={{
-                            width: `${F * 0.16}px`,
-                            height: `${F * 0.16}px`,
-                            left: '12%',
-                            top: '12%',
-                          }}
-                        >
-                          <div 
-                            className="absolute bg-white rounded-full"
-                            style={{
-                              width: `${F * 0.05}px`,
-                              height: `${F * 0.05}px`,
-                              left: '20%',
-                              top: '20%',
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+      {/* 3D layer (extruded middle) */}
+      <div
+        className="absolute inset-0 select-none pointer-events-none"
+        style={{
+          zIndex: 2,
+          color: colorStroke,
+          WebkitTextStroke: `${stroke3d}px ${colorStroke}`,
+          paintOrder: 'stroke fill',
+          textShadow: textShadowString,
+          fontSize: `${textSize}px`,
+        }}
+      >
+        {formattedText}
+      </div>
+
+      {/* Front layer (foreground text with clean outline) */}
+      <div
+        className="absolute inset-0 select-none pointer-events-none"
+        style={{
+          zIndex: 3,
+          color: colorText,
+          WebkitTextStroke: `${strokeFront}px ${colorStroke}`,
+          paintOrder: 'stroke fill',
+          fontSize: `${textSize}px`,
+        }}
+      >
+        {formattedText}
+      </div>
     </div>
   );
 }
@@ -1213,6 +1203,152 @@ export default function ChannelCover() {
                             className="w-full cursor-pointer accent-pink-600"
                           />
                         </div>
+
+                        {/* If it's a text sticker, show the detailed CodePen text customization tools */}
+                        {activeSticker.type === 'text' && (
+                          <>
+                            {/* Text Input/Textarea */}
+                            <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                              <label className="text-[9px] font-bold font-mono text-gray-500 uppercase block select-none">Sticker Text Content</label>
+                              <textarea
+                                rows={2}
+                                value={activeSticker.text || ''}
+                                onChange={(e) => updateActiveSticker('text', e.target.value)}
+                                className="w-full bg-white border border-[#888] font-mono font-bold text-xs p-1 focus:outline-none uppercase"
+                                placeholder="TYPE RETRO TEXT..."
+                              />
+                            </div>
+
+                            {/* Color Palette Controls */}
+                            <div className="bg-[#EAEAEA] border border-[#888] p-2 rounded space-y-2">
+                              <p className="text-[9px] font-bold font-mono text-gray-500 uppercase select-none">Sticker Color Palette</p>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="flex items-center gap-1.5 bg-white border border-gray-300 p-1 rounded">
+                                  <input 
+                                    type="color" 
+                                    value={activeSticker.colorText || activeSticker.color || '#f1593c'} 
+                                    onChange={(e) => {
+                                      updateActiveSticker('colorText', e.target.value);
+                                      updateActiveSticker('color', e.target.value);
+                                    }}
+                                    className="w-5 h-5 cursor-pointer border border-[#888] p-0 bg-transparent rounded"
+                                  />
+                                  <span className="text-[8px] font-mono font-bold text-gray-800">TEXT COLOR</span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-white border border-gray-300 p-1 rounded">
+                                  <input 
+                                    type="color" 
+                                    value={activeSticker.colorStroke || '#000000'} 
+                                    onChange={(e) => updateActiveSticker('colorStroke', e.target.value)}
+                                    className="w-5 h-5 cursor-pointer border border-[#888] p-0 bg-transparent rounded"
+                                  />
+                                  <span className="text-[8px] font-mono font-bold text-gray-800">3D/STROKE</span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-white border border-gray-300 p-1 rounded">
+                                  <input 
+                                    type="color" 
+                                    value={activeSticker.colorSticker || '#f2b714'} 
+                                    onChange={(e) => updateActiveSticker('colorSticker', e.target.value)}
+                                    className="w-5 h-5 cursor-pointer border border-[#888] p-0 bg-transparent rounded"
+                                  />
+                                  <span className="text-[8px] font-mono font-bold text-gray-800">BACKING</span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-white border border-gray-300 p-1 rounded">
+                                  <input 
+                                    type="color" 
+                                    value={activeSticker.colorShadow || '#000000'} 
+                                    onChange={(e) => updateActiveSticker('colorShadow', e.target.value)}
+                                    className="w-5 h-5 cursor-pointer border border-[#888] p-0 bg-transparent rounded"
+                                    disabled={Boolean(activeSticker.shadowTransparent)}
+                                  />
+                                  <span className="text-[8px] font-mono font-bold text-gray-800">SHADOW</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-1 select-none border-t border-gray-200">
+                                <span className="text-[9px] font-mono font-bold text-gray-700">Shadow Transparent?</span>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(activeSticker.shadowTransparent)}
+                                  onChange={(e) => updateActiveSticker('shadowTransparent', e.target.checked)}
+                                  className="w-3.5 h-3.5 cursor-pointer accent-indigo-600"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Base Text Size */}
+                            <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                              <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                                <span>Base Text Size</span>
+                                <span className="text-pink-600">{activeSticker.textSize || 32}px</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="10"
+                                max="80"
+                                step="1"
+                                value={activeSticker.textSize || 32}
+                                onChange={(e) => updateActiveSticker('textSize', parseInt(e.target.value))}
+                                className="w-full cursor-pointer accent-indigo-600"
+                              />
+                            </div>
+
+                            {/* Line Height spacing */}
+                            <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                              <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                                <span>Line Height spacing</span>
+                                <span className="text-pink-600">{activeSticker.lineHeight ? activeSticker.lineHeight.toFixed(2) : '0.95'}</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0.6"
+                                max="1.8"
+                                step="0.05"
+                                value={activeSticker.lineHeight || 0.95}
+                                onChange={(e) => updateActiveSticker('lineHeight', parseFloat(e.target.value))}
+                                className="w-full cursor-pointer accent-amber-600"
+                              />
+                            </div>
+
+                            {/* Sticker border Backing thickness */}
+                            <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                              <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                                <span>Sticker backing border</span>
+                                <span className="text-pink-600">{activeSticker.stickerSize || 54}px</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="10"
+                                max="120"
+                                step="2"
+                                value={activeSticker.stickerSize || 54}
+                                onChange={(e) => updateActiveSticker('stickerSize', parseInt(e.target.value))}
+                                className="w-full cursor-pointer accent-teal-600"
+                              />
+                            </div>
+
+                            {/* Skew factor */}
+                            <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
+                              <div className="flex justify-between text-[10px] font-bold font-mono text-gray-800 select-none">
+                                <span>Skew factor</span>
+                                <span className="text-pink-600">{activeSticker.skew || 0}°</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="-45"
+                                max="45"
+                                step="1"
+                                value={activeSticker.skew !== undefined ? activeSticker.skew : -4}
+                                onChange={(e) => updateActiveSticker('skew', parseInt(e.target.value))}
+                                className="w-full cursor-pointer accent-rose-600"
+                              />
+                            </div>
+                          </>
+                        )}
 
                         {/* Scale parameter slider */}
                         <div className="space-y-1 bg-[#EAEAEA] border border-[#888] p-2 rounded">
