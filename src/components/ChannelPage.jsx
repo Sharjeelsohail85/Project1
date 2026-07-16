@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useState, useCallback } from 'react'
 import PosterText from './PosterText'
 import ContentItem from './ContentItem'
+import ChannelCover from './ChannelCover'
 import { videoAPI } from '../services/api.service'
 import { getLocalChannelVideos } from '../services/videoService'
 
@@ -156,6 +157,7 @@ const handleOpenVideo = useCallback((video) => {
 
   const content = (
     <article className="channel-page">
+      <ChannelCover />
       <header className="channel-hero">
         <div className="channel-avatar" aria-hidden="true">
           <i className="material-icons">podcasts</i>
