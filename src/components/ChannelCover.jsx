@@ -381,7 +381,7 @@ const BACKGROUND_PRESETS = [
 
 // --- DEFAULT COVER COMPOSTION ---
 const DEFAULT_STICKERS_COMPOSITION = [
-  { id: 'def-t1', type: 'text', text: 'GOOD SDASDA', x: 50, y: 44, scale: 1.6, rotate: -2, color: '#F26B50', font: 'Impact', fontStyle: 'retro-3d', holo: false, peel: 0 },
+  { id: 'def-t1', type: 'text', text: 'GOOD\nMORNING!', x: 50, y: 44, scale: 1.6, rotate: -2, color: '#F26B50', font: 'Impact', fontStyle: 'retro-3d', holo: false, peel: 0 },
   { id: 'def-s1', type: 'sticker', value: 'cool-smiley', x: 16, y: 46, scale: 1.25, rotate: 12, holo: false, peel: 0 },
   { id: 'def-s2', type: 'sticker', value: 'cassette', x: 84, y: 55, scale: 1.2, rotate: -10, holo: true, peel: 0 },
   { id: 'def-s3', type: 'sticker', value: 'sparkles', x: 67, y: 30, scale: 0.95, rotate: 15, holo: true, peel: 0 }
@@ -393,7 +393,7 @@ const COMPOSITION_TEMPLATES = [
     name: '⚡️ RAD OUTRUN',
     preset: 'retro-sunset',
     stickers: [
-      { id: 't-1', type: 'text', text: 'RETRO CRUISE', x: 50, y: 38, scale: 1.6, rotate: -4, color: '#00F0FF', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 0 },
+      { id: 't-1', type: 'text', text: 'RETRO\nCRUISE', x: 50, y: 38, scale: 1.6, rotate: -4, color: '#00F0FF', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 0 },
       { id: 's-1', type: 'sticker', value: 'palm-tree', x: 20, y: 44, scale: 1.25, rotate: 8, holo: false, peel: 0 },
       { id: 's-2', type: 'sticker', value: 'cassette', x: 80, y: 55, scale: 1.15, rotate: -15, holo: true, peel: 15 },
       { id: 's-3', type: 'sticker', value: 'sparkles', x: 68, y: 22, scale: 0.85, rotate: 15, holo: true, peel: 0 }
@@ -403,7 +403,7 @@ const COMPOSITION_TEMPLATES = [
     name: '👽 ACID NEON',
     preset: 'neon-slime',
     stickers: [
-      { id: 't-2', type: 'text', text: 'ZAP THE NOISE', x: 50, y: 48, scale: 1.5, rotate: 4, color: '#39FF14', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 12 },
+      { id: 't-2', type: 'text', text: 'ZAP THE\nNOISE', x: 50, y: 48, scale: 1.5, rotate: 4, color: '#39FF14', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 12 },
       { id: 's-4', type: 'sticker', value: 'alien', x: 18, y: 48, scale: 1.3, rotate: -12, holo: true, peel: 0 },
       { id: 's-5', type: 'sticker', value: 'lightning', x: 82, y: 45, scale: 1.1, rotate: 20, holo: false, peel: 0 },
       { id: 's-6', type: 'sticker', value: 'star', x: 48, y: 80, scale: 0.85, rotate: 5, holo: false, peel: 0 }
@@ -413,7 +413,7 @@ const COMPOSITION_TEMPLATES = [
     name: '📻 BRUTALIST 90s',
     preset: 'checkers-bw',
     stickers: [
-      { id: 't-3', type: 'text', text: 'ANALOG CHANNELS', x: 50, y: 40, scale: 1.45, rotate: -2, color: '#FFE500', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 0 },
+      { id: 't-3', type: 'text', text: 'ANALOG\nCHANNELS', x: 50, y: 40, scale: 1.45, rotate: -2, color: '#FFE500', font: 'Impact', fontStyle: 'retro-3d', holo: true, peel: 0 },
       { id: 's-7', type: 'sticker', value: 'floppy', x: 22, y: 56, scale: 1.2, rotate: 14, holo: false, peel: 15 },
       { id: 's-8', type: 'sticker', value: 'yin-yang', x: 78, y: 42, scale: 1.15, rotate: -25, holo: true, peel: 0 },
       { id: 's-9', type: 'sticker', value: 'skull', x: 48, y: 78, scale: 0.9, rotate: 0, holo: false, peel: 0 }
@@ -425,7 +425,10 @@ const COMPOSITION_TEMPLATES = [
 function renderHighFidelityTextSticker(s) {
   // Replace standard spaces with newlines if needed, or keep spaces.
   const rawText = s.text || 'GOOD\nMORNING!';
-  const formattedText = String(rawText).replace(/\\n/g, '\n');
+  let formattedText = String(rawText).replace(/\\n/g, '\n');
+  if (!formattedText.includes('\n') && formattedText.includes(' ')) {
+    formattedText = formattedText.replace(' ', '\n');
+  }
 
   // Resolve customizable design values or fallbacks
   const colorText = s.colorText || s.color || '#f1593c';
@@ -458,32 +461,40 @@ function renderHighFidelityTextSticker(s) {
   // -1px 1px 0 var(--color-stroke), -2px 2px 0 var(--color-stroke), ...
   const textShadowString = Array.from({ length: 12 }, (_, idx) => {
     const o = idx + 1;
-    const offset = Math.max(1, Math.round(o * baseScale));
+    const offset = o * baseScale;
     return `-${offset}px ${offset}px 0px ${colorStroke}`;
   }).join(', ');
 
   // Drop shadow is offset: filter: drop-shadow(-24px 30px 0 var(--color-shadow));
-  const dropShadowOffset = Math.round(18 * baseScale);
+  const dropShadowOffset = 24 * baseScale;
+  const dropShadowOffsetY = 30 * baseScale;
   const dropShadowStyle = shadowTransparent
     ? 'none'
-    : `drop-shadow(-${dropShadowOffset}px ${dropShadowOffset}px 0px ${colorShadow})`;
+    : `drop-shadow(-${dropShadowOffset}px ${dropShadowOffsetY}px 0px ${colorShadow})`;
+
+  const textStyle = {
+    fontFamily: "'Montserrat', sans-serif",
+    fontWeight: 900,
+    textTransform: 'uppercase',
+    letterSpacing: `${-6 * baseScale}px`,
+    lineHeight: lineHeight,
+    fontSize: `${textSize}px`,
+    textAlign: 'center',
+    whiteSpace: 'pre-line',
+    wordBreak: 'break-word',
+  };
 
   return (
     <div
       className="relative select-none text-center"
       style={{
-        transform: `rotate(${rotate}deg) skewX(${skew}deg)`,
-        fontFamily: "'Montserrat', sans-serif",
-        fontWeight: 900,
-        textTransform: 'uppercase',
-        letterSpacing: '-0.04em',
-        lineHeight: lineHeight,
-        whiteSpace: 'pre-line',
+        transform: `skewX(${skew}deg)`,
       }}
     >
       {/* Background outline & drop shadow layer */}
       <div
         style={{
+          ...textStyle,
           color: colorSticker,
           WebkitTextStroke: `${strokeBg}px ${colorSticker}`,
           paintOrder: 'stroke fill',
@@ -499,6 +510,7 @@ function renderHighFidelityTextSticker(s) {
       <div
         className="absolute inset-0 select-none pointer-events-none"
         style={{
+          ...textStyle,
           zIndex: 2,
           color: colorStroke,
           WebkitTextStroke: `${stroke3d}px ${colorStroke}`,
@@ -514,6 +526,7 @@ function renderHighFidelityTextSticker(s) {
       <div
         className="absolute inset-0 select-none pointer-events-none"
         style={{
+          ...textStyle,
           zIndex: 3,
           color: colorText,
           WebkitTextStroke: `${strokeFront}px ${colorStroke}`,
@@ -670,8 +683,16 @@ export default function ChannelCover() {
       x: 50,
       y: 50,
       scale: 1.25,
-      rotate: -3,
-      color: textColor,
+      rotate: -6,
+      skew: -4,
+      colorText: textColor,
+      colorStroke: '#000000',
+      colorSticker: '#F2B714',
+      colorShadow: '#000000',
+      shadowTransparent: false,
+      textSize: 40,
+      lineHeight: 0.95,
+      stickerSize: 54,
       font: textFont,
       fontStyle: 'retro-3d',
       holo: false,
