@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+@import "tailwindcss";
+
+:root {
+    --color-text: #f1593c;
+    --color-stroke: #000000;
+    --color-sticker: #f2b714;
+    --color-shadow: #000000;
+    --color-body-bg: #c97118;
+    --text-size: 8.5rem;
+    --line-height: 0.95;
+    --sticker-size: 54px;
+    --logo-rotation: -6deg;
+    --logo-skew: -4deg;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.workspace {
+    position: relative;
+    padding: 40px;
+}
+
+.logo-wrapper {
+    transform: rotate(var(--logo-rotation)) skewX(var(--logo-skew));
+    position: relative;
+}
+
+.text-layer {
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    font-size: var(--text-size);
+    font-weight: 900;
+    line-height: var(--line-height);
+    text-transform: uppercase;
+    letter-spacing: -6px;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.layer-bg {
+    color: var(--color-sticker);
+    -webkit-text-stroke: var(--sticker-size) var(--color-sticker);
+    paint-order: stroke fill;
+    filter: drop-shadow(-24px 30px 0 var(--color-shadow));
+    transition: filter 0.2s ease;
+}
+
+.layer-bg.shadow-transparent {
+    filter: drop-shadow(-24px 30px 0 transparent) !important;
+}
+
+.layer-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    color: var(--color-stroke);
+    -webkit-text-stroke: 14px var(--color-stroke);
+    paint-order: stroke fill;
+    pointer-events: none;
+    text-shadow: 
+        -1px 1px 0 var(--color-stroke), 
+        -2px 2px 0 var(--color-stroke), 
+        -3px 3px 0 var(--color-stroke), 
+        -4px 4px 0 var(--color-stroke), 
+        -5px 5px 0 var(--color-stroke), 
+        -6px 6px 0 var(--color-stroke), 
+        -7px 7px 0 var(--color-stroke), 
+        -8px 8px 0 var(--color-stroke), 
+        -9px 9px 0 var(--color-stroke), 
+        -10px 10px 0 var(--color-stroke), 
+        -11px 11px 0 var(--color-stroke), 
+        -12px 12px 0 var(--color-stroke);
+}
+
+.layer-front {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 3;
+    color: var(--color-text);
+    -webkit-text-stroke: 6px var(--color-stroke);
+    paint-order: stroke fill;
+    outline: none;
+}
+
+.control-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+}
+
+.control-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+

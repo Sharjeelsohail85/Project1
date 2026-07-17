@@ -1,0 +1,6 @@
+{
+  "name": "Retro Sticker Studio",
+  "description": "A fully customizable retro sticker generator with real-time text editing, customizable colors, size, rotation, skew, and PNG export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
