@@ -1,0 +1,15 @@
+/* ============================================
+   INPUT COMPONENT STYLES
+   ============================================ */
+
+.input {
+	display: block;
+	background: #fafafa;
+	border: 0 solid transparent;
+}
+
+.input.hidden {
+	opacity: 0 !important;
+	transform: translateY(10px);
+	pointer-events: none !important;
+}

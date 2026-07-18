@@ -1,0 +1,40 @@
+/* ============================================
+   COMMENT COMPONENT STYLES
+   ============================================ */
+
+.comment {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	height: 200px;
+}
+
+.commentInfoWrap {
+	position: absolute;
+	display: block;
+	left: 60px;
+	top: 0;
+	right: 0;
+	height: 36px;
+	overflow: hidden;
+	line-height: 55px;
+	font-size: 15px;
+}
+
+.commentInfoItem {
+	display: inline-block;
+	position: relative;
+	margin-right: 7px;
+}
+
+.commentContent {
+	position: absolute;
+	display: block;
+	top: 38px;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: 15px;
+}

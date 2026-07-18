@@ -1,0 +1,504 @@
+/* ============================================
+   UPLOAD COMPONENT STYLES
+   ============================================ */
+
+.upload {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 400px;
+	z-index: 4;
+	color: #fafafa;
+	background: var(--theme-color);
+	overflow: hidden;
+	-webkit-transform: translateY(-100%);
+	pointer-events: none;
+	transform: translateY(-100%);
+	text-align: center;
+}
+
+.upload.active {
+	-webkit-transform: translateY(0);
+	transform: translateY(0);
+	opacity: 1;
+	pointer-events: auto;
+}
+
+/* Upload Pages */
+.uploadPage {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	-webkit-transform: translateX(-100%);
+	transform: translateX(-100%);
+	text-align: center;
+	-webkit-transition: all 0.33s ease-in-out;
+	transition: all 0.33s ease-in-out;
+}
+
+.uploadPage.active {
+	opacity: 1;
+	-webkit-transform: translateX(0);
+	transform: translateX(0);
+	-webkit-animation: slide 0.33s ease-in-out;
+	animation: slide 0.33s ease-in-out;
+}
+
+.uploadPage.alternate {
+	opacity: 1;
+	-webkit-transform: translateX(0);
+	transform: translateX(0);
+	-webkit-animation: slideAlternate 0.33s ease-in-out;
+	animation: slideAlternate 0.33s ease-in-out;
+}
+
+/* Upload2 specific */
+.upload2 {
+	position: relative;
+	display: inline-block;
+	left: initial;
+	right: initial;
+	width: auto;
+	top: 0;
+	bottom: 0;
+	height: 100%;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	overflow: hidden;
+	top: 50px;
+	text-align: left;
+}
+
+/* Upload Title */
+.uploadTitle {
+	position: absolute;
+	left: 0;
+	display: block;
+	padding: 10px;
+	font-size: 24px;
+	font-weight: 500;
+	color: #eaeaea;
+	width: 100%;
+	text-align: center;
+	top: 70px;
+}
+
+.uploadInformationTitle {
+	left: 50%;
+	padding: 0;
+	top: 68px !important;
+	text-align: left !important;
+}
+
+/* Item Select Buttons */
+.uploadItemSelect {
+	display: inline-block;
+	position: relative;
+	top: 220px;
+	border-radius: 2px;
+	width: 105px;
+	height: 105px;
+	margin: 10px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	overflow: hidden;
+	-webkit-transform: none;
+	transform: none;
+}
+
+.signup .uploadItemSelect {
+	top: 195px;
+}
+
+.uploadItemSelect.hidden,
+.uploadLinkDivide.hidden {
+	opacity: 0;
+	transform: scale(0) translateY(80px);
+}
+
+.uploadItemSelect:after {
+	color: #fafafa;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	position: absolute;
+	bottom: 5px;
+	display: block;
+	left: 0;
+	right: 0;
+	width: 100%;
+	font-weight: 500;
+	font-size: 12px;
+	opacity: 0;
+	-webkit-transition: all 0.15s ease-in-out;
+	transition: all 0.15s ease-in-out;
+	-webkit-transition-delay: 0.05s;
+	transition-delay: 0.05s;
+	-webkit-transform: translateY(2px);
+	transform: translateY(2px);
+}
+
+.uploadItemSelect:hover:after {
+	opacity: 1;
+	-webkit-transform: translateY(0);
+	transform: translateY(0);
+}
+
+.uploadItemSelect .materialIcons {
+	position: relative;
+	top: 3px;
+}
+
+.uploadItemSelect:hover {
+	background-color: rgba(255, 255, 255, 0.4);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.uploadItemSelect .zmdi,
+.uploadItemSelect .materialIcons {
+	font-size: 40px;
+	line-height: 105px;
+	width: 100%;
+	text-align: center;
+	height: 100%;
+}
+
+.uploadItemSelect:hover .zmdi,
+.uploadItemSelect:hover .materialIcons {
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Link Divide */
+.uploadLinkDivide {
+	content: "";
+	height: 52px;
+	position: relative;
+	top: 190px;
+	margin-left: 10px;
+	margin-right: 20px;
+	border-radius: 2px;
+	overflow: hidden;
+	cursor: default;
+	display: inline-block;
+	background: #fafafa;
+	width: 3px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.signup .uploadLinkDivide {
+	top: 160px;
+}
+
+/* Upload Link */
+.uploadLink {
+	margin-left: 40px;
+	padding-left: 10px;
+	width: 100%;
+	text-align: center;
+	display: inline-block;
+	position: absolute;
+	top: 254px;
+	opacity: 0;
+	height: 0;
+	-webkit-transform: translateY(10px);
+	transform: translateY(10px);
+	-webkit-transition-delay: 0.05s;
+	transition-delay: 0.05s;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.uploadLink input {
+	cursor: default;
+}
+
+.uploadLink.active {
+	opacity: 1;
+	-webkit-transform: scale(1);
+	transform: scale(1);
+	height: auto;
+	z-index: 10;
+}
+
+.uploadLink.active input {
+	cursor: text;
+}
+
+/* Upload Link Back Button */
+.uploadLinkBack {
+	position: relative !important;
+	display: inline-block !important;
+	height: 61px;
+	line-height: 61px;
+	color: #fafafa !important;
+	float: left;
+	margin-left: -20px !important;
+	margin-right: 20px !important;
+	-webkit-transform: translateY(10px);
+	transform: translateY(10px);
+	-webkit-transition-delay: 0.07s;
+	transition-delay: 0.07s;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.uploadLink.active .uploadLinkBack {
+	-webkit-transform: none;
+	transform: none;
+	opacity: 1;
+	pointer-events: initial !important;
+}
+
+/* Upload Link Wrap */
+.uploadLinkWrap {
+	float: left;
+	background: #fafafa;
+	border-radius: 2px;
+	overflow: hidden;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	width: 450px;
+	display: inline-block;
+	color: #212121;
+	position: relative;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.uploadLink .materialIcons,
+.signupInputUsername .materialIcons {
+	line-height: 22px;
+	text-align: center;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	display: block;
+	top: -3px;
+	bottom: 0;
+	margin: 10px;
+	padding: 10px;
+	color: #666;
+}
+
+/* Labels */
+.uploadLabel {
+	position: absolute;
+	left: 0;
+	cursor: default;
+}
+
+.uploadGo {
+	display: block;
+	cursor: pointer;
+	right: 0;
+	position: absolute;
+	-webkit-transform: translateX(100%);
+	transform: translateX(100%);
+	opacity: 0;
+}
+
+.uploadGo.active {
+	-webkit-transform: translateX(0);
+	transform: translateX(0);
+	opacity: 1;
+}
+
+/* Link Input */
+.uploadLinkInput {
+	font-size: 16px;
+	padding: 20px;
+	margin-left: 40px;
+	width: calc(100% - 80px);
+}
+
+/* Upload Frame */
+.uploadFrame {
+	display: block;
+	float: left;
+	border-radius: 2px;
+	position: relative;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	background-image: url("../resources/photo.jpg");
+	background-size: cover;
+	background-repeat: no-repeat;
+	background-position: center center;
+	overflow: hidden;
+	width: 195px;
+	height: 125px;
+	margin-right: 20px;
+}
+
+.uploadFrame .materialIcons {
+	font-size: 40px;
+	cursor: pointer;
+	float: left;
+	position: absolute;
+	display: inline-block;
+	width: 100%;
+	height: 100%;
+	line-height: 125px;
+	text-align: center;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	transform: translateY(1px) scale(0.9);
+	opacity: 0;
+	user-select: none;
+}
+
+.uploadFrame:hover .materialIcons {
+	opacity: 1;
+	-webkit-transform: none;
+	transform: none;
+}
+
+/* Upload Toggles/Inputs */
+.uploadToggles,
+.uploadInputs {
+	display: block;
+	float: left;
+}
+
+.uploadToggles {
+	width: 300px;
+	margin-left: 20px;
+}
+
+/* Upload Input */
+.uploadInput {
+	width: 475px;
+	display: inline-block;
+	position: relative;
+	overflow: hidden;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	border-radius: 2px;
+	overflow: hidden;
+	float: left;
+	margin-bottom: 20px;
+}
+
+.uploadInput .input {
+	font-size: 15px;
+	height: 52px;
+	font-weight: 500;
+	padding-bottom: 5px;
+	width: 100%;
+	padding: 12px;
+	font-weight: normal;
+	color: #424242;
+}
+
+.uploadInputTitle {
+	width: 275px;
+}
+
+.uploadInput .input::-webkit-input-placeholder {
+	color: #666;
+}
+
+.uploadInput .input::-moz-placeholder {
+	color: #666;
+}
+
+.uploadInput .input:-ms-input-placeholder {
+	color: #666;
+}
+
+.uploadInput .input::placeholder {
+	color: #666;
+}
+
+/* Upload Description Input */
+.uploadInputDesc {
+	display: block;
+	width: 690px;
+	margin-top: -20px;
+	float: initial;
+}
+
+.uploadInputDesc textarea {
+	height: 120px;
+	resize: none;
+}
+
+/* Upload Visibility Dropdown */
+.uploadVisibility {
+	width: 180px;
+	position: relative;
+	display: inline-block;
+	float: left;
+	margin-left: 20px;
+}
+
+.uploadVisibility.dropdown .dropdownList {
+	overflow: hidden !important;
+}
+
+/* Specific ID selectors converted */
+.uploadLinkId {
+	margin-left: -15px;
+	margin-top: 5px;
+}
+
+.uploadYoutube,
+.signupGoogle {
+	margin-left: 0;
+}
+
+.signupPasswordId {
+	margin-left: -5px;
+}
+
+.signupDropbox,
+.uploadDropbox {
+	margin-right: 0;
+}
+
+/* After content for item select buttons */
+.uploadItemSelectLink:after {
+	content: "Paste a Link";
+}
+
+.uploadItemSelectYoutube:after {
+	content: "YouTube";
+}
+
+.uploadItemSelectFacebook:after {
+	content: "Facebook";
+}
+
+.uploadItemSelectDrive:after {
+	content: "Google Drive";
+}
+
+.uploadItemSelectDropbox:after {
+	content: "Dropbox";
+}
+
+.signupPasswordSelect:after {
+	content: "Password";
+}
+
+.signupGoogleSelect:after {
+	content: "Google";
+}
+
+.signupFacebookSelect:after {
+	content: "Facebook";
+}
+
+.signupDropboxSelect:after {
+	content: "Dropbox";
+}
