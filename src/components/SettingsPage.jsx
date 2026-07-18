@@ -62,6 +62,7 @@ export default function SettingsPage({
   const toggleInputRefs = useRef({})
 
   const [slideoutVisible, setSlideoutVisible] = useState(false)
+  const [leftSidebarVisible, setLeftSidebarVisible] = useState(false)
   const [shadowDisplay, setShadowDisplay] = useState('none')
   const [shadowHiddenClass, setShadowHiddenClass] = useState(true)
   const [slideoutHiddenClass, setSlideoutHiddenClass] = useState(true)
@@ -199,7 +200,9 @@ export default function SettingsPage({
     let t50
     let t150
 
-    if (slideoutVisible) {
+    const isVisible = isChannelRoute ? leftSidebarVisible : slideoutVisible
+
+    if (isVisible) {
       setSlideoutHiddenClass(false)
       setShadowDisplay('block')
       setShadowHiddenClass(true)
@@ -214,7 +217,7 @@ export default function SettingsPage({
       if (t50) clearTimeout(t50)
       if (t150) clearTimeout(t150)
     }
-  }, [slideoutVisible])
+  }, [slideoutVisible, leftSidebarVisible, isChannelRoute])
 
   const titlebarActive = searchFocused || columnLeftScrollTop > 5 || contentMainScrollTop > 5
   const settingsSearchParentActive = searchFocused || columnLeftScrollTop > 5
@@ -416,10 +419,17 @@ export default function SettingsPage({
     [activeDesignerCategory, designerCategories],
   )
 
-  const onToggleSlideout = () => setSlideoutVisible((v) => !v)
+  const onToggleSlideout = () => {
+    if (isChannelRoute) {
+      setLeftSidebarVisible((v) => !v)
+    } else {
+      setSlideoutVisible((v) => !v)
+    }
+  }
 
   const openSettingsPanel = useCallback((sectionId) => {
     setSlideoutVisible(false)
+    setLeftSidebarVisible(false)
 
     if (!sectionId) {
       return
@@ -901,7 +911,12 @@ export default function SettingsPage({
       />
 
       <div id="content" className="content">
-        <div className="column-left" id="columnLeft" ref={columnLeftRef} onScroll={onColumnLeftScroll}>
+        <div 
+          className={`column-left ${isChannelRoute ? 'channel-slideout-bar' : ''} ${isChannelRoute && leftSidebarVisible ? 'open' : ''}`} 
+          id="columnLeft" 
+          ref={columnLeftRef} 
+          onScroll={onColumnLeftScroll}
+        >
           <div
             className={`column-left-item column-left-search ${settingsSearchParentActive ? 'active' : ''}`}
             id="settingsSearchParent"
@@ -951,7 +966,12 @@ export default function SettingsPage({
           ))}
         </div>
 
-        <div className="content-main" id="contentMain" ref={contentMainRef} onScroll={onContentMainScroll}>
+        <div 
+          className={`content-main ${isChannelRoute ? 'channel-full-width' : ''}`} 
+          id="contentMain" 
+          ref={contentMainRef} 
+          onScroll={onContentMainScroll}
+        >
           {sections.map((section, sectionIndex) => {
             const sectionItemLabels = section.items.map((item) => {
               if (typeof item === 'string') {

@@ -1846,6 +1846,45 @@ html, body {
 	}
 }
 
+/* ==========================================================================
+   Channel Page Slideout Drawer & Full-Width layout
+   ========================================================================== */
+
+.column-left.channel-slideout-bar {
+	position: fixed !important;
+	top: 60px !important;
+	left: 0 !important;
+	bottom: 0 !important;
+	width: 300px !important;
+	height: calc(100% - 60px) !important;
+	z-index: 999 !important;
+	background: #ffffff !important;
+	transform: translateX(-100%) !important;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+	box-shadow: none !important;
+	display: flex !important;
+	flex-direction: column !important;
+	overflow-y: auto !important;
+	overflow-x: hidden !important;
+}
+
+@media (max-width: 1024px) {
+	.column-left.channel-slideout-bar {
+		width: 260px !important;
+	}
+}
+
+.column-left.channel-slideout-bar.open {
+	transform: translateX(0) !important;
+	box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.content-main.channel-full-width {
+	left: 0 !important;
+	width: 100% !important;
+}
+
+
 
 
 
