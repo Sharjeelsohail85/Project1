@@ -62,7 +62,6 @@ export default function SettingsPage({
   const toggleInputRefs = useRef({})
 
   const [slideoutVisible, setSlideoutVisible] = useState(false)
-  const [leftSidebarVisible, setLeftSidebarVisible] = useState(false)
   const [shadowDisplay, setShadowDisplay] = useState('none')
   const [shadowHiddenClass, setShadowHiddenClass] = useState(true)
   const [slideoutHiddenClass, setSlideoutHiddenClass] = useState(true)
@@ -200,9 +199,7 @@ export default function SettingsPage({
     let t50
     let t150
 
-    const isVisible = isChannelRoute ? leftSidebarVisible : slideoutVisible
-
-    if (isVisible) {
+    if (slideoutVisible) {
       setSlideoutHiddenClass(false)
       setShadowDisplay('block')
       setShadowHiddenClass(true)
@@ -217,7 +214,7 @@ export default function SettingsPage({
       if (t50) clearTimeout(t50)
       if (t150) clearTimeout(t150)
     }
-  }, [slideoutVisible, leftSidebarVisible, isChannelRoute])
+  }, [slideoutVisible])
 
   const titlebarActive = searchFocused || columnLeftScrollTop > 5 || contentMainScrollTop > 5
   const settingsSearchParentActive = searchFocused || columnLeftScrollTop > 5
@@ -420,16 +417,11 @@ export default function SettingsPage({
   )
 
   const onToggleSlideout = () => {
-    if (isChannelRoute) {
-      setLeftSidebarVisible((v) => !v)
-    } else {
-      setSlideoutVisible((v) => !v)
-    }
+    setSlideoutVisible((v) => !v)
   }
 
   const openSettingsPanel = useCallback((sectionId) => {
     setSlideoutVisible(false)
-    setLeftSidebarVisible(false)
 
     if (!sectionId) {
       return
@@ -911,60 +903,62 @@ export default function SettingsPage({
       />
 
       <div id="content" className="content">
-        <div 
-          className={`column-left ${isChannelRoute ? 'channel-slideout-bar' : ''} ${isChannelRoute && leftSidebarVisible ? 'open' : ''}`} 
-          id="columnLeft" 
-          ref={columnLeftRef} 
-          onScroll={onColumnLeftScroll}
-        >
-          <div
-            className={`column-left-item column-left-search ${settingsSearchParentActive ? 'active' : ''}`}
-            id="settingsSearchParent"
-            onClick={focusSearch}
-            role="searchbox"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') focusSearch()
-            }}
-            onMouseEnter={(e) => e.stopPropagation()}
-            onMouseLeave={(e) => e.stopPropagation()}
+        {!isChannelRoute && (
+          <div 
+            className="column-left" 
+            id="columnLeft" 
+            ref={columnLeftRef} 
+            onScroll={onColumnLeftScroll}
           >
-            <i className="column-left-item-icon material-icons" aria-hidden="true">
-              search
-            </i>
-            <input
-              className="column-left-search-input input"
-              id="settingsSearch"
-              placeholder="Search settings"
-              ref={settingsSearchRef}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              onKeyUp={onSearchKeyUp}
-            />
-          </div>
-
-          {navItems.map((item, i) => (
             <div
-              key={item.label}
-              className={`column-left-item ${activeNavIndex === i ? 'active' : ''}`}
-              onClick={() => onNavItemClick(i)}
-              role="button"
+              className={`column-left-item column-left-search ${settingsSearchParentActive ? 'active' : ''}`}
+              id="settingsSearchParent"
+              onClick={focusSearch}
+              role="searchbox"
               tabIndex={0}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') onNavItemClick(i)
+                if (e.key === 'Enter' || e.key === ' ') focusSearch()
               }}
+              onMouseEnter={(e) => e.stopPropagation()}
+              onMouseLeave={(e) => e.stopPropagation()}
             >
               <i className="column-left-item-icon material-icons" aria-hidden="true">
-                {item.icon}
+                search
               </i>
-              <div className="column-left-item-label" data-scrollto={item.sectionId}>
-                {item.label}
-              </div>
+              <input
+                className="column-left-search-input input"
+                id="settingsSearch"
+                placeholder="Search settings"
+                ref={settingsSearchRef}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                onKeyUp={onSearchKeyUp}
+              />
             </div>
-          ))}
-        </div>
+
+            {navItems.map((item, i) => (
+              <div
+                key={item.label}
+                className={`column-left-item ${activeNavIndex === i ? 'active' : ''}`}
+                onClick={() => onNavItemClick(i)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') onNavItemClick(i)
+                }}
+              >
+                <i className="column-left-item-icon material-icons" aria-hidden="true">
+                  {item.icon}
+                </i>
+                <div className="column-left-item-label" data-scrollto={item.sectionId}>
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div 
           className={`content-main ${isChannelRoute ? 'channel-full-width' : ''}`} 
@@ -984,7 +978,7 @@ export default function SettingsPage({
             const sectionHidden = normalizedQuery !== '' && !sectionText.includes(normalizedQuery)
 
             return (
-              <div key={`${section.id}-${sectionIndex}`} className={`section-wrap ${sectionHidden ? 'hidden' : ''}`} id={section.id}>
+              <div key={`${section.id}-${sectionIndex}`} className={`section-wrap ${isChannelRoute ? 'channel-section-wrap' : ''} ${sectionHidden ? 'hidden' : ''}`} id={section.id}>
                 <div className="section-title">{section.title}</div>
                 <div className={`section ${(section.id === 'section4' || section.id === 'theme-designer-main') ? 'section-personalization' : ''} ${section.id === 'theme-designer-main' ? 'section-theme-designer' : ''} ${section.id === 'section7' ? 'section-links' : ''} ${section.id === 'section3' ? 'section-tags' : ''} ${section.id === 'channel-main' ? 'section-channel' : ''}`}>
                   {isThemeDesignerPage && section.id === 'theme-designer-main' && (
