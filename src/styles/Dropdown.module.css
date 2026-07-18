@@ -1,0 +1,93 @@
+/* ============================================
+   DROPDOWN COMPONENT STYLES
+   ============================================ */
+
+.dropdown {
+	position: relative;
+	width: 200px;
+	background: #fafafa;
+	border-radius: 2px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	color: #424242;
+	display: block;
+	user-select: none;
+	margin-bottom: 20px;
+	z-index: 5;
+	font-size: 15px;
+}
+
+.dropdown .selected {
+	display: block;
+	line-height: 52px;
+	padding-left: 13px;
+	padding-right: 13px;
+	cursor: pointer;
+	margin: 0;
+}
+
+.dropdown .selected.pre {
+	color: #666;
+}
+
+.dropdown .selected.pre .materialIcons {
+	color: #424242;
+}
+
+.dropdown .dropdownLabel {
+	font-size: 20px;
+	position: relative;
+	padding-right: 8px;
+	top: 5px;
+}
+
+.dropdown .selected .dropdownChevron {
+	position: absolute;
+	right: 0;
+	top: 1px;
+	font-size: 22px;
+	line-height: 52px;
+	padding-left: 13px;
+	padding-right: 13px;
+}
+
+.dropdown .selected:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.dropdown .dropdownList {
+	position: absolute;
+	top: 0;
+	width: 100%;
+	max-height: 0;
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+	border-radius: 2px;
+	background: #fafafa;
+	opacity: 0;
+	visibility: hidden;
+	overflow: hidden;
+	transition: all 0.15s ease-in-out;
+}
+
+.dropdown .dropdownList li {
+	height: 52px;
+	display: block;
+	cursor: pointer;
+	line-height: 52px;
+	padding-left: 13px;
+	padding-right: 13px;
+}
+
+.dropdown .dropdownList li:hover,
+.dropdown .dropdownList li.active {
+	background: #eaeaea;
+}
+
+.dropdown .dropdownList.active {
+	opacity: 1;
+	visibility: visible;
+	max-height: 260px;
+	overflow: auto;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
