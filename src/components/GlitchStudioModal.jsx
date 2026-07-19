@@ -577,41 +577,52 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               color: #ebdcb9 !important;
               font-size: 11px !important;
               text-transform: none !important;
-              letter-spacing: 0.02em !important;
-              height: 30px !important;
+              letter-spacing: 0.01em !important;
+              height: 26px !important;
               display: flex !important;
               align-items: center !important;
               justify-content: space-between !important;
-              padding: 0 12px !important;
+              padding: 0 10px !important;
               font-weight: bold !important;
               user-select: none !important;
+              font-family: "JetBrains Mono", monospace !important;
+            }
+            .glitch-studio-header-row:hover {
+              background-color: #2c1a2c !important;
             }
             .glitch-studio-field-row {
               border-bottom: 1px solid #3e273e !important;
               display: flex !important;
               align-items: stretch !important;
-              min-height: 30px !important;
+              min-height: 26px !important;
               font-size: 11px !important;
               background-color: #2d1c2d !important;
             }
             .glitch-studio-field-label {
-              width: 140px !important;
+              width: 40% !important;
               flex-shrink: 0 !important;
               border-right: 1px solid #3e273e !important;
-              padding: 6px 12px !important;
+              padding: 4px 10px !important;
               color: #a080a0 !important;
               display: flex !important;
               align-items: center !important;
               font-size: 11px !important;
               user-select: none !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              white-space: nowrap !important;
+              font-family: "JetBrains Mono", monospace !important;
             }
             .glitch-studio-field-control {
+              width: 60% !important;
               flex-grow: 1 !important;
-              padding: 6px 12px !important;
+              padding: 4px 10px !important;
               display: flex !important;
               align-items: center !important;
               color: #ebdcb9 !important;
               background-color: #2d1c2d !important;
+              font-family: "JetBrains Mono", monospace !important;
+              font-size: 11px !important;
             }
             .glitch-studio-btn-beige {
               background-color: #ebdcb9 !important;
@@ -630,6 +641,8 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               justify-content: center !important;
               gap: 6px !important;
               font-family: "JetBrains Mono", monospace !important;
+              width: 100% !important;
+              height: 20px !important;
             }
             .glitch-studio-btn-beige:hover {
               background-color: #fcf1d8 !important;
@@ -638,71 +651,97 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             .glitch-studio-select {
               background-color: #211322 !important;
               color: #ebdcb9 !important;
-              border: 1px solid #ebdcb9 !important;
+              border: 1px solid #3e273e !important;
               border-radius: 0px !important;
               font-size: 11px !important;
-              padding: 2px 6px !important;
+              padding: 0px 4px !important;
               font-family: "JetBrains Mono", monospace !important;
               cursor: pointer !important;
               outline: none !important;
-              height: 22px !important;
+              height: 20px !important;
               width: 100% !important;
             }
             .glitch-studio-select:hover {
               border-color: #ebdcb9 !important;
             }
+            .glitch-studio-select:focus {
+              border-color: #ebdcb9 !important;
+              background-color: #2d1c2d !important;
+            }
             .glitch-studio-checkbox {
-              width: 12px !important;
-              height: 12px !important;
+              width: 14px !important;
+              height: 14px !important;
               border: 1px solid #ebdcb9 !important;
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
               cursor: pointer !important;
               background-color: #211322 !important;
+              user-select: none !important;
             }
-            .glitch-studio-checkbox-checked {
-              width: 6px !important;
-              height: 6px !important;
-              background-color: #ebdcb9 !important;
+            .glitch-studio-number-input {
+              width: 50px !important;
+              height: 20px !important;
+              background-color: #211322 !important;
+              color: #ebdcb9 !important;
+              border: 1px solid #3e273e !important;
+              border-radius: 0px !important;
+              font-family: "JetBrains Mono", monospace !important;
+              font-size: 11px !important;
+              text-align: right !important;
+              padding: 0 4px !important;
+              outline: none !important;
+            }
+            .glitch-studio-number-input:hover {
+              border-color: #ebdcb9 !important;
+            }
+            .glitch-studio-number-input:focus {
+              border-color: #ebdcb9 !important;
+              background-color: #2d1c2d !important;
             }
             .glitch-studio-range {
               -webkit-appearance: none !important;
               width: 100% !important;
               background: transparent !important;
               outline: none !important;
+              height: 20px !important;
+              display: flex !important;
+              align-items: center !important;
             }
             .glitch-studio-range::-webkit-slider-runnable-track {
               width: 100% !important;
-              height: 2px !important;
+              height: 3px !important;
               cursor: pointer !important;
-              background: #3e273e !important;
+              background: #211322 !important;
+              border: 1px solid #3e273e !important;
             }
             .glitch-studio-range::-webkit-slider-thumb {
-              height: 10px !important;
-              width: 10px !important;
+              height: 12px !important;
+              width: 6px !important;
               background: #ebdcb9 !important;
               cursor: pointer !important;
               -webkit-appearance: none !important;
-              margin-top: -4px !important;
+              margin-top: -5px !important;
               border-radius: 0px !important;
+              border: none !important;
             }
             .glitch-studio-range::-moz-range-track {
               width: 100% !important;
-              height: 2px !important;
+              height: 3px !important;
               cursor: pointer !important;
-              background: #3e273e !important;
+              background: #211322 !important;
+              border: 1px solid #3e273e !important;
             }
             .glitch-studio-range::-moz-range-thumb {
-              height: 10px !important;
-              width: 10px !important;
+              height: 12px !important;
+              width: 6px !important;
               background: #ebdcb9 !important;
               cursor: pointer !important;
               border-radius: 0px !important;
               border: none !important;
             }
           `}</style>
-          
+
           <div className="flex-1">
             
             {/* Image I/O Section */}
@@ -711,7 +750,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('io')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Image I/O</span>
+                <span>{collapses.io ? '▼' : '▶'} Image I/O</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
               
@@ -723,9 +762,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     <div className="glitch-studio-field-control py-1">
                       <button
                         onClick={handleUploadClick}
-                        className="glitch-studio-btn-beige w-full"
+                        className="glitch-studio-btn-beige"
                       >
-                        <Upload size={12} />
+                        <Upload size={11} />
                         <span>Upload Image</span>
                       </button>
                       <input 
@@ -752,9 +791,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     <div className="glitch-studio-field-control py-1">
                       <button
                         onClick={handleDownloadImage}
-                        className="glitch-studio-btn-beige w-full"
+                        className="glitch-studio-btn-beige"
                       >
-                        <Download size={12} />
+                        <Download size={11} />
                         <span>Download Image</span>
                       </button>
                     </div>
@@ -798,7 +837,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('palette')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Palette Reduction</span>
+                <span>{collapses.palette ? '▼' : '▶'} Palette Reduction</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
 
@@ -812,7 +851,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onClick={() => updateSetting('paletteReduction', 'enabled', !settings.paletteReduction.enabled)}
                         className="glitch-studio-checkbox"
                       >
-                        {settings.paletteReduction.enabled && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.paletteReduction.enabled && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -860,9 +899,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                             updateSetting('paletteReduction', 'dithering', !settings.paletteReduction.dithering);
                           }
                         }}
-                        className={`glitch-studio-checkbox ${!settings.paletteReduction.enabled ? 'opacity-40' : ''}`}
+                        className={`glitch-studio-checkbox ${!settings.paletteReduction.enabled ? 'opacity-40 pointer-events-none' : ''}`}
                       >
-                        {settings.paletteReduction.dithering && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.paletteReduction.dithering && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -881,9 +920,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                           className="glitch-studio-range flex-1 disabled:opacity-40"
                           disabled={!settings.paletteReduction.enabled}
                         />
-                        <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                          {settings.paletteReduction.ditherIntensity}
-                        </span>
+                        <input 
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={settings.paletteReduction.ditherIntensity}
+                          onChange={(e) => {
+                            let val = parseInt(e.target.value);
+                            if (!isNaN(val)) {
+                              val = Math.max(1, Math.min(30, val));
+                              updateSetting('paletteReduction', 'ditherIntensity', val);
+                            }
+                          }}
+                          className="glitch-studio-number-input disabled:opacity-40"
+                          disabled={!settings.paletteReduction.enabled}
+                        />
                       </div>
                     </div>
                   )}
@@ -897,7 +948,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('colorShift')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Color Shift</span>
+                <span>{collapses.colorShift ? '▼' : '▶'} Color Shift</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
 
@@ -911,7 +962,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onClick={() => updateSetting('colorShift', 'enabled', !settings.colorShift.enabled)}
                         className="glitch-studio-checkbox"
                       >
-                        {settings.colorShift.enabled && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.colorShift.enabled && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -926,9 +977,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                             updateSetting('colorShift', 'uniformShift', !settings.colorShift.uniformShift);
                           }
                         }}
-                        className={`glitch-studio-checkbox ${!settings.colorShift.enabled ? 'opacity-40' : ''}`}
+                        className={`glitch-studio-checkbox ${!settings.colorShift.enabled ? 'opacity-40 pointer-events-none' : ''}`}
                       >
-                        {settings.colorShift.uniformShift && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.colorShift.uniformShift && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -947,9 +998,22 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.colorShift.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.colorShift.intensity.toFixed(2)}
-                      </span>
+                      <input 
+                        type="number"
+                        min="0.1"
+                        max="3.0"
+                        step="0.1"
+                        value={settings.colorShift.intensity}
+                        onChange={(e) => {
+                          let val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(0.1, Math.min(3.0, val));
+                            updateSetting('colorShift', 'intensity', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.colorShift.enabled}
+                      />
                     </div>
                   </div>
 
@@ -966,9 +1030,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.colorShift.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.colorShift.shiftAmount}
-                      </span>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={settings.colorShift.shiftAmount}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(1, Math.min(50, val));
+                            updateSetting('colorShift', 'shiftAmount', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.colorShift.enabled}
+                      />
                     </div>
                   </div>
                 </div>
@@ -981,7 +1057,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('wave')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Wave Deform</span>
+                <span>{collapses.wave ? '▼' : '▶'} Wave Deform</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
 
@@ -995,7 +1071,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onClick={() => updateSetting('waveDeform', 'enabled', !settings.waveDeform.enabled)}
                         className="glitch-studio-checkbox"
                       >
-                        {settings.waveDeform.enabled && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.waveDeform.enabled && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -1029,9 +1105,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.waveDeform.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.waveDeform.amplitude}
-                      </span>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="80"
+                        value={settings.waveDeform.amplitude}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(1, Math.min(80, val));
+                            updateSetting('waveDeform', 'amplitude', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.waveDeform.enabled}
+                      />
                     </div>
                   </div>
 
@@ -1049,9 +1137,22 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.waveDeform.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.waveDeform.frequency.toFixed(3)}
-                      </span>
+                      <input 
+                        type="number"
+                        min="0.005"
+                        max="0.25"
+                        step="0.005"
+                        value={settings.waveDeform.frequency}
+                        onChange={(e) => {
+                          let val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(0.005, Math.min(0.25, val));
+                            updateSetting('waveDeform', 'frequency', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.waveDeform.enabled}
+                      />
                     </div>
                   </div>
 
@@ -1068,9 +1169,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.waveDeform.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.waveDeform.speed}
-                      </span>
+                      <input 
+                        type="number"
+                        min="0"
+                        max="15"
+                        value={settings.waveDeform.speed}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(0, Math.min(15, val));
+                            updateSetting('waveDeform', 'speed', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.waveDeform.enabled}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1083,7 +1196,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('chop')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Chop & Slices Displacement</span>
+                <span>{collapses.chop ? '▼' : '▶'} Chop & Slices Displacement</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
 
@@ -1097,7 +1210,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onClick={() => updateSetting('chopSlices', 'enabled', !settings.chopSlices.enabled)}
                         className="glitch-studio-checkbox"
                       >
-                        {settings.chopSlices.enabled && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.chopSlices.enabled && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -1115,9 +1228,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.chopSlices.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.chopSlices.sliceCount}
-                      </span>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={settings.chopSlices.sliceCount}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(1, Math.min(20, val));
+                            updateSetting('chopSlices', 'sliceCount', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.chopSlices.enabled}
+                      />
                     </div>
                   </div>
 
@@ -1134,9 +1259,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.chopSlices.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.chopSlices.maxDisplacement}
-                      </span>
+                      <input 
+                        type="number"
+                        min="2"
+                        max="100"
+                        value={settings.chopSlices.maxDisplacement}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(2, Math.min(100, val));
+                            updateSetting('chopSlices', 'maxDisplacement', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.chopSlices.enabled}
+                      />
                     </div>
                   </div>
 
@@ -1153,9 +1290,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.chopSlices.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.chopSlices.interval}
-                      </span>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={settings.chopSlices.interval}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(1, Math.min(30, val));
+                            updateSetting('chopSlices', 'interval', val);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.chopSlices.enabled}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1168,7 +1317,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 onClick={() => toggleCollapse('static')}
                 className="glitch-studio-header-row cursor-pointer"
               >
-                <span>Scanlines & Laser Sweep</span>
+                <span>{collapses.static ? '▼' : '▶'} Scanlines & Laser Sweep</span>
                 <span className="text-[#8c698e]">()</span>
               </div>
 
@@ -1182,7 +1331,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onClick={() => updateSetting('scanlines', 'enabled', !settings.scanlines.enabled)}
                         className="glitch-studio-checkbox"
                       >
-                        {settings.scanlines.enabled && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.scanlines.enabled && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
@@ -1201,9 +1350,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         className="glitch-studio-range flex-1 disabled:opacity-40"
                         disabled={!settings.scanlines.enabled}
                       />
-                      <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {(settings.scanlines.intensity * 100).toFixed(0)}%
-                      </span>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={Math.round(settings.scanlines.intensity * 100)}
+                        onChange={(e) => {
+                          let val = parseInt(e.target.value);
+                          if (!isNaN(val)) {
+                            val = Math.max(1, Math.min(20, val));
+                            updateSetting('scanlines', 'intensity', val / 100);
+                          }
+                        }}
+                        className="glitch-studio-number-input disabled:opacity-40"
+                        disabled={!settings.scanlines.enabled}
+                      />
                     </div>
                   </div>
 
@@ -1217,9 +1378,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                             updateSetting('scanlines', 'laserSweep', !settings.scanlines.laserSweep);
                           }
                         }}
-                        className={`glitch-studio-checkbox ${!settings.scanlines.enabled ? 'opacity-40' : ''}`}
+                        className={`glitch-studio-checkbox ${!settings.scanlines.enabled ? 'opacity-40 pointer-events-none' : ''}`}
                       >
-                        {settings.scanlines.laserSweep && <div className="glitch-studio-checkbox-checked" />}
+                        {settings.scanlines.laserSweep && <span className="text-[10px] text-[#ebdcb9] font-bold leading-none">✓</span>}
                       </div>
                     </div>
                   </div>
