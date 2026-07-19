@@ -5,6 +5,7 @@ import GlitchAvatar from './GlitchAvatar'
 import { videoAPI } from '../services/api.service'
 import { getLocalChannelVideos } from '../services/videoService'
 import SeedCatalogue from './SeedCatalogue'
+import FlowerSticker from './FlowerSticker'
 
 const noop = () => {}
 
@@ -80,6 +81,9 @@ const ChannelPage = memo(function ChannelPage({
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [activeSection, setActiveSection] = useState('home')
+  const [selectedFlower, setSelectedFlower] = useState(() => {
+    return localStorage.getItem('channel_seed_flower') || 'sunflower'
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -173,7 +177,8 @@ const handleOpenVideo = useCallback((video) => {
           </div>
         </div>
 
-        <div className="channel-actions">
+        <div className="channel-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <FlowerSticker selectedFlower={selectedFlower} size={48} />
           <button type="button" className="channel-cta primary" onClick={onOpenVideo}>Play Featured</button>
           <button type="button" className="channel-cta">Subscribe</button>
         </div>
@@ -296,7 +301,14 @@ const handleOpenVideo = useCallback((video) => {
             <p className="channel-status" style={{ marginBottom: '16px' }}>
               Your channel's growth and milestones captured as a custom botanical seed packet from our classic collection.
             </p>
-            <SeedCatalogue videoCount={videos.length} />
+            <SeedCatalogue
+              videoCount={videos.length}
+              selectedFlower={selectedFlower}
+              onSelectFlower={(flowerId) => {
+                setSelectedFlower(flowerId);
+                localStorage.setItem('channel_seed_flower', flowerId);
+              }}
+            />
           </div>
         </section>
       ) : null}

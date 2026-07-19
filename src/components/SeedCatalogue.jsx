@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 
-export default function SeedCatalogue({ videoCount = 0 }) {
-  const [selectedFlower, setSelectedFlower] = useState('sunflower')
+export default function SeedCatalogue({ videoCount = 0, selectedFlower: propSelectedFlower, onSelectFlower: propOnSelectFlower }) {
+  const [localSelectedFlower, setLocalSelectedFlower] = useState('sunflower')
+  const selectedFlower = propSelectedFlower !== undefined ? propSelectedFlower : localSelectedFlower
+  const setSelectedFlower = propOnSelectFlower !== undefined ? propOnSelectFlower : setLocalSelectedFlower
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [channelInfo, setChannelInfo] = useState({
     createdMonth: 'October',
