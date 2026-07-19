@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function FlowerSticker({ selectedFlower = 'sunflower', size = 56 }) {
+export default function FlowerSticker({ selectedFlower = 'sunflower', size = 56, onClick }) {
   const [isHovered, setIsHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -148,10 +148,14 @@ export default function FlowerSticker({ selectedFlower = 'sunflower', size = 56 
   const flower = flowerData[selectedFlower] || flowerData.sunflower
 
   const handleStickerClick = () => {
-    // Smooth scroll down to the Seed Catalogue section on Channel Page
-    const targetElement = document.querySelector('.timeline-section') || document.querySelector('.channel-card')
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (onClick) {
+      onClick()
+    } else {
+      // Smooth scroll down to the Seed Catalogue section on Channel Page
+      const targetElement = document.querySelector('.timeline-section') || document.querySelector('.channel-card')
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
     }
   }
 

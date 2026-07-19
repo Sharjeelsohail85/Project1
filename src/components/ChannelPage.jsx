@@ -178,7 +178,19 @@ const handleOpenVideo = useCallback((video) => {
         </div>
 
         <div className="channel-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <FlowerSticker selectedFlower={selectedFlower} size={48} />
+          <FlowerSticker 
+            selectedFlower={selectedFlower} 
+            size={48} 
+            onClick={() => {
+              setActiveSection('about')
+              setTimeout(() => {
+                const targetElement = document.getElementById('botanical-milestone-card')
+                if (targetElement) {
+                  targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              }, 120)
+            }}
+          />
           <button type="button" className="channel-cta primary" onClick={onOpenVideo}>Play Featured</button>
           <button type="button" className="channel-cta">Subscribe</button>
         </div>
@@ -294,7 +306,7 @@ const handleOpenVideo = useCallback((video) => {
           <p className="channel-status">This channel contains uploaded and migrated videos linked to your account.</p>
           <p className="channel-status">Total uploads: {videos.length}</p>
           
-          <div style={{ marginTop: '20px', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '20px' }}>
+          <div id="botanical-milestone-card" style={{ marginTop: '20px', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '20px' }}>
             <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-main, #111827)' }}>
               Channel Botanical Milestone Card
             </h4>
