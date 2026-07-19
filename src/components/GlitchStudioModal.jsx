@@ -98,6 +98,44 @@ export const PRESETS = {
   }
 }
 
+const selectStyle = {
+  background: '#120513',
+  color: '#ebdcb9',
+  border: '1px solid #35203a',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  fontSize: '11px',
+  fontFamily: '"JetBrains Mono", monospace',
+  height: '28px',
+  minHeight: '28px',
+  lineHeight: '1.2',
+  width: 'auto',
+  appearance: 'auto',
+  display: 'inline-block',
+  cursor: 'pointer',
+  outline: 'none',
+}
+
+const checkboxStyle = {
+  width: '14px',
+  height: '14px',
+  minHeight: 'auto',
+  accentColor: '#d91ba3',
+  cursor: 'pointer',
+  display: 'inline-block'
+}
+
+const rangeStyle = {
+  height: '4px',
+  minHeight: 'auto',
+  accentColor: '#d91ba3',
+  cursor: 'pointer',
+  background: '#120513',
+  borderRadius: '2px',
+  width: '100%',
+  display: 'block'
+}
+
 export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('glitch_studio_settings')
@@ -429,14 +467,14 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 md:p-6 overflow-y-auto font-mono">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-mono">
       <div 
         id="glitchStudioContainer"
-        className="w-full max-w-5xl bg-[#190e19] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.15)] flex flex-col md:flex-row overflow-hidden max-h-[92vh]"
+        className="w-full max-w-5xl bg-[#1c0e18] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.2)] flex flex-col sm:flex-row overflow-hidden max-h-[92vh] mx-auto"
       >
         
         {/* Left column: Visual Workspace */}
-        <div className="md:w-1/2 bg-[#120a13] p-6 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r-2 border-[#35203a] min-h-[420px] md:min-h-[550px]">
+        <div className="w-full sm:w-[45%] bg-[#120a13] p-5 flex flex-col items-center justify-between border-b sm:border-b-0 sm:border-r-2 border-[#35203a] min-h-[440px] sm:min-h-[550px]">
           
           {/* Header Title */}
           <div className="w-full flex items-center justify-between border-b border-[#35203a] pb-3 mb-2">
@@ -463,7 +501,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
             <canvas
               ref={canvasRef}
-              className="w-[260px] h-[260px] md:w-[300px] md:h-[300px] rounded-xl object-cover bg-black"
+              className="w-[260px] h-[260px] sm:w-[300px] sm:h-[300px] rounded-xl object-cover bg-black"
               style={{
                 boxShadow: '0 0 40px rgba(0,0,0,0.6), 0 0 15px rgba(235,220,185,0.05)'
               }}
@@ -514,7 +552,10 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
         </div>
 
         {/* Right column: Form Settings controls */}
-        <div className="md:w-1/2 p-6 overflow-y-auto max-h-[50vh] md:max-h-[92vh] flex flex-col justify-between bg-[#190e19]">
+        <div 
+          className="w-full sm:w-[55%] p-5 sm:p-6 overflow-y-auto max-h-[40vh] sm:max-h-[92vh] flex flex-col justify-between bg-[#1c0e18]"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#35203a #1c0e18' }}
+        >
           
           <div className="space-y-3.5 pr-1">
             
@@ -569,6 +610,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         value={downloadFormat}
                         onChange={(e) => setDownloadFormat(e.target.value)}
                         className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6"
+                        style={selectStyle}
                       >
                         <option value="png">PNG (Lossless)</option>
                         <option value="jpeg">JPEG (Fast)</option>
@@ -577,7 +619,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
                     <button
                       onClick={handleDownloadImage}
-                      className="w-full flex items-center justify-center gap-1.5 bg-[#22d3ee] hover:bg-[#06b6d4] text-black font-bold px-3 py-2 rounded font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-md"
+                      className="w-full flex items-center justify-center gap-1.5 bg-[#ebdcb9] hover:bg-[#dcd1c4] text-[#120a13] font-bold px-3 py-2 rounded font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-md border border-[#35203a]"
                     >
                       <Download size={13} />
                       <span>DOWNLOAD GLITCHED FRAME</span>
@@ -605,6 +647,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     checked={settings.paletteReduction.enabled}
                     onChange={(e) => updateSetting('paletteReduction', 'enabled', e.target.checked)}
                     className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                    style={checkboxStyle}
                   />
                 </div>
               </div>
@@ -618,6 +661,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('paletteReduction', 'palette', e.target.value)}
                       className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
                       disabled={!settings.paletteReduction.enabled}
+                      style={selectStyle}
                     >
                       {Object.keys(PALETTES).map(p => (
                         <option key={p} value={p}>{p}</option>
@@ -633,6 +677,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('paletteReduction', 'dithering', e.target.checked)}
                       className="accent-fuchsia-500 cursor-pointer"
                       disabled={!settings.paletteReduction.enabled}
+                      style={checkboxStyle}
                     />
                   </div>
 
@@ -650,6 +695,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         onChange={(e) => updateSetting('paletteReduction', 'ditherIntensity', parseInt(e.target.value))}
                         className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                         disabled={!settings.paletteReduction.enabled}
+                        style={rangeStyle}
                       />
                     </div>
                   )}
@@ -675,6 +721,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     checked={settings.colorShift.enabled}
                     onChange={(e) => updateSetting('colorShift', 'enabled', e.target.checked)}
                     className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                    style={checkboxStyle}
                   />
                 </div>
               </div>
@@ -689,6 +736,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('colorShift', 'uniformShift', e.target.checked)}
                       className="accent-fuchsia-500 cursor-pointer"
                       disabled={!settings.colorShift.enabled}
+                      style={checkboxStyle}
                     />
                   </div>
 
@@ -706,6 +754,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('colorShift', 'intensity', parseFloat(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.colorShift.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -722,6 +771,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('colorShift', 'shiftAmount', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.colorShift.enabled}
+                      style={rangeStyle}
                     />
                   </div>
                 </div>
@@ -746,6 +796,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     checked={settings.waveDeform.enabled}
                     onChange={(e) => updateSetting('waveDeform', 'enabled', e.target.checked)}
                     className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                    style={checkboxStyle}
                   />
                 </div>
               </div>
@@ -759,6 +810,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('waveDeform', 'direction', e.target.value)}
                       className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
+                      style={selectStyle}
                     >
                       <option value="Horizontal">Horizontal rows</option>
                       <option value="Vertical">Vertical columns</option>
@@ -778,6 +830,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('waveDeform', 'amplitude', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -795,6 +848,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('waveDeform', 'frequency', parseFloat(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -811,6 +865,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('waveDeform', 'speed', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
+                      style={rangeStyle}
                     />
                   </div>
                 </div>
@@ -835,6 +890,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     checked={settings.chopSlices.enabled}
                     onChange={(e) => updateSetting('chopSlices', 'enabled', e.target.checked)}
                     className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                    style={checkboxStyle}
                   />
                 </div>
               </div>
@@ -854,6 +910,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('chopSlices', 'sliceCount', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -870,6 +927,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('chopSlices', 'maxDisplacement', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -886,6 +944,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('chopSlices', 'interval', parseInt(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
+                      style={rangeStyle}
                     />
                   </div>
                 </div>
@@ -910,6 +969,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     checked={settings.scanlines.enabled}
                     onChange={(e) => updateSetting('scanlines', 'enabled', e.target.checked)}
                     className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                    style={checkboxStyle}
                   />
                 </div>
               </div>
@@ -930,6 +990,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('scanlines', 'intensity', parseFloat(e.target.value))}
                       className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.scanlines.enabled}
+                      style={rangeStyle}
                     />
                   </div>
 
@@ -941,6 +1002,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('scanlines', 'laserSweep', e.target.checked)}
                       className="accent-fuchsia-500 cursor-pointer"
                       disabled={!settings.scanlines.enabled}
+                      style={checkboxStyle}
                     />
                   </div>
 
@@ -951,6 +1013,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       onChange={(e) => updateSetting('scanlines', 'laserColor', e.target.value)}
                       className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
                       disabled={!settings.scanlines.enabled}
+                      style={selectStyle}
                     >
                       <option value="rgba(0, 255, 255, 0.25)">Laser Cyan</option>
                       <option value="rgba(255, 0, 128, 0.3)">Hot Magenta</option>
@@ -965,7 +1028,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
           </div>
 
           {/* Dialog Action Footers */}
-          <div className="mt-6 flex gap-4 border-t border-[#35203a] pt-4 bg-[#190e19]">
+          <div className="mt-6 flex gap-4 border-t border-[#35203a] pt-4 bg-[#1c0e18]">
             <button
               onClick={onClose}
               className="flex-1 bg-transparent hover:bg-white/5 text-[#ebdcb9]/60 hover:text-white border border-[#ebdcb9]/20 font-mono text-xs py-3 rounded-lg transition-colors cursor-pointer uppercase tracking-wider font-bold"
