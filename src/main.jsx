@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import App from './App'
 import SeoManager from './components/SeoManager'
 import signupTheme from './theme/signupTheme'
+import './index.css'
 
 const rootEl = document.getElementById('root')
 if (rootEl) {

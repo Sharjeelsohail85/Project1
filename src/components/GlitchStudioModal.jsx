@@ -428,80 +428,80 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d0411]/90 backdrop-blur-md p-4 md:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 md:p-6 overflow-y-auto font-mono">
       <div 
         id="glitchStudioContainer"
-        className="w-full max-w-5xl bg-[#160c1d] border border-fuchsia-500/30 rounded-2xl shadow-[0_0_50px_rgba(232,23,172,0.25)] flex flex-col md:flex-row overflow-hidden max-h-[90vh]"
+        className="w-full max-w-5xl bg-[#190e19] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.15)] flex flex-col md:flex-row overflow-hidden max-h-[92vh]"
       >
         
         {/* Left column: Visual Workspace */}
-        <div className="md:w-1/2 bg-[#0e0614] p-6 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-fuchsia-500/10 min-h-[380px] md:min-h-[500px]">
+        <div className="md:w-1/2 bg-[#120a13] p-6 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r-2 border-[#35203a] min-h-[420px] md:min-h-[550px]">
           
           {/* Header Title */}
-          <div className="w-full flex items-center justify-between">
+          <div className="w-full flex items-center justify-between border-b border-[#35203a] pb-3 mb-2">
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 bg-cyan-400 rounded-full animate-ping" />
-              <h3 className="font-mono text-cyan-400 tracking-wider text-sm uppercase">Glitchify Image Studio v4</h3>
+              <span className="h-2 w-2 bg-[#ebdcb9] rounded-full animate-pulse" />
+              <h3 className="font-mono text-[#ebdcb9] font-bold tracking-wider text-xs uppercase">GLITCHIFY_IMAGE_STUDIO_v4</h3>
             </div>
             <button 
               onClick={onClose}
-              className="text-fuchsia-400/60 hover:text-fuchsia-400 transition-colors cursor-pointer"
+              className="text-[#ebdcb9]/40 hover:text-[#ebdcb9] transition-colors cursor-pointer"
               title="Close Editor"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
           {/* Central Canvas Viewport */}
           <div className="relative my-4 flex flex-col items-center">
             {/* Holographic Frame */}
-            <div className="absolute inset-0 border border-cyan-500/30 rounded-2xl pointer-events-none shadow-[0_0_20px_rgba(0,255,255,0.1)]" />
-            <div className="absolute -top-3 left-4 bg-[#0e0614] px-2 font-mono text-[10px] text-cyan-400/70">
-              PREVIEW_FEED_01
+            <div className="absolute inset-0 border border-[#ebdcb9]/20 rounded-2xl pointer-events-none shadow-[0_0_20px_rgba(235,220,185,0.05)]" />
+            <div className="absolute -top-2.5 left-4 bg-[#120a13] px-2 font-mono text-[9px] text-[#ebdcb9]/50 tracking-wider">
+              MONITOR_FEED_01
             </div>
 
             <canvas
               ref={canvasRef}
               className="w-[260px] h-[260px] md:w-[300px] md:h-[300px] rounded-xl object-cover bg-black"
               style={{
-                boxShadow: '0 0 30px rgba(0,255,255,0.15)'
+                boxShadow: '0 0 40px rgba(0,0,0,0.6), 0 0 15px rgba(235,220,185,0.05)'
               }}
             />
 
             {/* Quick Play/Pause & Reset controls */}
-            <div className="flex gap-4 mt-4 bg-[#160c1d]/90 border border-fuchsia-500/20 px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+            <div className="flex gap-4 mt-4 bg-[#1b111a] border border-[#35203a] px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
               <button
                 onClick={() => setIsAnimating(!isAnimating)}
-                className="text-cyan-400 hover:text-white transition-colors flex items-center gap-1 text-xs font-mono cursor-pointer"
+                className="text-[#ebdcb9] hover:text-white transition-colors flex items-center gap-1 text-[10px] font-mono font-bold cursor-pointer"
                 title={isAnimating ? "Pause Animation" : "Play Animation"}
               >
-                {isAnimating ? <Pause size={14} /> : <Play size={14} />}
+                {isAnimating ? <Pause size={12} /> : <Play size={12} />}
                 <span>{isAnimating ? "PAUSE" : "PLAY"}</span>
               </button>
-              <span className="text-fuchsia-500/30">|</span>
+              <span className="text-[#35203a]">|</span>
               <button
                 onClick={() => handleSelectPreset('Default Lab')}
-                className="text-fuchsia-400 hover:text-white transition-colors flex items-center gap-1 text-xs font-mono cursor-pointer"
+                className="text-[#ebdcb9]/60 hover:text-[#ebdcb9] transition-colors flex items-center gap-1 text-[10px] font-mono cursor-pointer"
                 title="Reset Settings"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
                 <span>RESET</span>
               </button>
             </div>
           </div>
 
           {/* Presets List */}
-          <div className="w-full">
-            <p className="font-mono text-[10px] text-fuchsia-400/50 uppercase tracking-widest mb-2">Preset Matrix</p>
+          <div className="w-full border-t border-[#35203a] pt-4">
+            <p className="font-mono text-[9px] text-[#ebdcb9]/40 uppercase tracking-widest mb-2.5 font-bold">Preset Matrix</p>
             <div className="grid grid-cols-3 gap-1.5 w-full">
               {Object.keys(PRESETS).map((pname) => (
                 <button
                   key={pname}
                   onClick={() => handleSelectPreset(pname)}
-                  className={`px-2 py-1.5 rounded text-[10px] font-mono tracking-tighter uppercase transition-all duration-200 cursor-pointer ${
+                  className={`px-2 py-1.5 rounded font-mono text-[9px] tracking-tight uppercase transition-all duration-200 cursor-pointer text-center ${
                     activePreset === pname
-                      ? 'bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)] border border-cyan-400'
-                      : 'bg-[#180a22] text-fuchsia-400/80 hover:bg-[#250d35] hover:text-white border border-fuchsia-500/15'
+                      ? 'bg-[#ebdcb9] text-black font-bold shadow-[0_0_12px_rgba(235,220,185,0.3)] border border-[#ebdcb9]'
+                      : 'bg-[#180a22] text-[#ebdcb9]/80 hover:bg-[#250d35] hover:text-white border border-[#35203a]'
                   }`}
                 >
                   {pname}
@@ -513,28 +513,31 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
         </div>
 
         {/* Right column: Form Settings controls */}
-        <div className="md:w-1/2 p-6 overflow-y-auto max-h-[50vh] md:max-h-[90vh] flex flex-col justify-between bg-[#130919]">
+        <div className="md:w-1/2 p-6 overflow-y-auto max-h-[50vh] md:max-h-[92vh] flex flex-col justify-between bg-[#190e19]">
           
-          <div className="space-y-4">
+          <div className="space-y-3.5 pr-1">
             
             {/* Header section toggle: Image IO */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-amber-500 shadow-md">
               <button 
                 onClick={() => toggleCollapse('io')}
-                className="w-full flex items-center justify-between p-3 font-mono text-xs uppercase tracking-widest text-fuchsia-400 border-b border-fuchsia-500/10 hover:bg-fuchsia-500/5 cursor-pointer"
+                className="w-full flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold bg-[#251727]/40 border-b border-[#35203a] hover:bg-[#251727]/60 cursor-pointer"
               >
-                <span>Image Input / Output</span>
-                <span>{collapses.io ? '⊟' : '⊞'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-[#ebdcb9]/50">{collapses.io ? '▼' : '▶'}</span>
+                  <span>Image Input / Output</span>
+                </div>
+                <span className="text-[10px] text-[#ebdcb9]/30">[]</span>
               </button>
               
               {collapses.io && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-400/90">
+                <div className="p-3 space-y-3 font-mono text-xs text-[#ebdcb9]">
                   <div className="flex gap-2">
                     <button
                       onClick={handleUploadClick}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#2a0e3b] hover:bg-[#3d1455] text-cyan-400 hover:text-white border border-cyan-400/30 px-3 py-2 rounded transition-all cursor-pointer shadow-[0_0_15px_rgba(0,255,255,0.05)]"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#ebdcb9] hover:bg-[#ebdcb9]/90 text-black font-bold px-3 py-2 rounded font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-md"
                     >
-                      <Upload size={14} />
+                      <Upload size={13} />
                       <span>UPLOAD IMAGE</span>
                     </button>
                     <input 
@@ -548,7 +551,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     {baseImage !== baseAvatarDefault && (
                       <button
                         onClick={handleResetBaseImage}
-                        className="bg-red-950/40 hover:bg-red-950 text-red-400 border border-red-500/20 px-2 rounded transition-all cursor-pointer"
+                        className="bg-[#1b111a] hover:bg-red-950/40 text-red-400 border border-red-500/20 px-2.5 rounded font-mono text-[10px] transition-all cursor-pointer"
                         title="Reset base avatar to original lab logo"
                       >
                         RESET
@@ -556,15 +559,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     )}
                   </div>
                   
-                  <p className="text-[10px] text-fuchsia-400/50">{imageQualityMsg}</p>
+                  <p className="text-[10px] text-[#ebdcb9]/40">{imageQualityMsg}</p>
                   
-                  <div className="border-t border-fuchsia-500/10 pt-3 space-y-2">
+                  <div className="border-t border-[#35203a] pt-3 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px]">Format:</span>
+                      <span className="text-[10px] uppercase tracking-wider text-[#ebdcb9]/60">Format:</span>
                       <select 
                         value={downloadFormat}
                         onChange={(e) => setDownloadFormat(e.target.value)}
-                        className="bg-[#1b0a24] text-cyan-300 border border-cyan-500/20 px-2 py-1 rounded text-[11px] focus:outline-none"
+                        className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6"
                       >
                         <option value="png">PNG (Lossless)</option>
                         <option value="jpeg">JPEG (Fast)</option>
@@ -573,9 +576,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
                     <button
                       onClick={handleDownloadImage}
-                      className="w-full flex items-center justify-center gap-1.5 bg-[#0d2a2d] hover:bg-[#123e42] text-cyan-300 border border-cyan-400/40 px-3 py-2 rounded transition-all cursor-pointer shadow-[0_0_15px_rgba(0,255,255,0.05)]"
+                      className="w-full flex items-center justify-center gap-1.5 bg-[#22d3ee] hover:bg-[#06b6d4] text-black font-bold px-3 py-2 rounded font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-md"
                     >
-                      <Download size={14} />
+                      <Download size={13} />
                       <span>DOWNLOAD GLITCHED FRAME</span>
                     </button>
                   </div>
@@ -584,43 +587,45 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Header section toggle: Palette Reduction */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
-              <div className="flex items-center justify-between p-3 border-b border-fuchsia-500/10">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-fuchsia-500 shadow-md">
+              <div className="flex items-center justify-between bg-[#251727]/40 border-b border-[#35203a]">
                 <button 
                   onClick={() => toggleCollapse('palette')}
-                  className="flex-1 flex items-center justify-between font-mono text-xs uppercase tracking-widest text-fuchsia-400 hover:bg-fuchsia-500/5 text-left cursor-pointer"
+                  className="flex-1 flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold hover:bg-[#251727]/60 text-left cursor-pointer"
                 >
-                  <span>Palette Reduction</span>
-                  <span>{collapses.palette ? '⊟' : '⊞'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#ebdcb9]/50">{collapses.palette ? '▼' : '▶'}</span>
+                    <span>Palette Reduction</span>
+                  </div>
                 </button>
-                <input
-                  type="checkbox"
-                  checked={settings.paletteReduction.enabled}
-                  onChange={(e) => updateSetting('paletteReduction', 'enabled', e.target.checked)}
-                  className="ml-3 accent-fuchsia-500 h-4 w-4 cursor-pointer"
-                />
+                <div className="pr-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.paletteReduction.enabled}
+                    onChange={(e) => updateSetting('paletteReduction', 'enabled', e.target.checked)}
+                    className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                  />
+                </div>
               </div>
 
               {collapses.palette && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-300/80">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span>Palette preset:</span>
-                      <select 
-                        value={settings.paletteReduction.palette}
-                        onChange={(e) => updateSetting('paletteReduction', 'palette', e.target.value)}
-                        className="bg-[#1b0a24] text-cyan-300 border border-cyan-500/20 px-2 py-1 rounded text-[11px] focus:outline-none focus:border-cyan-400"
-                        disabled={!settings.paletteReduction.enabled}
-                      >
-                        {Object.keys(PALETTES).map(p => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
+                <div className="p-3 space-y-2.5 font-mono text-xs text-[#ebdcb9]">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Palette preset:</span>
+                    <select 
+                      value={settings.paletteReduction.palette}
+                      onChange={(e) => updateSetting('paletteReduction', 'palette', e.target.value)}
+                      className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
+                      disabled={!settings.paletteReduction.enabled}
+                    >
+                      {Object.keys(PALETTES).map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span>Dithering pattern:</span>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Dithering pattern:</span>
                     <input
                       type="checkbox"
                       checked={settings.paletteReduction.dithering}
@@ -631,10 +636,10 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   {settings.paletteReduction.dithering && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px]">
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                         <span>Dither Intensity:</span>
-                        <span className="text-cyan-400">{settings.paletteReduction.ditherIntensity}</span>
+                        <span className="text-cyan-400 font-bold">{settings.paletteReduction.ditherIntensity}</span>
                       </div>
                       <input 
                         type="range"
@@ -642,7 +647,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         max="30"
                         value={settings.paletteReduction.ditherIntensity}
                         onChange={(e) => updateSetting('paletteReduction', 'ditherIntensity', parseInt(e.target.value))}
-                        className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                        className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                         disabled={!settings.paletteReduction.enabled}
                       />
                     </div>
@@ -652,27 +657,31 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Header section toggle: Color Shift */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
-              <div className="flex items-center justify-between p-3 border-b border-fuchsia-500/10">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-cyan-400 shadow-md">
+              <div className="flex items-center justify-between bg-[#251727]/40 border-b border-[#35203a]">
                 <button 
                   onClick={() => toggleCollapse('colorShift')}
-                  className="flex-1 flex items-center justify-between font-mono text-xs uppercase tracking-widest text-fuchsia-400 hover:bg-fuchsia-500/5 text-left cursor-pointer"
+                  className="flex-1 flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold hover:bg-[#251727]/60 text-left cursor-pointer"
                 >
-                  <span>Color Shift</span>
-                  <span>{collapses.colorShift ? '⊟' : '⊞'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#ebdcb9]/50">{collapses.colorShift ? '▼' : '▶'}</span>
+                    <span>Color Shift</span>
+                  </div>
                 </button>
-                <input
-                  type="checkbox"
-                  checked={settings.colorShift.enabled}
-                  onChange={(e) => updateSetting('colorShift', 'enabled', e.target.checked)}
-                  className="ml-3 accent-fuchsia-500 h-4 w-4 cursor-pointer"
-                />
+                <div className="pr-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.colorShift.enabled}
+                    onChange={(e) => updateSetting('colorShift', 'enabled', e.target.checked)}
+                    className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                  />
+                </div>
               </div>
 
               {collapses.colorShift && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-300/80">
-                  <div className="flex items-center justify-between">
-                    <span>Uniform shift (Chromatic):</span>
+                <div className="p-3 space-y-2.5 font-mono text-xs text-[#ebdcb9]">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Uniform shift (Chromatic):</span>
                     <input
                       type="checkbox"
                       checked={settings.colorShift.uniformShift}
@@ -683,9 +692,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Intensity scale:</span>
-                      <span className="text-cyan-400">{settings.colorShift.intensity.toFixed(2)}</span>
+                      <span className="text-cyan-400 font-bold">{settings.colorShift.intensity.toFixed(2)}</span>
                     </div>
                     <input 
                       type="range"
@@ -694,15 +703,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       step="0.1"
                       value={settings.colorShift.intensity}
                       onChange={(e) => updateSetting('colorShift', 'intensity', parseFloat(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.colorShift.enabled}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Shift offset:</span>
-                      <span className="text-cyan-400">{settings.colorShift.shiftAmount}px</span>
+                      <span className="text-cyan-400 font-bold">{settings.colorShift.shiftAmount}px</span>
                     </div>
                     <input 
                       type="range"
@@ -710,7 +719,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="50"
                       value={settings.colorShift.shiftAmount}
                       onChange={(e) => updateSetting('colorShift', 'shiftAmount', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.colorShift.enabled}
                     />
                   </div>
@@ -719,31 +728,35 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Header section toggle: Wave Deform */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
-              <div className="flex items-center justify-between p-3 border-b border-fuchsia-500/10">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-emerald-500 shadow-md">
+              <div className="flex items-center justify-between bg-[#251727]/40 border-b border-[#35203a]">
                 <button 
                   onClick={() => toggleCollapse('wave')}
-                  className="flex-1 flex items-center justify-between font-mono text-xs uppercase tracking-widest text-fuchsia-400 hover:bg-fuchsia-500/5 text-left cursor-pointer"
+                  className="flex-1 flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold hover:bg-[#251727]/60 text-left cursor-pointer"
                 >
-                  <span>Wave Deform</span>
-                  <span>{collapses.wave ? '⊟' : '⊞'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#ebdcb9]/50">{collapses.wave ? '▼' : '▶'}</span>
+                    <span>Wave Deform</span>
+                  </div>
                 </button>
-                <input
-                  type="checkbox"
-                  checked={settings.waveDeform.enabled}
-                  onChange={(e) => updateSetting('waveDeform', 'enabled', e.target.checked)}
-                  className="ml-3 accent-fuchsia-500 h-4 w-4 cursor-pointer"
-                />
+                <div className="pr-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.waveDeform.enabled}
+                    onChange={(e) => updateSetting('waveDeform', 'enabled', e.target.checked)}
+                    className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                  />
+                </div>
               </div>
 
               {collapses.wave && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-300/80">
-                  <div className="flex items-center justify-between">
-                    <span>Wave Direction:</span>
+                <div className="p-3 space-y-2.5 font-mono text-xs text-[#ebdcb9]">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Wave Direction:</span>
                     <select 
                       value={settings.waveDeform.direction}
                       onChange={(e) => updateSetting('waveDeform', 'direction', e.target.value)}
-                      className="bg-[#1b0a24] text-cyan-300 border border-cyan-500/20 px-2 py-1 rounded text-[11px] focus:outline-none"
+                      className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
                     >
                       <option value="Horizontal">Horizontal rows</option>
@@ -752,9 +765,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Wave Amplitude (size):</span>
-                      <span className="text-cyan-400">{settings.waveDeform.amplitude}px</span>
+                      <span className="text-cyan-400 font-bold">{settings.waveDeform.amplitude}px</span>
                     </div>
                     <input 
                       type="range"
@@ -762,15 +775,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="80"
                       value={settings.waveDeform.amplitude}
                       onChange={(e) => updateSetting('waveDeform', 'amplitude', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Wave Frequency (count):</span>
-                      <span className="text-cyan-400">{settings.waveDeform.frequency.toFixed(3)}</span>
+                      <span className="text-cyan-400 font-bold">{settings.waveDeform.frequency.toFixed(3)}</span>
                     </div>
                     <input 
                       type="range"
@@ -779,15 +792,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       step="0.005"
                       value={settings.waveDeform.frequency}
                       onChange={(e) => updateSetting('waveDeform', 'frequency', parseFloat(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Wave speed:</span>
-                      <span className="text-cyan-400">{settings.waveDeform.speed}</span>
+                      <span className="text-cyan-400 font-bold">{settings.waveDeform.speed}</span>
                     </div>
                     <input 
                       type="range"
@@ -795,7 +808,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="15"
                       value={settings.waveDeform.speed}
                       onChange={(e) => updateSetting('waveDeform', 'speed', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.waveDeform.enabled}
                     />
                   </div>
@@ -804,29 +817,33 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Header section toggle: Slices Displacement */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
-              <div className="flex items-center justify-between p-3 border-b border-fuchsia-500/10">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-indigo-500 shadow-md">
+              <div className="flex items-center justify-between bg-[#251727]/40 border-b border-[#35203a]">
                 <button 
                   onClick={() => toggleCollapse('chop')}
-                  className="flex-1 flex items-center justify-between font-mono text-xs uppercase tracking-widest text-fuchsia-400 hover:bg-fuchsia-500/5 text-left cursor-pointer"
+                  className="flex-1 flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold hover:bg-[#251727]/60 text-left cursor-pointer"
                 >
-                  <span>Chop & Slices Displacement</span>
-                  <span>{collapses.chop ? '⊟' : '⊞'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#ebdcb9]/50">{collapses.chop ? '▼' : '▶'}</span>
+                    <span>Chop & Slices Displacement</span>
+                  </div>
                 </button>
-                <input
-                  type="checkbox"
-                  checked={settings.chopSlices.enabled}
-                  onChange={(e) => updateSetting('chopSlices', 'enabled', e.target.checked)}
-                  className="ml-3 accent-fuchsia-500 h-4 w-4 cursor-pointer"
-                />
+                <div className="pr-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.chopSlices.enabled}
+                    onChange={(e) => updateSetting('chopSlices', 'enabled', e.target.checked)}
+                    className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                  />
+                </div>
               </div>
 
               {collapses.chop && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-300/80">
+                <div className="p-3 space-y-2.5 font-mono text-xs text-[#ebdcb9]">
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Slice count:</span>
-                      <span className="text-cyan-400">{settings.chopSlices.sliceCount}</span>
+                      <span className="text-cyan-400 font-bold">{settings.chopSlices.sliceCount}</span>
                     </div>
                     <input 
                       type="range"
@@ -834,15 +851,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="20"
                       value={settings.chopSlices.sliceCount}
                       onChange={(e) => updateSetting('chopSlices', 'sliceCount', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Max shift width:</span>
-                      <span className="text-cyan-400">{settings.chopSlices.maxDisplacement}px</span>
+                      <span className="text-cyan-400 font-bold">{settings.chopSlices.maxDisplacement}px</span>
                     </div>
                     <input 
                       type="range"
@@ -850,15 +867,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="100"
                       value={settings.chopSlices.maxDisplacement}
                       onChange={(e) => updateSetting('chopSlices', 'maxDisplacement', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Trigger interval (frames):</span>
-                      <span className="text-cyan-400">every {settings.chopSlices.interval} frames</span>
+                      <span className="text-cyan-400 font-bold">every {settings.chopSlices.interval} frames</span>
                     </div>
                     <input 
                       type="range"
@@ -866,7 +883,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       max="30"
                       value={settings.chopSlices.interval}
                       onChange={(e) => updateSetting('chopSlices', 'interval', parseInt(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.chopSlices.enabled}
                     />
                   </div>
@@ -875,29 +892,33 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Header section toggle: Scanlines / Sweep */}
-            <div className="border border-fuchsia-500/10 rounded-lg overflow-hidden bg-[#1a0c24]/30">
-              <div className="flex items-center justify-between p-3 border-b border-fuchsia-500/10">
+            <div className="border border-[#35203a] rounded-lg overflow-hidden bg-[#1b111a] border-l-4 border-l-rose-500 shadow-md">
+              <div className="flex items-center justify-between bg-[#251727]/40 border-b border-[#35203a]">
                 <button 
                   onClick={() => toggleCollapse('static')}
-                  className="flex-1 flex items-center justify-between font-mono text-xs uppercase tracking-widest text-fuchsia-400 hover:bg-fuchsia-500/5 text-left cursor-pointer"
+                  className="flex-1 flex items-center justify-between p-2.5 font-mono text-[11px] uppercase tracking-wider text-[#ebdcb9] font-bold hover:bg-[#251727]/60 text-left cursor-pointer"
                 >
-                  <span>Scanlines & Laser Sweep</span>
-                  <span>{collapses.static ? '⊟' : '⊞'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#ebdcb9]/50">{collapses.static ? '▼' : '▶'}</span>
+                    <span>Scanlines & Laser Sweep</span>
+                  </div>
                 </button>
-                <input
-                  type="checkbox"
-                  checked={settings.scanlines.enabled}
-                  onChange={(e) => updateSetting('scanlines', 'enabled', e.target.checked)}
-                  className="ml-3 accent-fuchsia-500 h-4 w-4 cursor-pointer"
-                />
+                <div className="pr-3 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.scanlines.enabled}
+                    onChange={(e) => updateSetting('scanlines', 'enabled', e.target.checked)}
+                    className="accent-fuchsia-500 h-3.5 w-3.5 cursor-pointer bg-black/40 border border-[#ebdcb9]/20"
+                  />
+                </div>
               </div>
 
               {collapses.static && (
-                <div className="p-3 space-y-3 font-mono text-xs text-fuchsia-300/80">
+                <div className="p-3 space-y-2.5 font-mono text-xs text-[#ebdcb9]">
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
+                    <div className="flex justify-between text-[10px] uppercase text-[#ebdcb9]/60">
                       <span>Scanline visibility:</span>
-                      <span className="text-cyan-400">{(settings.scanlines.intensity * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-bold">{(settings.scanlines.intensity * 100).toFixed(0)}%</span>
                     </div>
                     <input 
                       type="range"
@@ -906,13 +927,13 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                       step="0.01"
                       value={settings.scanlines.intensity}
                       onChange={(e) => updateSetting('scanlines', 'intensity', parseFloat(e.target.value))}
-                      className="w-full accent-fuchsia-500 bg-[#160c1d] rounded-lg cursor-pointer h-1.5"
+                      className="w-full accent-fuchsia-500 bg-[#0d0411] rounded h-1 cursor-pointer disabled:opacity-40"
                       disabled={!settings.scanlines.enabled}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span>Active Laser Sweep:</span>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Active Laser Sweep:</span>
                     <input
                       type="checkbox"
                       checked={settings.scanlines.laserSweep}
@@ -922,12 +943,12 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span>Laser Glow Color:</span>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-[#ebdcb9]/60 uppercase text-[10px] tracking-wider">Laser Glow Color:</span>
                     <select 
                       value={settings.scanlines.laserColor}
                       onChange={(e) => updateSetting('scanlines', 'laserColor', e.target.value)}
-                      className="bg-[#1b0a24] text-cyan-300 border border-cyan-500/20 px-2 py-1 rounded text-[11px] focus:outline-none"
+                      className="bg-[#100613] text-[#ebdcb9] border border-[#35203a] px-2 py-0.5 rounded text-[11px] font-mono outline-none focus:border-cyan-400 cursor-pointer h-6 disabled:opacity-40"
                       disabled={!settings.scanlines.enabled}
                     >
                       <option value="rgba(0, 255, 255, 0.25)">Laser Cyan</option>
@@ -943,16 +964,16 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
           </div>
 
           {/* Dialog Action Footers */}
-          <div className="mt-6 flex gap-4 border-t border-fuchsia-500/10 pt-4">
+          <div className="mt-6 flex gap-4 border-t border-[#35203a] pt-4 bg-[#190e19]">
             <button
               onClick={onClose}
-              className="flex-1 bg-transparent hover:bg-white/5 text-fuchsia-400 hover:text-white border border-fuchsia-500/30 font-mono text-xs py-3 rounded-lg transition-colors cursor-pointer"
+              className="flex-1 bg-transparent hover:bg-white/5 text-[#ebdcb9]/60 hover:text-white border border-[#ebdcb9]/20 font-mono text-xs py-3 rounded-lg transition-colors cursor-pointer uppercase tracking-wider font-bold"
             >
               DISCARD CHANGES
             </button>
             <button
               onClick={handleSaveAndApply}
-              className="flex-1 bg-[#d91ba3] hover:bg-[#ff20bf] text-white font-mono text-xs py-3 rounded-lg transition-all cursor-pointer shadow-[0_0_20px_rgba(232,23,172,0.4)] hover:shadow-[0_0_30px_rgba(232,23,172,0.6)] flex items-center justify-center gap-1.5"
+              className="flex-1 bg-[#d91ba3] hover:bg-[#ff20bf] text-white font-mono text-xs py-3 rounded-lg transition-all cursor-pointer shadow-[0_0_20px_rgba(232,23,172,0.4)] hover:shadow-[0_0_30px_rgba(232,23,172,0.6)] flex items-center justify-center gap-1.5 uppercase tracking-wider font-bold"
             >
               {showSaveFeedback ? (
                 <>
