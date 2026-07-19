@@ -54,6 +54,8 @@ export default function ChannelCover() {
   const [isInlineEditing, setIsInlineEditing] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const editableRef = useRef(null);
+  const backgroundLayerRef = useRef(null);
+  const extrusionLayerRef = useRef(null);
 
   useEffect(() => {
     if (editableRef.current && document.activeElement !== editableRef.current) {
@@ -214,6 +216,7 @@ export default function ChannelCover() {
           >
             {/* Background Layer with thick stroke outline & drop-shadow */}
             <div 
+              ref={backgroundLayerRef}
               style={{
                 ...getTextStyle(config.fontFamily || "Lilita One", config.textSize),
                 color: config.colorSticker,
@@ -230,6 +233,7 @@ export default function ChannelCover() {
 
             {/* 3D Extrusion Layer */}
             <div 
+              ref={extrusionLayerRef}
               style={{
                 ...getTextStyle(config.fontFamily || "Lilita One", config.textSize),
                 position: 'absolute',
@@ -257,10 +261,19 @@ export default function ChannelCover() {
               suppressContentEditableWarning={true}
               onInput={(e) => {
                 const text = e.currentTarget.innerText || '';
-                updateConfig('text', text);
+                if (backgroundLayerRef.current) {
+                  backgroundLayerRef.current.innerText = text;
+                }
+                if (extrusionLayerRef.current) {
+                  extrusionLayerRef.current.innerText = text;
+                }
               }}
               onFocus={() => setIsInlineEditing(true)}
-              onBlur={() => setIsInlineEditing(false)}
+              onBlur={(e) => {
+                setIsInlineEditing(false);
+                const text = e.currentTarget.innerText || '';
+                updateConfig('text', text);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
                   e.preventDefault();
