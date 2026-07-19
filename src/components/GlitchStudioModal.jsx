@@ -470,7 +470,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-mono">
       <div 
         id="glitchStudioContainer"
-        className="w-full max-w-5xl bg-[#1c0e18] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.2)] flex flex-row overflow-hidden max-h-[92vh] mx-auto"
+        className="w-full max-w-5xl bg-[#1c0e18] border-2 border-[#35203a] rounded-none shadow-[0_0_60px_rgba(217,27,163,0.2)] flex flex-row overflow-hidden max-h-[92vh] mx-auto"
       >
         
         {/* Left column: Visual Workspace */}
@@ -494,21 +494,21 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
           {/* Central Canvas Viewport */}
           <div className="relative my-4 flex flex-col items-center">
             {/* Holographic Frame */}
-            <div className="absolute inset-0 border border-[#ebdcb9]/20 rounded-2xl pointer-events-none shadow-[0_0_20px_rgba(235,220,185,0.05)]" />
+            <div className="absolute inset-0 border border-[#ebdcb9]/20 rounded-none pointer-events-none shadow-[0_0_20px_rgba(235,220,185,0.05)]" />
             <div className="absolute -top-2.5 left-4 bg-[#120a13] px-2 font-mono text-[9px] text-[#ebdcb9]/50 tracking-wider">
               MONITOR_FEED_01
             </div>
 
             <canvas
               ref={canvasRef}
-              className="w-[300px] h-[300px] rounded-xl object-cover bg-black"
+              className="w-[300px] h-[300px] rounded-none object-cover bg-black"
               style={{
                 boxShadow: '0 0 40px rgba(0,0,0,0.6), 0 0 15px rgba(235,220,185,0.05)'
               }}
             />
 
             {/* Quick Play/Pause & Reset controls */}
-            <div className="flex gap-4 mt-4 bg-[#1b111a] border border-[#35203a] px-3 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+            <div className="flex gap-4 mt-4 bg-[#1b111a] border border-[#35203a] px-3 py-1.5 rounded-none shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
               <button
                 onClick={() => setIsAnimating(!isAnimating)}
                 className="text-[#ebdcb9] hover:text-white transition-colors flex items-center gap-1 text-[10px] font-mono font-bold cursor-pointer"
@@ -537,7 +537,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                 <button
                   key={pname}
                   onClick={() => handleSelectPreset(pname)}
-                  className={`px-2 py-1.5 rounded font-mono text-[9px] tracking-tight uppercase transition-all duration-200 cursor-pointer text-center ${
+                  className={`px-2 py-1.5 rounded-none font-mono text-[9px] tracking-tight uppercase transition-all duration-200 cursor-pointer text-center ${
                     activePreset === pname
                       ? 'bg-[#ebdcb9] text-black font-bold shadow-[0_0_12px_rgba(235,220,185,0.3)] border border-[#ebdcb9]'
                       : 'bg-[#180a22] text-[#ebdcb9]/80 hover:bg-[#250d35] hover:text-white border border-[#35203a]'
@@ -553,32 +553,32 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
         {/* Right column: Form Settings controls */}
         <div 
-          className="w-[55%] overflow-y-auto max-h-[92vh] flex flex-col justify-between bg-[#2a162b] glitch-studio-right-panel"
-          style={{ scrollbarWidth: 'thin', scrollbarColor: '#4a2b4b #2a162b' }}
+          className="w-[55%] overflow-y-auto max-h-[92vh] flex flex-col justify-between bg-[#2d1c2d] glitch-studio-right-panel"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#4a2b4b #2d1c2d' }}
         >
           <style>{`
             .glitch-studio-right-panel {
-              background-color: #2a162b !important;
+              background-color: #2d1c2d !important;
               font-family: "JetBrains Mono", monospace !important;
             }
             .glitch-studio-right-panel::-webkit-scrollbar {
               width: 6px;
             }
             .glitch-studio-right-panel::-webkit-scrollbar-track {
-              background: #1a0b1a;
+              background: #211322;
             }
             .glitch-studio-right-panel::-webkit-scrollbar-thumb {
               background: #4a2b4b;
             }
             .glitch-studio-header-row {
-              background-color: #1a0b1a !important;
-              border-top: 1px solid #4a2b4b !important;
-              border-bottom: 1px solid #4a2b4b !important;
+              background-color: #211322 !important;
+              border-top: 1px solid #3e273e !important;
+              border-bottom: 1px solid #3e273e !important;
               color: #ebdcb9 !important;
               font-size: 11px !important;
-              text-transform: uppercase !important;
-              letter-spacing: 0.05em !important;
-              height: 32px !important;
+              text-transform: none !important;
+              letter-spacing: 0.02em !important;
+              height: 30px !important;
               display: flex !important;
               align-items: center !important;
               justify-content: space-between !important;
@@ -587,45 +587,56 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               user-select: none !important;
             }
             .glitch-studio-field-row {
-              border-bottom: 1px solid #3d223e !important;
-              padding: 8px 12px !important;
+              border-bottom: 1px solid #3e273e !important;
               display: flex !important;
-              align-items: center !important;
-              justify-content: space-between !important;
+              align-items: stretch !important;
+              min-height: 30px !important;
               font-size: 11px !important;
-              color: #ebdcb9 !important;
+              background-color: #2d1c2d !important;
             }
             .glitch-studio-field-label {
-              color: #ebdcb9 !important;
+              width: 140px !important;
+              flex-shrink: 0 !important;
+              border-right: 1px solid #3e273e !important;
+              padding: 6px 12px !important;
+              color: #a080a0 !important;
+              display: flex !important;
+              align-items: center !important;
               font-size: 11px !important;
+              user-select: none !important;
             }
-            .glitch-studio-field-label-muted {
-              color: #8c698e !important;
-              font-size: 11px !important;
+            .glitch-studio-field-control {
+              flex-grow: 1 !important;
+              padding: 6px 12px !important;
+              display: flex !important;
+              align-items: center !important;
+              color: #ebdcb9 !important;
+              background-color: #2d1c2d !important;
             }
             .glitch-studio-btn-beige {
               background-color: #ebdcb9 !important;
-              color: #1c0e18 !important;
+              color: #2d1c2d !important;
               font-size: 11px !important;
               font-weight: bold !important;
               border: none !important;
               border-radius: 0px !important;
-              padding: 6px 12px !important;
-              transition: all 0.15s ease-in-out !important;
+              padding: 4px 10px !important;
+              transition: all 0.1s ease-in-out !important;
               text-transform: uppercase !important;
               letter-spacing: 0.05em !important;
               cursor: pointer !important;
-              display: flex !important;
+              display: inline-flex !important;
               align-items: center !important;
               justify-content: center !important;
               gap: 6px !important;
+              font-family: "JetBrains Mono", monospace !important;
             }
             .glitch-studio-btn-beige:hover {
               background-color: #fcf1d8 !important;
               box-shadow: 0 0 10px rgba(235, 220, 185, 0.4) !important;
             }
             .glitch-studio-select {
-              background-color: #1a0b1a !important;
+              background-color: #211322 !important;
               color: #ebdcb9 !important;
               border: 1px solid #ebdcb9 !important;
               border-radius: 0px !important;
@@ -635,6 +646,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               cursor: pointer !important;
               outline: none !important;
               height: 22px !important;
+              width: 100% !important;
             }
             .glitch-studio-select:hover {
               border-color: #ebdcb9 !important;
@@ -647,8 +659,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               align-items: center !important;
               justify-content: center !important;
               cursor: pointer !important;
-              background-color: #1a0b1a !important;
-              user-select: none !important;
+              background-color: #211322 !important;
             }
             .glitch-studio-checkbox-checked {
               width: 6px !important;
@@ -665,7 +676,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               width: 100% !important;
               height: 2px !important;
               cursor: pointer !important;
-              background: #4a2b4b !important;
+              background: #3e273e !important;
             }
             .glitch-studio-range::-webkit-slider-thumb {
               height: 10px !important;
@@ -680,7 +691,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
               width: 100% !important;
               height: 2px !important;
               cursor: pointer !important;
-              background: #4a2b4b !important;
+              background: #3e273e !important;
             }
             .glitch-studio-range::-moz-range-thumb {
               height: 10px !important;
@@ -695,69 +706,81 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
           <div className="flex-1">
             
             {/* Image I/O Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('io')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Image I/O</span>
-                <span>()</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
               
               {collapses.io && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Upload Image Button */}
-                  <div className="glitch-studio-field-row py-3">
-                    <button
-                      onClick={handleUploadClick}
-                      className="glitch-studio-btn-beige w-full"
-                    >
-                      <Upload size={12} />
-                      <span>UPLOAD IMAGE</span>
-                    </button>
-                    <input 
-                      ref={fileInputRef}
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleFileChange}
-                    />
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label"></div>
+                    <div className="glitch-studio-field-control py-1">
+                      <button
+                        onClick={handleUploadClick}
+                        className="glitch-studio-btn-beige w-full"
+                      >
+                        <Upload size={12} />
+                        <span>Upload Image</span>
+                      </button>
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleFileChange}
+                      />
+                    </div>
                   </div>
 
                   {/* Image Quality Info */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Image Quality</span>
-                    <span className="glitch-studio-field-label-muted">{imageQualityMsg}</span>
+                    <div className="glitch-studio-field-label">Image Quality</div>
+                    <div className="glitch-studio-field-control text-[#ebdcb9]/80 text-[10px]">
+                      {imageQualityMsg}
+                    </div>
                   </div>
 
                   {/* Download Image Button */}
-                  <div className="glitch-studio-field-row py-3">
-                    <button
-                      onClick={handleDownloadImage}
-                      className="glitch-studio-btn-beige w-full"
-                    >
-                      <Download size={12} />
-                      <span>DOWNLOAD IMAGE</span>
-                    </button>
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label"></div>
+                    <div className="glitch-studio-field-control py-1">
+                      <button
+                        onClick={handleDownloadImage}
+                        className="glitch-studio-btn-beige w-full"
+                      >
+                        <Download size={12} />
+                        <span>Download Image</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Format Selector */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Format</span>
-                    <select 
-                      value={downloadFormat}
-                      onChange={(e) => setDownloadFormat(e.target.value)}
-                      className="glitch-studio-select"
-                    >
-                      <option value="png">PNG</option>
-                      <option value="jpeg">JPEG</option>
-                    </select>
+                    <div className="glitch-studio-field-label">Format</div>
+                    <div className="glitch-studio-field-control">
+                      <select 
+                        value={downloadFormat}
+                        onChange={(e) => setDownloadFormat(e.target.value)}
+                        className="glitch-studio-select"
+                      >
+                        <option value="png">PNG</option>
+                        <option value="jpeg">JPEG</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Status row */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Status</span>
-                    <span className="glitch-studio-field-label-muted">Idle</span>
+                    <div className="glitch-studio-field-label"></div>
+                    <div className="glitch-studio-field-control text-[#8c698e] text-[10px]">
+                      Idle
+                    </div>
                   </div>
                 </div>
               )}
@@ -766,81 +789,89 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             {/* General Settings Divider Header */}
             <div className="glitch-studio-header-row">
               <span>Settings</span>
-              <span>||</span>
+              <span className="text-[#8c698e]">||</span>
             </div>
 
             {/* Palette Reduction Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('palette')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Palette Reduction</span>
-                <span>()</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
 
               {collapses.palette && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Enable Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Enable</span>
-                    <div 
-                      onClick={() => updateSetting('paletteReduction', 'enabled', !settings.paletteReduction.enabled)}
-                      className="glitch-studio-checkbox"
-                    >
-                      {settings.paletteReduction.enabled && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Enable</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => updateSetting('paletteReduction', 'enabled', !settings.paletteReduction.enabled)}
+                        className="glitch-studio-checkbox"
+                      >
+                        {settings.paletteReduction.enabled && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Palette Selector */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Palette</span>
-                    <select 
-                      value={settings.paletteReduction.palette}
-                      onChange={(e) => updateSetting('paletteReduction', 'palette', e.target.value)}
-                      className="glitch-studio-select disabled:opacity-40"
-                      disabled={!settings.paletteReduction.enabled}
-                    >
-                      {Object.keys(PALETTES).map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
+                    <div className="glitch-studio-field-label">Palette</div>
+                    <div className="glitch-studio-field-control">
+                      <select 
+                        value={settings.paletteReduction.palette}
+                        onChange={(e) => updateSetting('paletteReduction', 'palette', e.target.value)}
+                        className="glitch-studio-select disabled:opacity-40"
+                        disabled={!settings.paletteReduction.enabled}
+                      >
+                        {Object.keys(PALETTES).map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   {/* Distance Selector */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Distance</span>
-                    <select 
-                      value={settings.paletteReduction.distance || 'Accurate'}
-                      onChange={(e) => updateSetting('paletteReduction', 'distance', e.target.value)}
-                      className="glitch-studio-select disabled:opacity-40"
-                      disabled={!settings.paletteReduction.enabled}
-                    >
-                      <option value="Accurate">Accurate</option>
-                      <option value="Fast">Fast</option>
-                    </select>
+                    <div className="glitch-studio-field-label">Distance</div>
+                    <div className="glitch-studio-field-control">
+                      <select 
+                        value={settings.paletteReduction.distance || 'Accurate'}
+                        onChange={(e) => updateSetting('paletteReduction', 'distance', e.target.value)}
+                        className="glitch-studio-select disabled:opacity-40"
+                        disabled={!settings.paletteReduction.enabled}
+                      >
+                        <option value="Accurate">Accurate</option>
+                        <option value="Fast">Fast</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Dithering Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Dithering</span>
-                    <div 
-                      onClick={() => {
-                        if (settings.paletteReduction.enabled) {
-                          updateSetting('paletteReduction', 'dithering', !settings.paletteReduction.dithering);
-                        }
-                      }}
-                      className={`glitch-studio-checkbox ${!settings.paletteReduction.enabled ? 'opacity-40' : ''}`}
-                    >
-                      {settings.paletteReduction.dithering && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Dithering</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => {
+                          if (settings.paletteReduction.enabled) {
+                            updateSetting('paletteReduction', 'dithering', !settings.paletteReduction.dithering);
+                          }
+                        }}
+                        className={`glitch-studio-checkbox ${!settings.paletteReduction.enabled ? 'opacity-40' : ''}`}
+                      >
+                        {settings.paletteReduction.dithering && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Dither Intensity Slider */}
                   {settings.paletteReduction.dithering && (
-                    <div className="glitch-studio-field-row flex items-center justify-between">
-                      <span className="glitch-studio-field-label w-24 shrink-0">Dither Intensity</span>
-                      <div className="flex items-center gap-3 flex-1">
+                    <div className="glitch-studio-field-row">
+                      <div className="glitch-studio-field-label">Dither Intensity</div>
+                      <div className="glitch-studio-field-control gap-3">
                         <input 
                           type="range"
                           min="1"
@@ -861,47 +892,51 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Color Shift Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('colorShift')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Color Shift</span>
-                <span>||</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
 
               {collapses.colorShift && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Enable Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Enable</span>
-                    <div 
-                      onClick={() => updateSetting('colorShift', 'enabled', !settings.colorShift.enabled)}
-                      className="glitch-studio-checkbox"
-                    >
-                      {settings.colorShift.enabled && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Enable</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => updateSetting('colorShift', 'enabled', !settings.colorShift.enabled)}
+                        className="glitch-studio-checkbox"
+                      >
+                        {settings.colorShift.enabled && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Uniform Shift Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Uniform Shift</span>
-                    <div 
-                      onClick={() => {
-                        if (settings.colorShift.enabled) {
-                          updateSetting('colorShift', 'uniformShift', !settings.colorShift.uniformShift);
-                        }
-                      }}
-                      className={`glitch-studio-checkbox ${!settings.colorShift.enabled ? 'opacity-40' : ''}`}
-                    >
-                      {settings.colorShift.uniformShift && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Uniform Shift</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => {
+                          if (settings.colorShift.enabled) {
+                            updateSetting('colorShift', 'uniformShift', !settings.colorShift.uniformShift);
+                          }
+                        }}
+                        className={`glitch-studio-checkbox ${!settings.colorShift.enabled ? 'opacity-40' : ''}`}
+                      >
+                        {settings.colorShift.uniformShift && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Intensity Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Intensity</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Intensity</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="0.1"
@@ -918,10 +953,10 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                     </div>
                   </div>
 
-                  {/* Shift offset Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Shift offset</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  {/* Shift offset Slider (Shift Amount in CodePen) */}
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Shift Amount</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="1"
@@ -932,7 +967,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         disabled={!settings.colorShift.enabled}
                       />
                       <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.colorShift.shiftAmount}px
+                        {settings.colorShift.shiftAmount}
                       </span>
                     </div>
                   </div>
@@ -941,46 +976,50 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Wave Deform Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('wave')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Wave Deform</span>
-                <span>()</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
 
               {collapses.wave && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Enable Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Enable</span>
-                    <div 
-                      onClick={() => updateSetting('waveDeform', 'enabled', !settings.waveDeform.enabled)}
-                      className="glitch-studio-checkbox"
-                    >
-                      {settings.waveDeform.enabled && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Enable</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => updateSetting('waveDeform', 'enabled', !settings.waveDeform.enabled)}
+                        className="glitch-studio-checkbox"
+                      >
+                        {settings.waveDeform.enabled && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Wave Direction */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Wave Direction</span>
-                    <select 
-                      value={settings.waveDeform.direction}
-                      onChange={(e) => updateSetting('waveDeform', 'direction', e.target.value)}
-                      className="glitch-studio-select disabled:opacity-40"
-                      disabled={!settings.waveDeform.enabled}
-                    >
-                      <option value="Horizontal">Horizontal</option>
-                      <option value="Vertical">Vertical</option>
-                    </select>
+                    <div className="glitch-studio-field-label">Direction</div>
+                    <div className="glitch-studio-field-control">
+                      <select 
+                        value={settings.waveDeform.direction}
+                        onChange={(e) => updateSetting('waveDeform', 'direction', e.target.value)}
+                        className="glitch-studio-select disabled:opacity-40"
+                        disabled={!settings.waveDeform.enabled}
+                      >
+                        <option value="Horizontal">Horizontal</option>
+                        <option value="Vertical">Vertical</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Wave Amplitude Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Amplitude</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Amplitude</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="1"
@@ -991,15 +1030,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         disabled={!settings.waveDeform.enabled}
                       />
                       <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.waveDeform.amplitude}px
+                        {settings.waveDeform.amplitude}
                       </span>
                     </div>
                   </div>
 
                   {/* Wave Frequency Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Frequency</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Frequency</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="0.005"
@@ -1017,9 +1056,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   {/* Wave Speed Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Wave Speed</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Wave Speed</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="0"
@@ -1039,32 +1078,34 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Chop & Slices Displacement Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('chop')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Chop & Slices Displacement</span>
-                <span>||</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
 
               {collapses.chop && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Enable Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Enable</span>
-                    <div 
-                      onClick={() => updateSetting('chopSlices', 'enabled', !settings.chopSlices.enabled)}
-                      className="glitch-studio-checkbox"
-                    >
-                      {settings.chopSlices.enabled && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Enable</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => updateSetting('chopSlices', 'enabled', !settings.chopSlices.enabled)}
+                        className="glitch-studio-checkbox"
+                      >
+                        {settings.chopSlices.enabled && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Slice Count Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Slice Count</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Slice Count</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="1"
@@ -1081,9 +1122,9 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   {/* Max Shift Width Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Max Shift</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Max Shift</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="2"
@@ -1094,15 +1135,15 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         disabled={!settings.chopSlices.enabled}
                       />
                       <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.chopSlices.maxDisplacement}px
+                        {settings.chopSlices.maxDisplacement}
                       </span>
                     </div>
                   </div>
 
                   {/* Trigger Interval Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Interval</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Interval</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="1"
@@ -1113,7 +1154,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
                         disabled={!settings.chopSlices.enabled}
                       />
                       <span className="text-[11px] w-8 text-right text-[#ebdcb9] font-bold">
-                        {settings.chopSlices.interval}f
+                        {settings.chopSlices.interval}
                       </span>
                     </div>
                   </div>
@@ -1122,32 +1163,34 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
             </div>
 
             {/* Scanlines & Laser Sweep Section */}
-            <div className="border-b border-[#3d223e]">
+            <div className="border-b border-[#3e273e]">
               <div 
                 onClick={() => toggleCollapse('static')}
                 className="glitch-studio-header-row cursor-pointer"
               >
                 <span>Scanlines & Laser Sweep</span>
-                <span>()</span>
+                <span className="text-[#8c698e]">()</span>
               </div>
 
               {collapses.static && (
-                <div className="bg-[#2a162b]">
+                <div className="bg-[#2d1c2d]">
                   {/* Enable Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Enable</span>
-                    <div 
-                      onClick={() => updateSetting('scanlines', 'enabled', !settings.scanlines.enabled)}
-                      className="glitch-studio-checkbox"
-                    >
-                      {settings.scanlines.enabled && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Enable</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => updateSetting('scanlines', 'enabled', !settings.scanlines.enabled)}
+                        className="glitch-studio-checkbox"
+                      >
+                        {settings.scanlines.enabled && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Scanline Visibility Slider */}
-                  <div className="glitch-studio-field-row flex items-center justify-between">
-                    <span className="glitch-studio-field-label w-24 shrink-0">Visibility</span>
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="glitch-studio-field-row">
+                    <div className="glitch-studio-field-label">Visibility</div>
+                    <div className="glitch-studio-field-control gap-3">
                       <input 
                         type="range"
                         min="0.01"
@@ -1166,33 +1209,37 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
                   {/* Active Laser Sweep Switch */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Active Laser Sweep</span>
-                    <div 
-                      onClick={() => {
-                        if (settings.scanlines.enabled) {
-                          updateSetting('scanlines', 'laserSweep', !settings.scanlines.laserSweep);
-                        }
-                      }}
-                      className={`glitch-studio-checkbox ${!settings.scanlines.enabled ? 'opacity-40' : ''}`}
-                    >
-                      {settings.scanlines.laserSweep && <div className="glitch-studio-checkbox-checked" />}
+                    <div className="glitch-studio-field-label">Active Laser Sweep</div>
+                    <div className="glitch-studio-field-control">
+                      <div 
+                        onClick={() => {
+                          if (settings.scanlines.enabled) {
+                            updateSetting('scanlines', 'laserSweep', !settings.scanlines.laserSweep);
+                          }
+                        }}
+                        className={`glitch-studio-checkbox ${!settings.scanlines.enabled ? 'opacity-40' : ''}`}
+                      >
+                        {settings.scanlines.laserSweep && <div className="glitch-studio-checkbox-checked" />}
+                      </div>
                     </div>
                   </div>
 
                   {/* Laser Glow Color */}
                   <div className="glitch-studio-field-row">
-                    <span className="glitch-studio-field-label">Laser Glow Color</span>
-                    <select 
-                      value={settings.scanlines.laserColor}
-                      onChange={(e) => updateSetting('scanlines', 'laserColor', e.target.value)}
-                      className="glitch-studio-select disabled:opacity-40"
-                      disabled={!settings.scanlines.enabled}
-                    >
-                      <option value="rgba(0, 255, 255, 0.25)">Cyan</option>
-                      <option value="rgba(255, 0, 128, 0.3)">Magenta</option>
-                      <option value="rgba(50, 205, 50, 0.35)">Green</option>
-                      <option value="rgba(255, 255, 255, 0.3)">White</option>
-                    </select>
+                    <div className="glitch-studio-field-label">Laser Glow Color</div>
+                    <div className="glitch-studio-field-control">
+                      <select 
+                        value={settings.scanlines.laserColor}
+                        onChange={(e) => updateSetting('scanlines', 'laserColor', e.target.value)}
+                        className="glitch-studio-select disabled:opacity-40"
+                        disabled={!settings.scanlines.enabled}
+                      >
+                        <option value="rgba(0, 255, 255, 0.25)">Cyan</option>
+                        <option value="rgba(255, 0, 128, 0.3)">Magenta</option>
+                        <option value="rgba(50, 205, 50, 0.35)">Green</option>
+                        <option value="rgba(255, 255, 255, 0.3)">White</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1201,7 +1248,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
           </div>
 
           {/* Dialog Action Footers */}
-          <div className="mt-6 flex gap-4 border-t border-[#3d223e] pt-4 bg-[#2a162b] pb-2">
+          <div className="mt-6 flex gap-4 border-t border-[#3e273e] pt-4 bg-[#2d1c2d] pb-2">
             <button
               onClick={onClose}
               className="flex-1 bg-transparent hover:bg-white/5 text-[#ebdcb9] border border-[#ebdcb9]/40 font-mono text-[11px] py-2.5 rounded-none transition-colors cursor-pointer uppercase tracking-wider font-bold"
