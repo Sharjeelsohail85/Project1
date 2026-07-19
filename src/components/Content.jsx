@@ -61,25 +61,24 @@ const Content = memo(function Content({
   })
 
   useEffect(() => {
-    const el = contentRef.current
-    if (!el) return
-    if (typeof el.scrollTo === 'function') {
-      el.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      el.scrollTop = 0
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [dailyActive])
 
   useEffect(() => {
-    const el = contentRef.current
-    if (!el) return
-  
-    if (loginActive) {
-      el.style.overflow = 'hidden'
+    if (typeof document === 'undefined') return
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden'
     } else {
-      el.style.overflow = ''
+      document.body.style.overflow = ''
     }
-  }, [loginActive])
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = ''
+      }
+    }
+  }, [isModalOpen])
   
   // If we are on an OAuth callback path, do not render any main page contents/overlays
   if ((currentPath && currentPath.startsWith('/auth/')) || (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/'))) {

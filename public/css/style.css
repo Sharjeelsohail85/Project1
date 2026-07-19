@@ -895,14 +895,14 @@ select:disabled {
 	z-index: 1;
 	display: block;
 	width: 100%;
-	height: 100vh;
+	height: auto;
 	min-height: calc(100vh - 60px);
 	margin-top: 0;
 	color: #212121;
 	background: #fafafa;
-	overflow-y: auto;
+	overflow-y: visible;
 	overflow-x: hidden;
-	overscroll-behavior: contain;
+	overscroll-behavior: auto;
 	padding-top: 60px;
 	box-sizing: border-box;
 }
