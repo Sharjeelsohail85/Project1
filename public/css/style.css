@@ -6035,8 +6035,8 @@ video.background {
 	bottom: 0;
 	width: 100%;
 	height: auto;
-	overflow-y: auto;
-	overflow-x: hidden;
+	overflow-y: visible;
+	overflow-x: visible;
 	background: #fafafa;
 }
 
