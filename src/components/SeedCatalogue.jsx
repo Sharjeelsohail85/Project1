@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function SeedCatalogue() {
+export default function SeedCatalogue({ videoCount = 0 }) {
   const [selectedFlower, setSelectedFlower] = useState('sunflower')
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [channelInfo, setChannelInfo] = useState({
@@ -9,7 +9,13 @@ export default function SeedCatalogue() {
     createdMonthIdx: 9,
     growthMonth: 'April',
     growthMonthIdx: 3,
-    milestone: '1.3M subscribers'
+    milestone: '1.3M subscribers',
+    isFullyBloomed: true,
+    subscriberCount: 1300000,
+    target: 1000000,
+    progress: 100,
+    velocity: 15000,
+    projectedYear: '2024'
   })
 
   // Load selection and calculate deterministic channel dates based on user_info
@@ -29,6 +35,43 @@ export default function SeedCatalogue() {
       console.error(e)
     }
 
+    // Resolve actual subscriber count using candidate list
+    let subscriberCount = 304
+    if (user) {
+      const candidates = [
+        user.subscriber_count,
+        user.subscriberCount,
+        user.subscribers,
+        user.followers,
+        user.follower_count,
+        user.followers_count,
+        user.followersCount,
+        user.stats?.subscriber_count,
+        user.stats?.subscriberCount,
+        user.stats?.subscribers,
+        user.metrics?.subscriber_count,
+        user.metrics?.subscriberCount,
+        user.metrics?.subscribers,
+        user.metrics?.followers,
+      ]
+      for (const cand of candidates) {
+        if (typeof cand === 'number' && Number.isFinite(cand)) {
+          subscriberCount = cand
+          break
+        }
+        if (typeof cand === 'string') {
+          const parsed = parseInt(cand.replace(/,/g, ''), 10)
+          if (Number.isFinite(parsed)) {
+            subscriberCount = parsed
+            break
+          }
+        }
+      }
+    }
+
+    // Determine if fully bloomed
+    const isFullyBloomed = subscriberCount >= 1000000
+
     const email = user?.email || 'general.user@octopus.local'
     let hash = 0
     for (let i = 0; i < email.length; i++) {
@@ -44,9 +87,58 @@ export default function SeedCatalogue() {
     const createdMonth = months[createdMonthIdx]
     const createdYear = String(2023 + (Math.abs(hash) % 3))
 
-    // Growth is 6 months later
-    const growthMonthIdx = (createdMonthIdx + 6) % 12
-    const growthMonth = months[growthMonthIdx]
+    let growthMonthIdx = (createdMonthIdx + 6) % 12
+    let growthMonth = months[growthMonthIdx]
+    let milestone = '1.3M subscribers'
+    let target = 1000000
+    let progress = 100
+    let velocity = 15000
+    let projectedYear = createdYear
+
+    if (!isFullyBloomed) {
+      // Pick target milestone
+      if (subscriberCount < 1000) {
+        target = 1000
+        milestone = '1K subscribers'
+      } else if (subscriberCount < 10000) {
+        target = 10000
+        milestone = '10K subscribers'
+      } else if (subscriberCount < 100000) {
+        target = 100000
+        milestone = '100K subscribers'
+      } else {
+        target = 1000000
+        milestone = '1M subscribers'
+      }
+
+      // Calculate organic & active velocity
+      const baseVelocity = Math.max(8, (Math.abs(hash) % 12) + 6) // subs/month
+      const contentSpeed = Math.max(12, (Math.abs(hash) % 20) + 10) // subs/month
+      velocity = baseVelocity + (videoCount * contentSpeed)
+
+      // Calculate months to bloom
+      const remaining = target - subscriberCount
+      const monthsToBloom = Math.ceil(remaining / velocity)
+
+      // Calculate projected bloom date
+      let projMonthIdx = (createdMonthIdx + monthsToBloom) % 12
+      let projYear = parseInt(createdYear) + Math.floor((createdMonthIdx + monthsToBloom) / 12)
+
+      // Ensure projection is in the future (July 2026 onwards)
+      const currentYear = 2026
+      const currentMonthIdx = 6 // July
+      if (projYear < currentYear || (projYear === currentYear && projMonthIdx <= currentMonthIdx)) {
+        // Adjust velocity organically or simulate future trajectory
+        const adjustMonths = Math.max(3, (Math.abs(hash) % 8) + 2)
+        projMonthIdx = (currentMonthIdx + adjustMonths) % 12
+        projYear = currentYear + Math.floor((currentMonthIdx + adjustMonths) / 12)
+      }
+
+      growthMonthIdx = projMonthIdx
+      growthMonth = months[projMonthIdx]
+      projectedYear = String(projYear)
+      progress = Math.min(100, Math.round((subscriberCount / target) * 100))
+    }
 
     setChannelInfo({
       createdMonth,
@@ -54,9 +146,15 @@ export default function SeedCatalogue() {
       createdMonthIdx,
       growthMonth,
       growthMonthIdx,
-      milestone: '1.3M subscribers'
+      milestone,
+      isFullyBloomed,
+      subscriberCount,
+      target,
+      progress,
+      velocity,
+      projectedYear
     })
-  }, [])
+  }, [videoCount])
 
   const handleSelectFlower = (flowerId) => {
     setSelectedFlower(flowerId)
@@ -478,6 +576,14 @@ export default function SeedCatalogue() {
           animation: flowerPulse 2s infinite;
         }
 
+        .month-node.active-projected {
+          background-color: transparent;
+          border: 2px dashed #0284c7;
+          color: #0284c7;
+          box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+          animation: projectedPulse 2.5s infinite;
+        }
+
         @keyframes sowPulse {
           0%, 100% { transform: scale(1); box-shadow: 0 0 2px rgba(85,139,47,0.4); }
           50% { transform: scale(1.15); box-shadow: 0 0 8px rgba(85,139,47,0.8); }
@@ -486,6 +592,11 @@ export default function SeedCatalogue() {
         @keyframes flowerPulse {
           0%, 100% { transform: scale(1); box-shadow: 0 0 2px rgba(216,27,96,0.4); }
           50% { transform: scale(1.15); box-shadow: 0 0 8px rgba(216,27,96,0.8); }
+        }
+
+        @keyframes projectedPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 2px rgba(2, 132, 199, 0.3); }
+          50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(2, 132, 199, 0.7); }
         }
 
         .timeline-desc {
@@ -687,23 +798,55 @@ export default function SeedCatalogue() {
           {/* FLOWER TIMELINE */}
           <div className="timeline-section" role="region" aria-label="Flower timetable">
             <div className="timeline-title">
-              <span className="material-icons" style={{ fontSize: '10px', color: '#d81b60' }}>local_florist</span>
-              Flower Month
+              <span className="material-icons" style={{ fontSize: '10px', color: channelInfo.isFullyBloomed ? '#d81b60' : '#0284c7' }}>
+                {channelInfo.isFullyBloomed ? 'local_florist' : 'psychology'}
+              </span>
+              {channelInfo.isFullyBloomed ? 'Flower Month' : 'Projected Flower Month'}
             </div>
             <div className="months-grid">
               {monthsAbbr.map((m, idx) => (
                 <div
                   key={`flower-${idx}`}
-                  className={`month-node ${idx === channelInfo.growthMonthIdx ? 'active-flower' : ''}`}
-                  title={idx === channelInfo.growthMonthIdx ? `Flowers in ${channelInfo.growthMonth}` : m}
+                  className={`month-node ${
+                    idx === channelInfo.growthMonthIdx 
+                      ? (channelInfo.isFullyBloomed ? 'active-flower' : 'active-projected') 
+                      : ''
+                  }`}
+                  title={
+                    idx === channelInfo.growthMonthIdx 
+                      ? (channelInfo.isFullyBloomed ? `Flowers in ${channelInfo.growthMonth}` : `Projected to flower in ${channelInfo.growthMonth} ${channelInfo.projectedYear}`) 
+                      : m
+                  }
                 >
                   {m}
                 </div>
               ))}
             </div>
             <div className="timeline-desc">
-              Blooms in <strong>{channelInfo.growthMonth}</strong>. This represents the month of peak growth when the channel reached its <strong>{channelInfo.milestone}</strong> milestone.
+              {channelInfo.isFullyBloomed ? (
+                <>Blooms in <strong>{channelInfo.growthMonth}</strong>. This represents the month of peak growth when the channel reached its <strong>{channelInfo.milestone}</strong> milestone.</>
+              ) : (
+                <>
+                  Projected to bloom in <strong>{channelInfo.growthMonth} {channelInfo.projectedYear}</strong>.
+                  Based on your current <strong>{channelInfo.subscriberCount}</strong> subscribers, adding <strong>{videoCount}</strong> uploads acts as active fertilizer, boosting organic growth!
+                </>
+              )}
             </div>
+            {/* PROGRESS BAR & VELOCITY FOR NEW CHANNELS */}
+            {!channelInfo.isFullyBloomed && (
+              <div className="bloom-progress-container" style={{ borderTop: '1px dashed #c2b29e', paddingTop: '8px', marginTop: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', color: '#5d4037', marginBottom: '4px' }}>
+                  <span>Milestone Bloom Progress</span>
+                  <span>{channelInfo.subscriberCount} / {channelInfo.target.toLocaleString()} ({channelInfo.progress}%)</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', background: '#e7dfd1', borderRadius: '3px', overflow: 'hidden', border: '1px solid #c2b29e', marginBottom: '4px' }}>
+                  <div style={{ width: `${channelInfo.progress}%`, height: '100%', background: 'linear-gradient(90deg, #388e3c, #8bc34a)', borderRadius: '3px', transition: 'width 1s ease' }}></div>
+                </div>
+                <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#795548', textAlign: 'center', marginTop: '2px' }}>
+                  Growing at <strong>+{channelInfo.velocity} subs / month</strong>. Keep uploading to accelerate!
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

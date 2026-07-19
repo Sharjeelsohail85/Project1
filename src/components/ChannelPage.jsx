@@ -296,7 +296,7 @@ const handleOpenVideo = useCallback((video) => {
             <p className="channel-status" style={{ marginBottom: '16px' }}>
               Your channel's growth and milestones captured as a custom botanical seed packet from our classic collection.
             </p>
-            <SeedCatalogue />
+            <SeedCatalogue videoCount={videos.length} />
           </div>
         </section>
       ) : null}
