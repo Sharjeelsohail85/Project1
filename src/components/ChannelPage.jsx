@@ -4,6 +4,7 @@ import ChannelCover from './ChannelCover'
 import GlitchAvatar from './GlitchAvatar'
 import { videoAPI } from '../services/api.service'
 import { getLocalChannelVideos } from '../services/videoService'
+import SeedCatalogue from './SeedCatalogue'
 
 const noop = () => {}
 
@@ -287,6 +288,16 @@ const handleOpenVideo = useCallback((video) => {
           <h3>About</h3>
           <p className="channel-status">This channel contains uploaded and migrated videos linked to your account.</p>
           <p className="channel-status">Total uploads: {videos.length}</p>
+          
+          <div style={{ marginTop: '20px', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '20px' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-main, #111827)' }}>
+              Channel Botanical Milestone Card
+            </h4>
+            <p className="channel-status" style={{ marginBottom: '16px' }}>
+              Your channel's growth and milestones captured as a custom botanical seed packet from our classic collection.
+            </p>
+            <SeedCatalogue />
+          </div>
         </section>
       ) : null}
     </article>
