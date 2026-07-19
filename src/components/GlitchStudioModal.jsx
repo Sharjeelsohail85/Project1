@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Upload, Download, RefreshCw, Sparkles, Check, Play, Pause, RotateCcw } from 'lucide-react'
 import baseAvatarDefault from '../assets/images/channel_avatar_glitch_base_1784436675495.jpg'
 
@@ -427,7 +428,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
     }))
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 md:p-6 overflow-y-auto font-mono">
       <div 
         id="glitchStudioContainer"
@@ -992,6 +993,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
