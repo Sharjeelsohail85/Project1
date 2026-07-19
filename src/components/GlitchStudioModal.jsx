@@ -470,11 +470,11 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-mono">
       <div 
         id="glitchStudioContainer"
-        className="w-full max-w-5xl bg-[#1c0e18] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.2)] flex flex-col sm:flex-row overflow-hidden max-h-[92vh] mx-auto"
+        className="w-full max-w-5xl bg-[#1c0e18] border-2 border-[#35203a] rounded-2xl shadow-[0_0_60px_rgba(217,27,163,0.2)] flex flex-row overflow-hidden max-h-[92vh] mx-auto"
       >
         
         {/* Left column: Visual Workspace */}
-        <div className="w-full sm:w-[45%] bg-[#120a13] p-5 flex flex-col items-center justify-between border-b sm:border-b-0 sm:border-r-2 border-[#35203a] min-h-[440px] sm:min-h-[550px]">
+        <div className="w-[45%] bg-[#120a13] p-5 flex flex-col items-center justify-between border-r-2 border-[#35203a] min-h-[550px]">
           
           {/* Header Title */}
           <div className="w-full flex items-center justify-between border-b border-[#35203a] pb-3 mb-2">
@@ -501,7 +501,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
             <canvas
               ref={canvasRef}
-              className="w-[260px] h-[260px] sm:w-[300px] sm:h-[300px] rounded-xl object-cover bg-black"
+              className="w-[300px] h-[300px] rounded-xl object-cover bg-black"
               style={{
                 boxShadow: '0 0 40px rgba(0,0,0,0.6), 0 0 15px rgba(235,220,185,0.05)'
               }}
@@ -553,7 +553,7 @@ export default function GlitchStudioModal({ isOpen, onClose, onSave }) {
 
         {/* Right column: Form Settings controls */}
         <div 
-          className="w-full sm:w-[55%] p-5 sm:p-6 overflow-y-auto max-h-[40vh] sm:max-h-[92vh] flex flex-col justify-between bg-[#1c0e18]"
+          className="w-[55%] p-5 sm:p-6 overflow-y-auto max-h-[92vh] flex flex-col justify-between bg-[#1c0e18]"
           style={{ scrollbarWidth: 'thin', scrollbarColor: '#35203a #1c0e18' }}
         >
           
