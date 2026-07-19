@@ -55,7 +55,7 @@ export default function SettingsPage({
   const isSettingsPage = location.pathname === '/settings'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
   const isFaqPage = location.pathname === '/faq'
-  const isChannelRoute = location.pathname === '/channel' || Boolean(isChannelPage)
+  const isChannelRoute = location.pathname.startsWith('/channel') || Boolean(isChannelPage)
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
   const settingsSearchRef = useRef(null)

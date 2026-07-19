@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useState, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
 import ContentItem from './ContentItem'
 import ChannelCover from './ChannelCover'
 import GlitchAvatar from './GlitchAvatar'
@@ -77,13 +78,72 @@ const ChannelPage = memo(function ChannelPage({
   embedded = false,
   onOpenVideo = noop,
 }) {
+  const { channelId } = useParams()
   const [videos, setVideos] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [activeSection, setActiveSection] = useState('home')
+  const [copied, setCopied] = useState(false)
   const [selectedFlower, setSelectedFlower] = useState(() => {
     return localStorage.getItem('channel_seed_flower') || 'sunflower'
   })
+
+  const resolvedChannelId = useMemo(() => {
+    if (channelId) return channelId
+    try {
+      const rawUser = localStorage.getItem('user_info')
+      if (rawUser) {
+        const user = JSON.parse(rawUser)
+        const uid = user?.channel_id || user?.channel?.id || user?.channel?.uuid || user?.uuid || user?.id
+        if (uid) return String(uid).trim()
+      }
+    } catch {
+      // ignore
+    }
+    return 'me'
+  }, [channelId])
+
+  const channelUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://project1-video-app.sharjeelsohail85.workers.dev'
+    return `${origin}/channel/${resolvedChannelId}`
+  }, [resolvedChannelId])
+
+  const handleCopyLink = useCallback(() => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(channelUrl)
+        .then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+        .catch(() => {
+          try {
+            const el = document.createElement('textarea')
+            el.value = channelUrl
+            document.body.appendChild(el)
+            el.select()
+            document.execCommand('copy')
+            document.body.removeChild(el)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+          } catch {
+            // ignore
+          }
+        })
+    } else {
+      try {
+        const el = document.createElement('textarea')
+        el.value = channelUrl
+        document.body.appendChild(el)
+        el.select()
+        document.execCommand('copy')
+        document.body.removeChild(el)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch {
+        // ignore
+      }
+    }
+  }, [channelUrl])
 
   useEffect(() => {
     let cancelled = false
@@ -170,10 +230,53 @@ const handleOpenVideo = useCallback((video) => {
           <p className="channel-tagline">
             Uploaded and migrated videos linked to your account channels appear here.
           </p>
-          <div className="channel-stats" role="list" aria-label="Channel stats">
+          <div className="channel-stats" role="list" aria-label="Channel stats" style={{ marginBottom: '10px' }}>
             <span role="listitem"><strong>1.3M</strong> subscribers</span>
             <span role="listitem"><strong>{videos.length}</strong> uploads</span>
             <span role="listitem"><strong>89h</strong> weekly watch time</span>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '6px 12px',
+            borderRadius: '6px',
+            width: 'max-content',
+            maxWidth: '100%',
+            color: '#9ca3af',
+            fontFamily: 'monospace',
+            marginTop: '8px',
+          }}>
+            <i className="material-icons" style={{ fontSize: '15px', color: 'var(--primary, #e5a93b)' }}>podcasts</i>
+            <span style={{ 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis', 
+              whiteSpace: 'nowrap',
+              maxWidth: '320px'
+            }} title={channelUrl}>
+              {channelUrl}
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                color: '#fff',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '500',
+                marginLeft: '8px',
+              }}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
           </div>
         </div>
 
@@ -305,6 +408,40 @@ const handleOpenVideo = useCallback((video) => {
           <h3>About</h3>
           <p className="channel-status">This channel contains uploaded and migrated videos linked to your account.</p>
           <p className="channel-status">Total uploads: {videos.length}</p>
+          
+          <div style={{
+            marginTop: '12px',
+            marginBottom: '16px',
+            padding: '12px',
+            background: 'var(--bg-card-nested, rgba(255, 255, 255, 0.02))',
+            borderRadius: '6px',
+            border: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
+            maxWidth: '100%',
+            overflow: 'hidden'
+          }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Unique Channel Link</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted, #9ca3af)', wordBreak: 'break-all' }}>
+                {channelUrl}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                style={{
+                  background: 'var(--primary, #e5a93b)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                }}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
           
           <div id="botanical-milestone-card" style={{ marginTop: '20px', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '20px' }}>
             <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-main, #111827)' }}>

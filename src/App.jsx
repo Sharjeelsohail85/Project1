@@ -38,6 +38,20 @@ const PERSONALIZATION_EFFECT_CLASS_MAP = {
 
 const DEFAULT_AUTH_SUBSCRIBER_COUNT = 304
 
+function getChannelId() {
+  try {
+    const raw = localStorage.getItem('user_info')
+    if (raw) {
+      const user = JSON.parse(raw)
+      const id = user?.channel_id || user?.channel?.id || user?.channel?.uuid || user?.uuid || user?.id
+      if (id) return String(id).trim()
+    }
+  } catch (e) {
+    console.error(e)
+  }
+  return 'me'
+}
+
 function canUseLocalStorage() {
   if (typeof window === 'undefined') return false
   try {
@@ -165,7 +179,7 @@ const inlineStyles = `
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname === '/faq'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname.startsWith('/channel') || location.pathname === '/faq'
   const isAuthCallbackRoute = location.pathname.startsWith('/auth/') || (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/'))
   
   // Check authentication status on mount
@@ -1074,6 +1088,10 @@ function App() {
           />
           <Route
             path="/channel"
+            element={<Navigate to={`/channel/${getChannelId()}`} replace />}
+          />
+          <Route
+            path="/channel/:channelId"
             element={(
               isAuthenticated
                 ? (
