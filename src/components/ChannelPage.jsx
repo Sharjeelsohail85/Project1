@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useState, useCallback } from 'react'
 import ContentItem from './ContentItem'
 import ChannelCover from './ChannelCover'
+import GlitchAvatar from './GlitchAvatar'
 import { videoAPI } from '../services/api.service'
 import { getLocalChannelVideos } from '../services/videoService'
 
@@ -156,9 +157,7 @@ const handleOpenVideo = useCallback((video) => {
     <article className="channel-page">
       <ChannelCover />
       <header className="channel-hero">
-        <div className="channel-avatar" aria-hidden="true">
-          <i className="material-icons">podcasts</i>
-        </div>
+        <GlitchAvatar />
 
         <div className="channel-hero-copy">
           <p className="channel-kicker">Featured Channel</p>
