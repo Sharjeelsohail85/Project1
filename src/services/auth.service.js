@@ -87,11 +87,6 @@ function completeOAuthInDemoMode(provider) {
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1)
   const timestamp = Date.now()
 
-  // Generate stable & unique demo statistics based on timestamp
-  const stableNum = Math.abs((`demo-${provider}-${timestamp}`).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0))
-  const subscriberCount = 1000 + (stableNum * 17) % 5000000
-  const videoCount = 10 + (stableNum % 90)
-
   const demoUser = {
     uuid: `demo-${provider}-${timestamp}`,
     first_name: `${providerName} User`,
@@ -102,8 +97,8 @@ function completeOAuthInDemoMode(provider) {
     channel_id: `demo-${provider}-${timestamp}`,
     channel_name: `${providerName} User Channel`,
     custom_url: `@${provider}user_${timestamp.toString().slice(-4)}`,
-    subscriber_count: subscriberCount,
-    video_count: videoCount,
+    subscriber_count: 0,
+    video_count: 0,
   }
 
   // Keep app auth flow functional even when backend OAuth endpoint is not available.
@@ -246,8 +241,8 @@ export async function loginWithOAuth(provider) {
               const gUser = userInfoRes?.data || {}
               
               const stableNum = gUser.sub ? Math.abs(gUser.sub.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) : 304
-              const ytSubscriberCount = 1000 + (stableNum * 17) % 5000000
-              const ytVideoCount = 10 + (stableNum % 90)
+              const ytSubscriberCount = 0
+              const ytVideoCount = 0
 
               const realChannelId = gUser.sub || `google-${gUser.email ? gUser.email.split('@')[0] : Date.now()}`
               const realChannelName = gUser.name || `${gUser.given_name || 'Google'} ${gUser.family_name || 'User'}`
@@ -364,8 +359,8 @@ export async function loginWithOAuth(provider) {
                 const gUser = userInfoRes?.data || {}
                 
                 const stableNum = gUser.sub ? Math.abs(gUser.sub.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) : 304
-                const ytSubscriberCount = 1000 + (stableNum * 17) % 5000000
-                const ytVideoCount = 10 + (stableNum % 90)
+                const ytSubscriberCount = 0
+                const ytVideoCount = 0
 
                 const realChannelId = gUser.sub || `google-${gUser.email ? gUser.email.split('@')[0] : Date.now()}`
                 const realChannelName = gUser.name || `${gUser.given_name || 'Google'} ${gUser.family_name || 'User'}`

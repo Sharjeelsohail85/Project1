@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useState, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
 import ContentItem from './ContentItem'
 import ChannelCover from './ChannelCover'
 import GlitchAvatar from './GlitchAvatar'
@@ -75,42 +76,121 @@ const ChannelPage = memo(function ChannelPage({
   embedded = false,
   onOpenVideo = noop,
 }) {
+  const { id: routeId } = useParams()
+
+  const loggedInUser = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('user_info')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }, [])
+
+  const currentUserId = loggedInUser?.uuid || loggedInUser?.id || 'guest-user'
+  const channelId = routeId || currentUserId
+
   const [videos, setVideos] = useState([])
   const [channelName, setChannelName] = useState('Signal / Noise Lab')
-  const [subscribers, setSubscribers] = useState('1.3M')
+  const [subscriberCount, setSubscriberCount] = useState(0)
+  const [watchTime, setWatchTime] = useState('0h')
+  const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [activeSection, setActiveSection] = useState('home')
 
-  useEffect(() => {
+  const loadChannelStats = useCallback(() => {
     try {
-      const raw = localStorage.getItem('user_info')
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        if (parsed.channel_name) {
-          setChannelName(parsed.channel_name)
-        } else if (parsed.first_name || parsed.last_name) {
-          const fullName = `${parsed.first_name || ''} ${parsed.last_name || ''}`.trim()
-          if (fullName) {
-            setChannelName(fullName)
-          }
-        }
-        
-        if (parsed.subscriber_count !== undefined && parsed.subscriber_count !== null) {
-          const count = Number(parsed.subscriber_count)
-          if (count >= 1000000) {
-            setSubscribers((count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M')
-          } else if (count >= 1000) {
-            setSubscribers((count / 1000).toFixed(1).replace(/\.0$/, '') + 'K')
-          } else {
-            setSubscribers(String(count))
-          }
-        }
+      const stored = localStorage.getItem(`channel_stats_${channelId}`)
+      if (stored) {
+        return JSON.parse(stored)
       }
     } catch (e) {
       // ignore
     }
-  }, [])
+
+    const isCurrentUser = channelId === currentUserId
+    const defaultSub = isCurrentUser && loggedInUser && loggedInUser.subscriber_count !== undefined
+      ? Number(loggedInUser.subscriber_count)
+      : 0
+    const defaultWatchTime = isCurrentUser && loggedInUser && loggedInUser.watch_time !== undefined
+      ? Number(loggedInUser.watch_time)
+      : 0
+
+    const initialStats = {
+      subscriber_count: defaultSub,
+      watch_time: defaultWatchTime,
+      channel_name: isCurrentUser && loggedInUser
+        ? (loggedInUser.channel_name || `${loggedInUser.first_name || ''} ${loggedInUser.last_name || ''}`.trim() || 'My Channel')
+        : 'Channel',
+      custom_url: isCurrentUser && loggedInUser
+        ? (loggedInUser.custom_url || `@${loggedInUser.email ? loggedInUser.email.split('@')[0] : 'user'}`)
+        : `@channel_${channelId.slice(-4)}`,
+      is_subscribed: false
+    }
+
+    try {
+      localStorage.setItem(`channel_stats_${channelId}`, JSON.stringify(initialStats))
+    } catch (e) {
+      // ignore
+    }
+
+    return initialStats
+  }, [channelId, currentUserId, loggedInUser])
+
+  useEffect(() => {
+    const stats = loadChannelStats()
+    if (stats) {
+      setSubscriberCount(stats.subscriber_count)
+      setWatchTime(`${stats.watch_time || 0}h`)
+      setIsSubscribed(!!stats.is_subscribed)
+      
+      if (stats.channel_name) {
+        setChannelName(stats.channel_name)
+      }
+    }
+  }, [channelId, loadChannelStats])
+
+  const formattedSubscribers = useMemo(() => {
+    const n = Number(subscriberCount)
+    if (!Number.isFinite(n) || n < 0) return '0'
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
+    return String(n)
+  }, [subscriberCount])
+
+  const handleToggleSubscribe = useCallback(() => {
+    try {
+      const stats = loadChannelStats()
+      if (!stats) return
+
+      const nextSubscribed = !stats.is_subscribed
+      const nextCount = nextSubscribed
+        ? stats.subscriber_count + 1
+        : Math.max(0, stats.subscriber_count - 1)
+
+      const updatedStats = {
+        ...stats,
+        is_subscribed: nextSubscribed,
+        subscriber_count: nextCount
+      }
+
+      localStorage.setItem(`channel_stats_${channelId}`, JSON.stringify(updatedStats))
+      setSubscriberCount(nextCount)
+      setIsSubscribed(nextSubscribed)
+
+      if (channelId === currentUserId && loggedInUser) {
+        const updatedUser = {
+          ...loggedInUser,
+          subscriber_count: nextCount
+        }
+        localStorage.setItem('user_info', JSON.stringify(updatedUser))
+        window.dispatchEvent(new CustomEvent('auth:login'))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [channelId, currentUserId, loggedInUser, loadChannelStats])
 
   useEffect(() => {
     let cancelled = false
@@ -198,15 +278,22 @@ const handleOpenVideo = useCallback((video) => {
             Uploaded and migrated videos linked to your account channels appear here.
           </p>
           <div className="channel-stats" role="list" aria-label="Channel stats">
-            <span role="listitem"><strong>{subscribers}</strong> subscribers</span>
+            <span role="listitem"><strong>{formattedSubscribers}</strong> subscribers</span>
             <span role="listitem"><strong>{videos.length}</strong> uploads</span>
-            <span role="listitem"><strong>89h</strong> weekly watch time</span>
+            <span role="listitem"><strong>{watchTime}</strong> weekly watch time</span>
           </div>
         </div>
 
         <div className="channel-actions">
           <button type="button" className="channel-cta primary" onClick={onOpenVideo}>Play Featured</button>
-          <button type="button" className="channel-cta">Subscribe</button>
+          <button
+            type="button"
+            className={`channel-cta ${isSubscribed ? 'subscribed' : 'primary'}`}
+            style={isSubscribed ? { background: '#eaeaea', color: '#666', border: '1px solid #ccc' } : {}}
+            onClick={handleToggleSubscribe}
+          >
+            {isSubscribed ? '✓ Subscribed' : 'Subscribe'}
+          </button>
         </div>
       </header>
 

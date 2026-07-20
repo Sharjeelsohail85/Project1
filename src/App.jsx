@@ -36,7 +36,7 @@ const PERSONALIZATION_EFFECT_CLASS_MAP = {
   mixingItUp: 'theme-effect-mixing',
 }
 
-const DEFAULT_AUTH_SUBSCRIBER_COUNT = 304
+const DEFAULT_AUTH_SUBSCRIBER_COUNT = 0
 
 function canUseLocalStorage() {
   if (typeof window === 'undefined') return false
