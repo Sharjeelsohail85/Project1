@@ -88,7 +88,7 @@ function getSessionStorageSafe() {
 
 export const authConfig = {
   google: {
-    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-google-client-id.apps.googleusercontent.com',
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '989755989766-i7v8a6h95cou5bd9ab9li19mqi06guj1.apps.googleusercontent.com',
     redirectUri: resolveRedirectUri(import.meta.env.VITE_GOOGLE_REDIRECT_URI, '/auth/google/callback'),
     scope: 'openid profile email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -147,9 +147,8 @@ export function getOAuthUrl(provider, state) {
 
     params.append('client_id', config.clientId)
     params.append('redirect_uri', config.redirectUri)
-    params.append('response_type', 'code')
+    params.append('response_type', 'token')
     params.append('scope', config.scope)
-    params.append('access_type', 'offline')
     params.append('prompt', 'consent')
     if (state) params.append('state', state)
   } else if (provider === 'facebook') {

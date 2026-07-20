@@ -53,6 +53,25 @@ function isProviderNotConfiguredError(error) {
 function isOAuthDemoModeEnabled() {
   if (typeof window === 'undefined') return true
 
+  // Check if allow-demo-mode is explicitly configured
+  const allowDemoEnv = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase()
+  if (allowDemoEnv === 'false') {
+    return false
+  }
+  if (allowDemoEnv === 'true') {
+    return true
+  }
+
+  const googleId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '989755989766-i7v8a6h95cou5bd9ab9li19mqi06guj1.apps.googleusercontent.com').trim()
+  const facebookId = String(import.meta.env.VITE_FACEBOOK_APP_ID || '').trim()
+  const hasRealGoogle = googleId && !googleId.includes('your_google_client_id_here') && !googleId.includes('dummy')
+  const hasRealFacebook = facebookId && !facebookId.includes('your_facebook_app_id_here') && !facebookId.includes('dummy')
+
+  // If real keys are present, disable demo mode!
+  if (hasRealGoogle || hasRealFacebook) {
+    return false
+  }
+
   const hostname = String(window.location?.hostname || '').toLowerCase()
   const isLocalRuntime = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
   const isWorkersDev = hostname === 'workers.dev' || hostname.endsWith('.workers.dev')
@@ -61,17 +80,7 @@ function isOAuthDemoModeEnabled() {
     return true
   }
 
-  const googleId = String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
-  const facebookId = String(import.meta.env.VITE_FACEBOOK_APP_ID || '').trim()
-  const hasRealGoogle = googleId && !googleId.includes('your_google_client_id_here') && !googleId.includes('dummy')
-  const hasRealFacebook = facebookId && !facebookId.includes('your_facebook_app_id_here') && !facebookId.includes('dummy')
-
-  if (!hasRealGoogle || !hasRealFacebook) {
-    return true
-  }
-
-  const envEnabled = String(import.meta.env.VITE_ALLOW_OAUTH_DEMO || '').toLowerCase() === 'true'
-  return Boolean(import.meta.env.DEV) || envEnabled
+  return Boolean(import.meta.env.DEV)
 }
 
 function completeOAuthInDemoMode(provider) {
@@ -195,13 +204,60 @@ export async function loginWithOAuth(provider) {
         try {
           const callbackUrl = new URL(event.data.url)
           const urlParams = new URLSearchParams(callbackUrl.search)
-          const code = urlParams.get('code')
-          const error = urlParams.get('error')
+          const hashString = callbackUrl.hash.startsWith('#') ? callbackUrl.hash.substring(1) : callbackUrl.hash
+          const hashParams = new URLSearchParams(hashString)
+          
+          const code = urlParams.get('code') || hashParams.get('code')
+          const accessToken = urlParams.get('access_token') || hashParams.get('access_token')
+          const error = urlParams.get('error') || hashParams.get('error')
 
           if (error) {
             closePopupSafe()
             window.removeEventListener('message', messageHandler)
             rejectOnce(new Error(`OAuth error: ${error}`))
+            return
+          }
+
+          if (accessToken && provider === 'google') {
+            isAwaitingCallbackCompletion = true
+
+            if (checkPopup) {
+              clearInterval(checkPopup)
+              checkPopup = null
+            }
+
+            closePopupSafe()
+            window.removeEventListener('message', messageHandler)
+
+            axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            })
+            .then((res) => {
+              const gUser = res.data
+              const user = {
+                uuid: gUser.sub || `google-${gUser.email || Date.now()}`,
+                first_name: gUser.given_name || 'Google',
+                last_name: gUser.family_name || 'User',
+                email: gUser.email,
+                registration_type: 'google',
+                active: 1,
+                google_access_token: accessToken,
+                access_token: accessToken,
+                refresh_token: '',
+              }
+              setLocalStorageItem('user_info', JSON.stringify(user))
+              setLocalStorageItem('auth_provider', 'google')
+              saveAuthTokens(accessToken, `google-client-${gUser.sub}`)
+              try {
+                window.dispatchEvent(new CustomEvent('auth:login'))
+              } catch {
+                // ignore
+              }
+              resolveOnce(user)
+            })
+            .catch((err) => {
+              rejectOnce(new Error(`Failed to fetch Google user info: ${err.message}`))
+            })
             return
           }
 
@@ -250,7 +306,7 @@ export async function loginWithOAuth(provider) {
         // Check if popup has navigated to callback URL (fallback for browsers that block postMessage)
         try {
           const popupUrl = popup.location.href
-          if (popupUrl.includes('/auth/') || popupUrl.includes('code=') || popupUrl.includes('error=')) {
+          if (popupUrl.includes('/auth/') || popupUrl.includes('code=') || popupUrl.includes('access_token=') || popupUrl.includes('error=')) {
             if (checkPopup) {
               clearInterval(checkPopup)
               checkPopup = null
@@ -258,13 +314,54 @@ export async function loginWithOAuth(provider) {
 
             const callbackUrl = new URL(popupUrl)
             const urlParams = new URLSearchParams(callbackUrl.search)
-            const code = urlParams.get('code')
-            const error = urlParams.get('error')
+            const hashString = callbackUrl.hash.startsWith('#') ? callbackUrl.hash.substring(1) : callbackUrl.hash
+            const hashParams = new URLSearchParams(hashString)
+            
+            const code = urlParams.get('code') || hashParams.get('code')
+            const accessToken = urlParams.get('access_token') || hashParams.get('access_token')
+            const error = urlParams.get('error') || hashParams.get('error')
 
             if (error) {
               closePopupSafe()
               window.removeEventListener('message', messageHandler)
               rejectOnce(new Error(`OAuth error: ${error}`))
+              return
+            }
+
+            if (accessToken && provider === 'google') {
+              isAwaitingCallbackCompletion = true
+              closePopupSafe()
+              window.removeEventListener('message', messageHandler)
+
+              axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              })
+              .then((res) => {
+                const gUser = res.data
+                const user = {
+                  uuid: gUser.sub || `google-${gUser.email || Date.now()}`,
+                  first_name: gUser.given_name || 'Google',
+                  last_name: gUser.family_name || 'User',
+                  email: gUser.email,
+                  registration_type: 'google',
+                  active: 1,
+                  google_access_token: accessToken,
+                  access_token: accessToken,
+                  refresh_token: '',
+                }
+                setLocalStorageItem('user_info', JSON.stringify(user))
+                setLocalStorageItem('auth_provider', 'google')
+                saveAuthTokens(accessToken, `google-client-${gUser.sub}`)
+                try {
+                  window.dispatchEvent(new CustomEvent('auth:login'))
+                } catch {
+                  // ignore
+                }
+                resolveOnce(user)
+              })
+              .catch((err) => {
+                rejectOnce(new Error(`Failed to fetch Google user info: ${err.message}`))
+              })
               return
             }
 
