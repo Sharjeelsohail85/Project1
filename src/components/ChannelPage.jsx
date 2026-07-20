@@ -76,9 +76,41 @@ const ChannelPage = memo(function ChannelPage({
   onOpenVideo = noop,
 }) {
   const [videos, setVideos] = useState([])
+  const [channelName, setChannelName] = useState('Signal / Noise Lab')
+  const [subscribers, setSubscribers] = useState('1.3M')
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [activeSection, setActiveSection] = useState('home')
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user_info')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed.channel_name) {
+          setChannelName(parsed.channel_name)
+        } else if (parsed.first_name || parsed.last_name) {
+          const fullName = `${parsed.first_name || ''} ${parsed.last_name || ''}`.trim()
+          if (fullName) {
+            setChannelName(fullName)
+          }
+        }
+        
+        if (parsed.subscriber_count !== undefined && parsed.subscriber_count !== null) {
+          const count = Number(parsed.subscriber_count)
+          if (count >= 1000000) {
+            setSubscribers((count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M')
+          } else if (count >= 1000) {
+            setSubscribers((count / 1000).toFixed(1).replace(/\.0$/, '') + 'K')
+          } else {
+            setSubscribers(String(count))
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -161,12 +193,12 @@ const handleOpenVideo = useCallback((video) => {
 
         <div className="channel-hero-copy">
           <p className="channel-kicker">Featured Channel</p>
-          <h2 className="channel-title">Signal / Noise Lab</h2>
+          <h2 className="channel-title">{channelName}</h2>
           <p className="channel-tagline">
             Uploaded and migrated videos linked to your account channels appear here.
           </p>
           <div className="channel-stats" role="list" aria-label="Channel stats">
-            <span role="listitem"><strong>1.3M</strong> subscribers</span>
+            <span role="listitem"><strong>{subscribers}</strong> subscribers</span>
             <span role="listitem"><strong>{videos.length}</strong> uploads</span>
             <span role="listitem"><strong>89h</strong> weekly watch time</span>
           </div>

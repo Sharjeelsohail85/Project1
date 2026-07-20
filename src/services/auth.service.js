@@ -229,13 +229,27 @@ export async function loginWithOAuth(provider) {
             closePopupSafe()
             window.removeEventListener('message', messageHandler)
 
-            axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            })
-            .then((res) => {
-              const gUser = res.data
+            Promise.all([
+              axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              }).catch(() => null),
+              axios.get('https://www.googleapis.com/youtube/v3/channels?part=id,snippet,statistics&mine=true', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              }).catch(() => null)
+            ])
+            .then(([userInfoRes, ytChannelsRes]) => {
+              const gUser = userInfoRes?.data || {}
+              const ytItems = ytChannelsRes?.data?.items || []
+              const firstChannel = ytItems[0] || {}
+              
+              const realChannelId = firstChannel.id || gUser.sub || `google-${gUser.email ? gUser.email.split('@')[0] : Date.now()}`
+              const realChannelName = firstChannel.snippet?.title || gUser.name || `${gUser.given_name || 'Google'} ${gUser.family_name || 'User'}`
+              const customUrl = firstChannel.snippet?.customUrl || ''
+              const ytSubscriberCount = firstChannel.statistics?.subscriberCount ? parseInt(firstChannel.statistics.subscriberCount, 10) : null
+              const ytVideoCount = firstChannel.statistics?.videoCount ? parseInt(firstChannel.statistics.videoCount, 10) : null
+
               const user = {
-                uuid: gUser.sub || `google-${gUser.email || Date.now()}`,
+                uuid: realChannelId,
                 first_name: gUser.given_name || 'Google',
                 last_name: gUser.family_name || 'User',
                 email: gUser.email,
@@ -244,10 +258,15 @@ export async function loginWithOAuth(provider) {
                 google_access_token: accessToken,
                 access_token: accessToken,
                 refresh_token: '',
+                channel_id: realChannelId,
+                channel_name: realChannelName,
+                custom_url: customUrl,
+                subscriber_count: ytSubscriberCount,
+                video_count: ytVideoCount,
               }
               setLocalStorageItem('user_info', JSON.stringify(user))
               setLocalStorageItem('auth_provider', 'google')
-              saveAuthTokens(accessToken, `google-client-${gUser.sub}`)
+              saveAuthTokens(accessToken, `google-client-${gUser.sub || realChannelId}`)
               try {
                 window.dispatchEvent(new CustomEvent('auth:login'))
               } catch {
@@ -333,13 +352,27 @@ export async function loginWithOAuth(provider) {
               closePopupSafe()
               window.removeEventListener('message', messageHandler)
 
-              axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${accessToken}` }
-              })
-              .then((res) => {
-                const gUser = res.data
+              Promise.all([
+                axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${accessToken}` }
+                }).catch(() => null),
+                axios.get('https://www.googleapis.com/youtube/v3/channels?part=id,snippet,statistics&mine=true', {
+                  headers: { Authorization: `Bearer ${accessToken}` }
+                }).catch(() => null)
+              ])
+              .then(([userInfoRes, ytChannelsRes]) => {
+                const gUser = userInfoRes?.data || {}
+                const ytItems = ytChannelsRes?.data?.items || []
+                const firstChannel = ytItems[0] || {}
+                
+                const realChannelId = firstChannel.id || gUser.sub || `google-${gUser.email ? gUser.email.split('@')[0] : Date.now()}`
+                const realChannelName = firstChannel.snippet?.title || gUser.name || `${gUser.given_name || 'Google'} ${gUser.family_name || 'User'}`
+                const customUrl = firstChannel.snippet?.customUrl || ''
+                const ytSubscriberCount = firstChannel.statistics?.subscriberCount ? parseInt(firstChannel.statistics.subscriberCount, 10) : null
+                const ytVideoCount = firstChannel.statistics?.videoCount ? parseInt(firstChannel.statistics.videoCount, 10) : null
+
                 const user = {
-                  uuid: gUser.sub || `google-${gUser.email || Date.now()}`,
+                  uuid: realChannelId,
                   first_name: gUser.given_name || 'Google',
                   last_name: gUser.family_name || 'User',
                   email: gUser.email,
@@ -348,10 +381,15 @@ export async function loginWithOAuth(provider) {
                   google_access_token: accessToken,
                   access_token: accessToken,
                   refresh_token: '',
+                  channel_id: realChannelId,
+                  channel_name: realChannelName,
+                  custom_url: customUrl,
+                  subscriber_count: ytSubscriberCount,
+                  video_count: ytVideoCount,
                 }
                 setLocalStorageItem('user_info', JSON.stringify(user))
                 setLocalStorageItem('auth_provider', 'google')
-                saveAuthTokens(accessToken, `google-client-${gUser.sub}`)
+                saveAuthTokens(accessToken, `google-client-${gUser.sub || realChannelId}`)
                 try {
                   window.dispatchEvent(new CustomEvent('auth:login'))
                 } catch {

@@ -55,7 +55,7 @@ export default function SettingsPage({
   const isSettingsPage = location.pathname === '/settings'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
   const isFaqPage = location.pathname === '/faq'
-  const isChannelRoute = location.pathname === '/channel' || Boolean(isChannelPage)
+  const isChannelRoute = location.pathname === '/channel' || location.pathname.startsWith('/channel/') || Boolean(isChannelPage)
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
   const settingsSearchRef = useRef(null)
@@ -847,7 +847,17 @@ export default function SettingsPage({
       <div id="slideout" className={`slideout ${slideoutHiddenClass ? 'hidden' : ''}`}>
         <nav className="slideout-technical" aria-label="Menu options">
           {isAuthenticated ? (
-            <button className={`slideout-entry ${isChannelRoute ? 'active' : ''}`} role="menuitem" onClick={() => navigate('/channel')}>
+            <button className={`slideout-entry ${isChannelRoute ? 'active' : ''}`} role="menuitem" onClick={() => {
+              let channelId = 'channel'
+              try {
+                const raw = localStorage.getItem('user_info')
+                if (raw) {
+                  const parsed = JSON.parse(raw)
+                  channelId = parsed.uuid || parsed.id || 'channel'
+                }
+              } catch (e) {}
+              navigate(`/channel/${channelId}`)
+            }}>
               Channel
               <i className="material-icons" aria-hidden="true">podcasts</i>
             </button>

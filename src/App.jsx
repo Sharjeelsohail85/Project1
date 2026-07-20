@@ -136,6 +136,21 @@ function getStoredSubscriberCount() {
   }
 }
 
+function getCurrentUserChannelId() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem('user_info')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        return parsed.uuid || parsed.id || 'channel'
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return 'channel'
+}
+
 function formatSubscriberCountLabel(value) {
   if (!Number.isFinite(value) || value < 0) {
     return '0'
@@ -165,7 +180,7 @@ const inlineStyles = `
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname === '/faq'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname.startsWith('/channel/') || location.pathname === '/faq'
   const isAuthCallbackRoute = location.pathname.startsWith('/auth/') || (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/'))
   
   // Check authentication status on mount
@@ -768,7 +783,7 @@ function App() {
   }, [navigate])
 
   const openChannel = useCallback(() => {
-    navigate('/channel')
+    navigate(`/channel/${getCurrentUserChannelId()}`)
   }, [navigate])
 
   const openFaq = useCallback(() => {
@@ -1074,6 +1089,10 @@ function App() {
           />
           <Route
             path="/channel"
+            element={<Navigate to={`/channel/${getCurrentUserChannelId()}`} replace />}
+          />
+          <Route
+            path="/channel/:id"
             element={(
               isAuthenticated
                 ? (

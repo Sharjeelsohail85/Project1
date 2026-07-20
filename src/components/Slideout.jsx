@@ -17,7 +17,7 @@ const Slideout = memo(function Slideout({
 }) {
   const location = useLocation()
   const isSettingsPage = location.pathname === '/settings'
-  const isChannelPage = location.pathname === '/channel'
+  const isChannelPage = location.pathname === '/channel' || location.pathname.startsWith('/channel/')
   const isFaqPage = location.pathname === '/faq'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
 
