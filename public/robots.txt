@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Keep internal/authenticated app areas out of index
+Disallow: /login
+Disallow: /post
+Disallow: /studio/
+Disallow: /settings
+Disallow: /theme-designer
+Disallow: /channel
+
+Sitemap: https://octopussol.com/sitemap.xml
+

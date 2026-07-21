@@ -1,0 +1,6 @@
+{
+  "name": "Octopussol",
+  "description": "A creator-first video platform with multi-cloud integration, interactive video visualizers, and advanced channel customization tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

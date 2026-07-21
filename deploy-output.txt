@@ -1,0 +1,16 @@
+
+ ⛅️ wrangler 4.101.0 (update available 4.105.0)
+───────────────────────────────────────────────
+🌀 Building list of assets...
+✨ Read 17 files from the assets directory C:\Users\sharjeel\Desktop\Project1\dist
+🌀 Starting asset upload...
+No updated asset files to upload. Proceeding with deployment...
+Total Upload: 45.14 KiB / gzip: 10.19 KiB
+Your Worker has access to the following bindings:
+Binding            Resource      
+env.ASSETS         Assets        
+
+Uploaded project1-video-app (15.70 sec)
+Deployed project1-video-app triggers (6.47 sec)
+  https://project1-video-app.sharjeelsohail85.workers.dev
+Current Version ID: f9827b69-b634-4ff0-85a2-080bd39a5918

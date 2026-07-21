@@ -1,0 +1,29 @@
+src/components/SeoManager.jsx:76:        'Octopussol is a creator-first video platform for uploading, migrating, organizing, and streaming videos with cloud integrations including Google Drive and Dropbox.',
+src/components/Upload.jsx:20:  { id: 'uploadGoogle', icon: 'cloud_queue', label: 'Google Drive' },
+src/components/Upload.jsx:93:    if (selectedSource === 'uploadGoogle') return 'Paste Google Drive URL'
+src/components/VideoPlayer.jsx:27:  google: 'Google Drive',
+src/components/migration/MigrationForm.jsx:64:  if (normalized === 'google drive') return 'gdrive'
+src/components/migration/MigrationForm.jsx:70:const MigrationForm = memo(function MigrationForm({
+src/components/migration/MigrationForm.jsx:71:  onConnectProvider,
+src/components/migration/MigrationForm.jsx:73:  connectedProviders = [],
+src/components/migration/MigrationForm.jsx:98:    const options = Array.isArray(connectedProviders) ? connectedProviders : []
+src/components/migration/MigrationForm.jsx:102:  }, [connectedProviders])
+src/components/migration/MigrationForm.jsx:278:        connectedProviders={connectedProviderIds}
+src/components/migration/MigrationForm.jsx:283:        onRequestConnect={(provider) => onConnectProvider?.(provider)}
+src/components/migration/MigrationForm.jsx:397:export default MigrationForm
+src/components/migration/StorageProviderSelector.jsx:11:  { id: 'gdrive', label: 'Google Drive' },
+src/components/migration/StorageProviderSelector.jsx:19:  connectedProviders = [],
+src/components/migration/StorageProviderSelector.jsx:25:    (Array.isArray(connectedProviders) ? connectedProviders : [])
+src/config/storageProviders.js:4:    name: 'Google Drive',
+src/pages/Studio/MigratePostPage.jsx:9:import MigrationForm from '../../components/migration/MigrationForm'
+src/pages/Studio/MigratePostPage.jsx:11:import { beginProviderOAuth, waitForProviderOAuthResult } from '../../services/multiCloudMigrationService'
+src/pages/Studio/MigratePostPage.jsx:61:  const connectedProviders = useMemo(() => normalizeConnectedProviderIds(connectedById), [connectedById])
+src/pages/Studio/MigratePostPage.jsx:63:  const onConnectProvider = useCallback(async (providerId) => {
+src/pages/Studio/MigratePostPage.jsx:87:      const result = await beginProviderOAuth(normalized)
+src/pages/Studio/MigratePostPage.jsx:191:          <MigrationForm
+src/pages/Studio/MigratePostPage.jsx:192:            connectedProviders={connectedProviders}
+src/pages/Studio/MigratePostPage.jsx:193:            onConnectProvider={onConnectProvider}
+src/services/multiCloudMigrationService.js:49:export async function beginProviderOAuth(providerId) {
+src/services/multiCloudMigrationService.js:154:  beginProviderOAuth,
+src/services/videoService.js:5:  uploadGoogle: 'Google Drive',
+src/styles/Upload.module.css:483:	content: "Google Drive";
