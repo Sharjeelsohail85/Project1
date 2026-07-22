@@ -29,9 +29,9 @@ function getAutoTimeMode() {
 
 const FILTER_STYLES = {
   dawn: 'brightness(0.9) contrast(1.15) sepia(0.35) saturate(1.4) hue-rotate(-15deg)',
-  daytime: 'brightness(1.05) contrast(1.05) saturate(1.2)',
+  daytime: 'brightness(2.4) contrast(1.1) hue-rotate(168deg)',
   sunset: 'brightness(0.8) contrast(1.25) sepia(0.5) saturate(2.0) hue-rotate(-45deg)',
-  night: 'brightness(0.38) contrast(1.35) hue-rotate(185deg) invert(0.85) saturate(1.5)',
+  night: 'brightness(0.5) contrast(1.1) hue-rotate(179deg)',
 }
 
 const PromoOverlay = memo(function PromoOverlay({
