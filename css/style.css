@@ -1949,8 +1949,8 @@ select:disabled {
 }
 
 .promoverlay {
-	height: 400px;
-	min-height: 400px;
+	height: 520px;
+	min-height: 520px;
 }
 
 .promoverlay-bg {
@@ -1963,7 +1963,7 @@ select:disabled {
 	height: 100%;
 	background-image: url("/resources/photo.jpg"), url("/resources/tianjin.jpg"), url("https://cdn.pixabay.com/photo/2017/03/29/15/18/tianjin-2185510_1280.jpg");
 	background-size: cover;
-	background-position: center center;
+	background-position: center 30%;
 	z-index: 1;
 }
 
@@ -1974,9 +1974,9 @@ select:disabled {
 	z-index: 10;
 	display: flex;
 	align-items: center;
-	background: rgba(0, 0, 0, 0.55);
-	backdrop-filter: blur(8px);
-	-webkit-backdrop-filter: blur(8px);
+	background: rgba(0, 0, 0, 0.65);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
 	padding: 6px 14px;
 	border-radius: 20px;
 	border: 1px solid rgba(255, 255, 255, 0.25);
@@ -1984,7 +1984,44 @@ select:disabled {
 	font-size: 13px;
 	font-weight: 500;
 	user-select: none;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.promoverlay-mode-divider {
+	margin: 0 10px;
+	color: rgba(255, 255, 255, 0.4);
+	font-weight: 300;
+}
+
+.promoverlay-mode-pills {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.promoverlay-mode-pill {
+	background: transparent;
+	border: 1px solid transparent;
+	color: rgba(255, 255, 255, 0.85);
+	font-size: 12px;
+	font-weight: 600;
+	padding: 3px 9px;
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.promoverlay-mode-pill:hover {
+	color: #fff;
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.promoverlay-mode-pill.active {
+	background: #ffffff;
+	color: #111111;
+	border-color: #ffffff;
+	font-weight: 700;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .promoverlay-clock {

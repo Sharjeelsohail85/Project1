@@ -28,10 +28,11 @@ function getAutoTimeMode() {
 }
 
 const FILTER_STYLES = {
-  dawn: 'brightness(0.9) contrast(1.15) sepia(0.35) saturate(1.4) hue-rotate(-15deg)',
-  daytime: 'brightness(2.4) contrast(1.1) hue-rotate(168deg)',
-  sunset: 'brightness(0.8) contrast(1.25) sepia(0.5) saturate(2.0) hue-rotate(-45deg)',
-  night: 'brightness(0.5) contrast(1.1) hue-rotate(179deg)',
+  dawn: 'brightness(0.95) contrast(1.15) sepia(0.35) saturate(1.5) hue-rotate(-15deg)',
+  daytime: 'brightness(2.2) contrast(1.1) saturate(1.1) hue-rotate(168deg)',
+  dusk: 'brightness(0.85) contrast(1.25) sepia(0.55) saturate(2.2) hue-rotate(-45deg)',
+  sunset: 'brightness(0.85) contrast(1.25) sepia(0.55) saturate(2.2) hue-rotate(-45deg)',
+  night: 'brightness(0.5) contrast(1.15) hue-rotate(179deg) saturate(1.3)',
 }
 
 const PromoOverlay = memo(function PromoOverlay({
@@ -45,7 +46,6 @@ const PromoOverlay = memo(function PromoOverlay({
 }) {
   const videoRef = useRef(null)
   const [selectedMode, setSelectedMode] = useState('auto')
-  const [isNightToggled, setIsNightToggled] = useState(false)
   const [currentAutoMode, setCurrentAutoMode] = useState(() => getAutoTimeMode())
   const [currentTimeString, setCurrentTimeString] = useState('')
 
@@ -88,22 +88,22 @@ const PromoOverlay = memo(function PromoOverlay({
     }
   }, [active])
 
-  const effectiveMode = isNightToggled
-    ? 'night'
-    : selectedMode === 'auto'
-      ? currentAutoMode
-      : selectedMode
-
+  const effectiveMode = selectedMode === 'auto' ? currentAutoMode : selectedMode
   const activeFilter = FILTER_STYLES[effectiveMode] || FILTER_STYLES.daytime
+  const isNightOrDusk = effectiveMode === 'night' || effectiveMode === 'dusk'
+
+  const handleSelectMode = (mode) => {
+    setSelectedMode(mode)
+  }
 
   return (
     <section
       id="promoverlay"
-      className={`promoverlay ${active ? 'active' : ''} ${effectiveMode === 'night' ? 'is-night' : ''}`}
+      className={`promoverlay ${active ? 'active' : ''} ${isNightOrDusk ? 'is-night' : ''}`}
       aria-label="Promotional content"
       aria-hidden={!active}
     >
-      {/* City Skyline Background Image (CodePen exact design) with CSS filter */}
+      {/* City Skyline Background Image with CSS filter */}
       <div
         className="promoverlay-bg"
         style={{
@@ -112,17 +112,64 @@ const PromoOverlay = memo(function PromoOverlay({
         }}
       />
 
-      {/* Top Left Toggle Night Control */}
-      <div className="promoverlay-night-wrap">
-        <label htmlFor="toggleNightCheckbox" className="promoverlay-night-label">
+      {/* Top Left Time & Theme Mode Bar */}
+      <div className="promoverlay-night-wrap" role="group" aria-label="Background image mode controls">
+        <label
+          htmlFor="toggleNightCheckbox"
+          className="promoverlay-night-label"
+          title="Toggle Night mode"
+        >
           <input
             id="toggleNightCheckbox"
             type="checkbox"
-            checked={isNightToggled}
-            onChange={(e) => setIsNightToggled(e.target.checked)}
+            checked={effectiveMode === 'night'}
+            onChange={(e) => handleSelectMode(e.target.checked ? 'night' : 'daytime')}
           />
-          <span>Toggle night</span>
+          <span>Night</span>
         </label>
+        <span className="promoverlay-mode-divider" aria-hidden="true">|</span>
+        <div className="promoverlay-mode-pills">
+          <button
+            type="button"
+            className={`promoverlay-mode-pill ${effectiveMode === 'dawn' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('dawn')}
+            title="Dawn filter"
+          >
+            Dawn
+          </button>
+          <button
+            type="button"
+            className={`promoverlay-mode-pill ${effectiveMode === 'daytime' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('daytime')}
+            title="Daytime filter"
+          >
+            Day
+          </button>
+          <button
+            type="button"
+            className={`promoverlay-mode-pill ${effectiveMode === 'dusk' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('dusk')}
+            title="Dusk / Sunset filter"
+          >
+            Dusk
+          </button>
+          <button
+            type="button"
+            className={`promoverlay-mode-pill ${effectiveMode === 'night' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('night')}
+            title="Night filter"
+          >
+            Night
+          </button>
+          <button
+            type="button"
+            className={`promoverlay-mode-pill ${selectedMode === 'auto' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('auto')}
+            title={`Auto sync (${currentAutoMode})`}
+          >
+            Auto
+          </button>
+        </div>
       </div>
 
       {/* Center Live Digital Clock (matching CodePen design) */}
@@ -185,11 +232,8 @@ const PromoOverlay = memo(function PromoOverlay({
         <div className="promoverlay-filter-bar" role="group" aria-label="Background time filters">
           <button
             type="button"
-            className={`promoverlay-filter-btn ${selectedMode === 'auto' && !isNightToggled ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedMode('auto')
-              setIsNightToggled(false)
-            }}
+            className={`promoverlay-filter-btn ${selectedMode === 'auto' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('auto')}
           >
             <i className="material-icons" aria-hidden="true">schedule</i>
             Auto ({currentAutoMode.charAt(0).toUpperCase() + currentAutoMode.slice(1)})
@@ -197,11 +241,8 @@ const PromoOverlay = memo(function PromoOverlay({
 
           <button
             type="button"
-            className={`promoverlay-filter-btn ${selectedMode === 'dawn' && !isNightToggled ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedMode('dawn')
-              setIsNightToggled(false)
-            }}
+            className={`promoverlay-filter-btn ${effectiveMode === 'dawn' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('dawn')}
           >
             <i className="material-icons" aria-hidden="true">wb_twilight</i>
             Dawn
@@ -209,11 +250,8 @@ const PromoOverlay = memo(function PromoOverlay({
 
           <button
             type="button"
-            className={`promoverlay-filter-btn ${selectedMode === 'daytime' && !isNightToggled ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedMode('daytime')
-              setIsNightToggled(false)
-            }}
+            className={`promoverlay-filter-btn ${effectiveMode === 'daytime' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('daytime')}
           >
             <i className="material-icons" aria-hidden="true">wb_sunny</i>
             Daytime
@@ -221,23 +259,17 @@ const PromoOverlay = memo(function PromoOverlay({
 
           <button
             type="button"
-            className={`promoverlay-filter-btn ${selectedMode === 'sunset' && !isNightToggled ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedMode('sunset')
-              setIsNightToggled(false)
-            }}
+            className={`promoverlay-filter-btn ${(effectiveMode === 'dusk' || effectiveMode === 'sunset') ? 'active' : ''}`}
+            onClick={() => handleSelectMode('dusk')}
           >
             <i className="material-icons" aria-hidden="true">wb_twilight</i>
-            Sunset
+            Dusk / Sunset
           </button>
 
           <button
             type="button"
-            className={`promoverlay-filter-btn ${(selectedMode === 'night' || isNightToggled) ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedMode('night')
-              setIsNightToggled(true)
-            }}
+            className={`promoverlay-filter-btn ${effectiveMode === 'night' ? 'active' : ''}`}
+            onClick={() => handleSelectMode('night')}
           >
             <i className="material-icons" aria-hidden="true">nights_stay</i>
             Night
