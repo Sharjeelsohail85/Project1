@@ -114,7 +114,7 @@ const PromoOverlay = memo(function PromoOverlay({
         muted
         loop
         preload="auto"
-        poster="resources/photo.jpg"
+        poster="/resources/photo.jpg"
         aria-hidden="true"
         style={{
           filter: activeFilter,
@@ -122,7 +122,7 @@ const PromoOverlay = memo(function PromoOverlay({
           opacity: 0.15,
         }}
       >
-        <source src="resources/ocean-video.webm" type="video/webm" />
+        <source src="/resources/ocean-video.webm" type="video/webm" />
       </video>
 
       {/* SVG Title Mask */}

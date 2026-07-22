@@ -19,7 +19,7 @@ const QUALITY_OPTIONS = [1080, 720, 480, 360, 240, 144, 0]
 const COLLAGE_PIECES_NUM = 50
 const COLLAGE_LEVEL_SPLIT = 0.75
 const COLLAGE_STRENGTH = 3
-const COLLAGE_FALLBACK_FRAME = 'resources/video-thumbnail.jpg'
+const COLLAGE_FALLBACK_FRAME = '/resources/video-thumbnail.jpg'
 const COLLAGE_FRAME_INTERVAL_MS = 90
 
 const PROVIDER_LABELS = Object.freeze({
@@ -314,7 +314,7 @@ const VideoPlayer = memo(function VideoPlayer({
           ref={playerRef}
           id="player"
           preload="auto"
-          poster="resources/video-thumbnail.jpg"
+          poster="/resources/video-thumbnail.jpg"
           playsInline
           onClick={handleVideoClick}
           onError={handleNativeError}
@@ -328,7 +328,7 @@ const VideoPlayer = memo(function VideoPlayer({
           id="playerBackground"
           className="player-background"
           preload="auto"
-          poster="resources/video-thumbnail.jpg"
+          poster="/resources/video-thumbnail.jpg"
           muted
           playsInline
           aria-hidden="true"

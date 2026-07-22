@@ -111,10 +111,10 @@ const Daily = memo(function Daily({
         loop
         className="profile-background"
         preload="auto"
-        poster="resources/video-thumbnail.jpg"
+        poster="/resources/video-thumbnail.jpg"
         aria-hidden="true"
       >
-        <source src="resources/video.mp4" type="video/mp4" />
+        <source src="/resources/video.mp4" type="video/mp4" />
       </video>
 
       {/* Close Button */}
