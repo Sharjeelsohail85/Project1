@@ -2065,14 +2065,28 @@ select:disabled {
 	font-size: 13px;
 }
 
-.promoverlay svg rect {
-	fill: #eaeaea;
-	opacity: 0.85;
+/* SVG Mask setup: mask rect must be pure white and mask text pure black for SVG transparency cutout */
+.promoverlay svg mask rect {
+	fill: #ffffff !important;
+	opacity: 1 !important;
 }
 
-.promoverlay svg>rect {
+.promoverlay svg mask text {
+	fill: #000000 !important;
+	opacity: 1 !important;
+}
+
+.promoverlay svg > rect {
+	fill: #eaeaea;
+	opacity: 0.85;
 	-webkit-mask: url(#mask);
 	mask: url(#mask);
+	transition: fill 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+.promoverlay.is-night svg > rect {
+	fill: #141418;
+	opacity: 0.88;
 }
 
 .promoverlay-slide-container {
