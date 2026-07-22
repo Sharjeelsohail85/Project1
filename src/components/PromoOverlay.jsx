@@ -47,6 +47,24 @@ const PromoOverlay = memo(function PromoOverlay({
   const [selectedMode, setSelectedMode] = useState('auto')
   const [isNightToggled, setIsNightToggled] = useState(false)
   const [currentAutoMode, setCurrentAutoMode] = useState(() => getAutoTimeMode())
+  const [currentTimeString, setCurrentTimeString] = useState('')
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date()
+      setCurrentTimeString(
+        now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }).toLowerCase()
+      )
+    }
+    updateTime()
+    const timer = setInterval(updateTime, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const updateAutoMode = () => {
@@ -105,6 +123,11 @@ const PromoOverlay = memo(function PromoOverlay({
           />
           <span>Toggle night</span>
         </label>
+      </div>
+
+      {/* Center Live Digital Clock (matching CodePen design) */}
+      <div className="promoverlay-clock" aria-label="Current time">
+        {currentTimeString}
       </div>
 
       {/* Background Video */}
