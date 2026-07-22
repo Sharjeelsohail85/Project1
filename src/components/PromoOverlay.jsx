@@ -31,7 +31,7 @@ const FILTER_STYLES = {
   dawn: 'brightness(0.9) contrast(1.15) sepia(0.35) saturate(1.4) hue-rotate(-15deg)',
   daytime: 'brightness(1.05) contrast(1.05) saturate(1.2)',
   sunset: 'brightness(0.8) contrast(1.25) sepia(0.5) saturate(2.0) hue-rotate(-45deg)',
-  night: 'brightness(0.38) contrast(1.3) hue-rotate(180deg) saturate(1.3) sepia(0.15)',
+  night: 'brightness(0.38) contrast(1.35) hue-rotate(185deg) invert(0.85) saturate(1.5)',
 }
 
 const PromoOverlay = memo(function PromoOverlay({
@@ -128,38 +128,6 @@ const PromoOverlay = memo(function PromoOverlay({
       {/* Center Live Digital Clock (matching CodePen design) */}
       <div className="promoverlay-clock" aria-label="Current time">
         {currentTimeString}
-      </div>
-
-      {/* Background Video */}
-      <video
-        ref={videoRef}
-        playsInline
-        muted
-        loop
-        preload="auto"
-        poster="/resources/photo.jpg"
-        aria-hidden="true"
-        style={{
-          filter: activeFilter,
-          transition: 'filter 0.5s ease-in-out',
-          opacity: 0.15,
-        }}
-      >
-        <source src="/resources/ocean-video.webm" type="video/webm" />
-      </video>
-
-      {/* SVG Title Mask */}
-      <div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <mask id="mask" x="0" y="0" width="100%" height="100%">
-              <rect x="0" y="0" width="100%" height="100%" fill="#ffffff" />
-              <text className="title" x="11" y="41" fill="#000000">A Different</text>
-              <text className="title" x="10" y="53" fill="#000000">Way to Watch.</text>
-            </mask>
-          </defs>
-          <rect x="0" y="0" width="100%" height="100%" />
-        </svg>
       </div>
 
       {/* Slide Container - right side text + buttons */}
