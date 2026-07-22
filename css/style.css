@@ -1949,9 +1949,8 @@ select:disabled {
 }
 
 .promoverlay {
-	height: 80vh !important;
-	min-height: 600px !important;
-	max-height: 850px !important;
+	height: 400px;
+	min-height: 400px;
 }
 
 .promoverlay-bg {
