@@ -172,10 +172,6 @@ const PromoOverlay = memo(function PromoOverlay({
         </div>
       </div>
 
-      {/* Center Live Digital Clock (matching CodePen design) */}
-      <div className="promoverlay-clock" aria-label="Current time">
-        {currentTimeString}
-      </div>
 
       {/* Slide Container - right side text + buttons */}
       <div id="promoverlaySlideContainer" className="promoverlay-slide-container">
