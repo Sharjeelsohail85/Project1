@@ -226,7 +226,7 @@ const PromoOverlay = memo(function PromoOverlay({
       </div>
 
 
-      {/* Slide Container - right side text + buttons */}
+      {/* Slide Container - right side text */}
       <div id="promoverlaySlideContainer" className="promoverlay-slide-container">
         {PROMO_SLIDES.map((slide, index) => (
           <div
@@ -240,90 +240,14 @@ const PromoOverlay = memo(function PromoOverlay({
             />
           </div>
         ))}
-        {!isAuthenticated ? (
-          <>
-            <div className="promoverlay-button-row" role="group" aria-label="Authentication actions">
-              <button
-                id="promoverlaySignup"
-                className="promoverlay-signup promoverlay-button button-flat"
-                onClick={() => onShowSignup?.()}
-              >
-                <i className="material-icons" aria-hidden="true">person_add</i>
-                Sign Up
-              </button>
-              <button
-                id="promoverlayLogin"
-                className="promoverlay-login promoverlay-button button-flat"
-                onClick={() => onShowLogin?.()}
-              >
-                <i className="material-icons" aria-hidden="true">exit_to_app</i>
-                Log In
-              </button>
-            </div>
-
-            <div className="promoverlay-legal-links" aria-label="Legal links">
-              <a href="/privacy-policy.html">Privacy Policy</a>
-              <span aria-hidden="true"> • </span>
-              <a href="/terms-and-conditions.html">Terms &amp; Conditions</a>
-            </div>
-          </>
-        ) : null}
       </div>
 
-      {/* Left-side tagline under the SVG title + Filter selector bar */}
+      {/* Left-side tagline */}
       <div className="promoverlay-tagline">
         <strong className="promoverlay-tagline-bold">
           Octopussol helps creators upload, migrate, and stream videos.
         </strong>
         <span className="promoverlay-tagline-sub">Use Search to discover videos and Post to publish your own content.</span>
-
-        {/* Time-sensitive filter mode buttons */}
-        <div className="promoverlay-filter-bar" role="group" aria-label="Background time filters">
-          <button
-            type="button"
-            className={`promoverlay-filter-btn ${selectedMode === 'auto' ? 'active' : ''}`}
-            onClick={() => handleSelectMode('auto')}
-          >
-            <i className="material-icons" aria-hidden="true">schedule</i>
-            Auto ({currentAutoMode.charAt(0).toUpperCase() + currentAutoMode.slice(1)})
-          </button>
-
-          <button
-            type="button"
-            className={`promoverlay-filter-btn ${effectiveMode === 'dawn' ? 'active' : ''}`}
-            onClick={() => handleSelectMode('dawn')}
-          >
-            <i className="material-icons" aria-hidden="true">wb_twilight</i>
-            Dawn
-          </button>
-
-          <button
-            type="button"
-            className={`promoverlay-filter-btn ${effectiveMode === 'daytime' ? 'active' : ''}`}
-            onClick={() => handleSelectMode('daytime')}
-          >
-            <i className="material-icons" aria-hidden="true">wb_sunny</i>
-            Daytime
-          </button>
-
-          <button
-            type="button"
-            className={`promoverlay-filter-btn ${(effectiveMode === 'dusk' || effectiveMode === 'sunset') ? 'active' : ''}`}
-            onClick={() => handleSelectMode('dusk')}
-          >
-            <i className="material-icons" aria-hidden="true">wb_twilight</i>
-            Dusk / Sunset
-          </button>
-
-          <button
-            type="button"
-            className={`promoverlay-filter-btn ${effectiveMode === 'night' ? 'active' : ''}`}
-            onClick={() => handleSelectMode('night')}
-          >
-            <i className="material-icons" aria-hidden="true">nights_stay</i>
-            Night
-          </button>
-        </div>
       </div>
 
       {/* User Attribution */}
@@ -340,16 +264,6 @@ const PromoOverlay = memo(function PromoOverlay({
         aria-label="Close promotional overlay"
       >
         <i className="material-icons" aria-hidden="true">close</i>
-      </button>
-
-      {/* Next Slide Button */}
-      <button
-        id="promoverlayNext"
-        className="promoverlay-next button-float active"
-        onClick={() => onNextPromo?.()}
-        aria-label="Next slide"
-      >
-        <i className="material-icons" aria-hidden="true">navigate_next</i>
       </button>
     </section>
   )
