@@ -1,4 +1,4 @@
-name = "project2"
+name = "project1"
 main = "src/worker.js"
 compatibility_date = "2024-04-01"
 
