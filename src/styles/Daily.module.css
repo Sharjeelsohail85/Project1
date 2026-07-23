@@ -1,0 +1,336 @@
+/* ============================================
+   DAILY/VIDEO SECTION COMPONENT STYLES
+   ============================================ */
+
+.daily,
+.promoverlay,
+.signup,
+.login,
+.upload {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 400px;
+	z-index: 4;
+	color: #fafafa;
+	background: var(--theme-color, #607D8B);
+	overflow: hidden;
+	-webkit-transform: translateY(-100%);
+	pointer-events: none;
+	transform: translateY(-100%);
+}
+
+.daily.alternate {
+	height: 100%;
+}
+
+.daily.alternate .profileBackground {
+	display: none;
+}
+
+.daily.alternate .dailyPlayer {
+	height: 500px;
+	width: 100%;
+	max-width: 100%;
+	top: 0;
+	left: 0;
+	right: 0;
+	border-radius: 0;
+	box-shadow: inset 0 -4px 4px rgba(0, 0, 0, 0.3);
+}
+
+.daily.alternate .dailyInfo {
+	transition: none !important;
+	animation: dailyInfoAlt 0.15s ease-in-out;
+	animation-fill-mode: forwards;
+}
+
+.daily.alternate .dailyComments {
+	height: auto;
+}
+
+.daily.alternate .dailyFull {
+	transform: translateY(-10px);
+	opacity: 0;
+	pointer-events: none;
+}
+
+.daily.active,
+.promoverlay.active,
+.signup.active,
+.login.active,
+.upload.active {
+	-webkit-transform: translateY(0);
+	transform: translateY(0);
+	opacity: 1;
+	pointer-events: auto;
+}
+
+/* Daily Player */
+.dailyPlayer {
+	position: absolute;
+	top: 43px;
+	width: calc(50% - 80px);
+	max-width: 554px;
+	right: 50%;
+	height: 312px;
+	right: calc(50% + 40px);
+	background-color: var(--theme-color, #607D8B);
+	border-radius: 2px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+	-webkit-transition: none;
+	transition: none;
+	-webkit-transition-delay: 0.15s;
+	transition-delay: 0.15s;
+}
+
+/* Daily Info */
+.dailyInfo {
+	position: absolute;
+	width: 50%;
+	left: 50%;
+	top: 200px;
+	-webkit-transform: translateY(-50%);
+	transform: translateY(-50%);
+	right: 0;
+	padding-top: 40px;
+	padding-right: 40px;
+	max-height: 100%;
+	padding-bottom: 40px;
+	overflow: hidden;
+}
+
+.dailyInfoItem {
+	display: inline-block;
+}
+
+.dailyInfo .materialIcons,
+.dailyInfo .zmdi {
+	font-size: 17px;
+	position: relative;
+	top: 2px;
+	margin-right: 5px;
+}
+
+.dailyInfoTitle {
+	font-size: 22px;
+	font-weight: 500;
+	margin-bottom: 15px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	width: calc(100% - 60px);
+	color: #fafafa;
+}
+
+.dailyInfoUser,
+.dailyInfoLabel,
+.dailyInfoViews,
+.dailyInfoRating,
+.dailyInfoMore,
+.dailyInfoArchive,
+.dailyInfoDate,
+.dailyInfoLink {
+	font-size: 14px;
+	font-size: 500;
+	color: #eaeaea;
+	margin-bottom: 10px;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+}
+
+.dailyInfoDesc {
+	color: #fafafa;
+	font-size: 15px;
+	max-width: 500px;
+	display: block;
+}
+
+.dailyInfoMore,
+.dailyInfoLabel,
+.dailyInfoArchive {
+	margin-top: 8px;
+}
+
+.dailyInfoLabel,
+.dailyInfoViews,
+.dailyInfoRating,
+.dailyInfoArchive,
+.dailyInfoDate,
+.dailyInfoLink {
+	margin-left: 10px;
+}
+
+.dailyInfoLink:first-child {
+	margin-left: 0;
+}
+
+.dailyInfoRating .materialIcons:last-child {
+	margin-left: 5px;
+}
+
+/* Daily Comments */
+.dailyComments {
+	position: absolute;
+	top: 584px;
+	left: 638px;
+	right: 30px;
+	overflow: hidden;
+	height: 0;
+	display: block;
+}
+
+.dailyComments .buttonFlat {
+	color: #fafafa;
+}
+
+.dailyComments .buttonFloat {
+	opacity: 1;
+	transform: scale(1);
+	cursor: pointer;
+}
+
+/* Daily Action Buttons */
+.dailyComment {
+	position: absolute;
+	top: 330px;
+	right: 20px;
+	padding-left: 13px;
+}
+
+.daily.alternate .dailyComment {
+	transform: translateY(100px);
+	z-index: 11;
+}
+
+.dailySub {
+	position: absolute;
+	top: 330px;
+	right: 90px;
+}
+
+.daily.alternate .dailySub {
+	transform: translateY(100px);
+	z-index: 11;
+}
+
+.dailyExternal {
+	position: absolute;
+	bottom: -100px;
+	left: 640px;
+}
+
+.dailyExternal .buttonFloatCaption {
+	left: 50px;
+}
+
+/* Daily Close Button */
+.dailyClose,
+.promoverlayClose {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 10;
+}
+
+.dailyFull {
+	position: fixed;
+	top: 20px;
+	right: 90px;
+}
+
+.daily.alternate .dailyClose {
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	z-index: 11;
+}
+
+/* Daily Profile Styles */
+.daily.profile .dailyInfoUser,
+.daily.profile .dailyInfoViews,
+.daily.profile .dailyInfoRating,
+.daily.profile .dailyInfoLabel,
+.daily.profile .dailyInfoArchive {
+	display: none;
+}
+
+.daily.profile .dailyInfoDesc {
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	font-size: 15px;
+}
+
+.daily.profile .dailyInfoMore {
+	display: block;
+}
+
+/* Profile Background */
+.profileBackground {
+	opacity: 0.05;
+	position: absolute;
+	top: -25%;
+	left: 0;
+	right: 0;
+	transition: all 0.33s ease-in-out;
+}
+
+.profileBackground.hidden {
+	transform: scale(1.1);
+	opacity: 0;
+}
+
+/* Profile Logo */
+.profileLogo {
+	width: 500px;
+	height: 80px;
+	font-size: 0;
+	user-select: none;
+	cursor: default;
+	position: relative;
+	display: block;
+	background-image: url("../resources/needledrop.png");
+	background-repeat: no-repeat;
+	background-position: left center;
+	background-size: auto 130%;
+	margin-bottom: 10px;
+}
+
+.profileLogo.text {
+	background: none;
+	font-size: 24px;
+	height: auto;
+	font-weight: 500;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Profile Avatar */
+.profileAvatar {
+	display: none;
+	border-radius: 50%;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+	background-image: url("../resources/fantano.jpg");
+	background-size: cover;
+	background-position: center center;
+	background-repeat: no-repeat;
+	width: 100px;
+	height: 100px;
+	position: relative;
+	margin-right: 20px;
+}
+
+/* Daily Sub Button Hover */
+.buttonFloat.dailySub:hover {
+	color: #fafafa;
+	background: #673AB7;
+	box-shadow: 0 5px 5px rgba(0, 0, 0, 0.14);
+}
+
+@media only screen and (max-width: 370px) {
+	.daily, .promoverlay, .signup, .login, .upload {
+		height: 430px;
+	}
+}
