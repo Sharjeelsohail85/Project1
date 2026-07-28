@@ -1,0 +1,66 @@
+/* ============================================
+   LOADER COMPONENT STYLES
+   ============================================ */
+
+.loaderContainer {
+	z-index: 9;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(103, 58, 183, 0.2);
+	opacity: 0;
+}
+
+.loaderContainer.visible,
+.loaderContainer.visible .loader {
+	cursor: progress;
+}
+
+.loader {
+	display: block;
+	top: calc(50% - 40px);
+	left: 50%;
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 0 50px 86.6px 50px;
+	-webkit-transform-origin: 50% 67%;
+	transform-origin: 50% 67%;
+	-webkit-transition: 1s all;
+	transition: 1s all;
+	position: absolute;
+	-webkit-transform: translate(-50%, -50%);
+	transform: translate(-50%, -50%);
+	-webkit-filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.3));
+	filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.3));
+}
+
+.loaderOne {
+	border-width: 0 50px 86.6px 50px;
+	border-color: transparent transparent rgba(81, 45, 168, 0.1) transparent;
+	z-index: 0;
+	-webkit-animation: rotate 0.65s ease-in-out infinite;
+	animation: rotate 0.65s ease-in-out infinite;
+	-webkit-animation-delay: 0.14s;
+	animation-delay: 0.14s;
+}
+
+.loaderTwo {
+	border-width: 0 50px 86.6px 50px;
+	border-color: transparent transparent rgba(103, 58, 183, 0.2) transparent;
+	z-index: 10;
+	-webkit-animation: rotate 0.65s ease-in-out infinite;
+	animation: rotate 0.65s ease-in-out infinite;
+	-webkit-animation-delay: 0.07s;
+	animation-delay: 0.07s;
+}
+
+.loaderThree {
+	border-width: 0 50px 86.6px 50px;
+	border-color: transparent transparent rgba(103, 58, 183, 0.9) transparent;
+	z-index: 10;
+	-webkit-animation: rotate 0.65s ease-in-out infinite;
+	animation: rotate 0.65s ease-in-out infinite;
+}

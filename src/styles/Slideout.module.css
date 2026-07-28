@@ -1,0 +1,109 @@
+/* ============================================
+   SLIDEOUT COMPONENT STYLES
+   ============================================ */
+
+.slideout {
+	display: block;
+	position: fixed;
+	top: 60px;
+	right: 0;
+	bottom: 0;
+	width: 250px;
+	height: 100%;
+	box-shadow: -2px 0 4px rgba(0, 0, 0, 0.3);
+	background: #fafafa;
+	z-index: 7;
+}
+
+.slideout.hidden {
+	-webkit-transform: translateX(100%);
+	transform: translateX(100%);
+	box-shadow: none;
+}
+
+.slideoutAccount {
+	margin-top: 25px;
+}
+
+.slideoutTechnical {
+	margin-top: 25px;
+}
+
+.slideoutBottom {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background: #fafafa;
+	bottom: 68px;
+	left: 0;
+	right: 0;
+	width: 100%;
+	height: auto;
+	padding: 8px;
+	box-sizing: border-box;
+}
+
+.slideoutEntry:last-child {
+	border: none;
+}
+
+.slideoutEntry {
+	color: #212121;
+	display: block;
+	position: relative;
+	width: 100%;
+	height: 40px;
+	padding-left: 20px;
+	padding-right: 20px;
+	line-height: 40px;
+	font-weight: 400;
+	user-select: none;
+	cursor: pointer;
+	text-align: right;
+}
+
+.slideoutEntry:hover {
+	background: #eaeaea;
+}
+
+.slideoutEntry .materialIcons {
+	font-size: 20px;
+	position: relative;
+	top: 5px;
+	margin-left: 15px;
+}
+
+/* Slideout Color Picker */
+.slideoutBottom .signupColorPicker {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	padding: 8px;
+	box-sizing: border-box;
+}
+
+.slideoutBottom .signupColorPickerItem {
+	margin: 2px;
+	width: calc((100% / 6) - 12px);
+	max-width: 36px;
+	min-width: 32px;
+}
+
+@media only screen and (max-width: 430px) {
+	.slideout {
+		top: 100px;
+	}
+	.slideoutBottom {
+		bottom: 108px;
+	}
+}
+
+@media only screen and (max-width: 370px) {
+	.slideout {
+		top: 100px;
+	}
+}

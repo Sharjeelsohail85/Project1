@@ -1,0 +1,24 @@
+<h2>Click Paint Bucket to Change the Paint Color</h2>
+
+<div class="scene" alt="Two paint buckets pour out very lovely colors of blue paint into a large pool of even prettier blue. If you click each of the paint buckets you can change the colors you mix, and there is an RGB math equation for it in the results box.">
+  <img class="clay" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Bucket-dynamic-clay.png/250px-Bucket-dynamic-clay.png">
+  <img class="clay2" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Bucket-dynamic-clay.png/250px-Bucket-dynamic-clay.png">
+
+  <div class="bucket" id="bucket1">
+    <input type="color" id="color1" value="#5e8ba6">
+    <div class="stream" id="stream1"></div>
+
+  </div>
+  <div class="bucket" id="bucket2">
+    <input type="color" id="color2" value="#28505d">
+    <div class="stream" id="stream2"></div>
+
+  </div>
+  <div id="ocean"></div>
+
+  <!-- Info boxes -->
+  <div id="bucket1Info" class="bucketInfo leftInfo"></div>
+  <div id="bucket2Info" class="bucketInfo rightInfo"></div>
+</div>
+
+<div id="resultBox"></div>

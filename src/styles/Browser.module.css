@@ -1,0 +1,418 @@
+/* ============================================
+   BROWSER COMPONENT STYLES
+   ============================================ */
+
+.browser {
+	user-select: none;
+	position: relative;
+	display: block;
+	top: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	min-height: calc(100% - 400px);
+	height: auto;
+	z-index: 5;
+	box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.26);
+	overflow: hidden;
+}
+
+/* Browser Navigation */
+.browserNav {
+	cursor: default;
+	position: absolute;
+	left: 0;
+	right: 0;
+	display: block;
+	height: 45px;
+	width: 100%;
+	background: var(--theme-color);
+	color: #fafafa;
+	text-align: center;
+	font-weight: 500;
+	font-size: 16px;
+	z-index: 6;
+	white-space: nowrap;
+	box-shadow: 0 1px 8px rgba(0, 0, 0, 0.66);
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	-webkit-position: sticky;
+	border-radius: none;
+	height: auto;
+}
+
+.browserNav.fixed {
+	position: fixed !important;
+	top: 60px !important;
+}
+
+.browserNavFuck {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.browserNavItem {
+	display: inline-block;
+	margin-left: 10px;
+	margin-right: 10px;
+	position: relative;
+	padding-top: 9px;
+	padding-left: 30px;
+	padding-right: 30px;
+	padding-bottom: 9px;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+	width: 198px;
+	height: 45px;
+	border-bottom: solid 0 transparent;
+	text-overflow: ellipsis;
+	transition: all 0.1s ease-in-out;
+}
+
+.browserNavItem.active {
+	border-bottom: solid 3px var(--theme-color);
+	border-color: var(--theme-color);
+}
+
+.browserNavItem:hover {
+	border-bottom: solid 3px #fafafa;
+	border-color: #fafafa;
+}
+
+.browserNavItem .materialIcons,
+.browserNavItem.materialIcons {
+	position: relative;
+	top: 4px;
+	font-size: 20px;
+	margin-right: 14px;
+	font-weight: normal !important;
+}
+
+/* Browser Content */
+.browserContent {
+	position: relative;
+	top: 0;
+	left: 0;
+	z-index: 5;
+	right: 0;
+	bottom: 0;
+	display: block;
+	width: 100%;
+	height: auto;
+	overflow: hidden;
+	text-align: center;
+	padding-bottom: 75px;
+	background: #fafafa;
+}
+
+/* Browser Content Page */
+.browserContentPage {
+	position: relative;
+	background: #fafafa;
+	width: 100%;
+	min-height: 100%;
+	height: auto;
+	display: none;
+	margin-top: 50px;
+}
+
+.browserContentPage.hidden {
+	opacity: 0;
+	transform: scale(0.95);
+	pointer-events: none;
+}
+
+/* Browser Content Item */
+.browserContentItem {
+	margin-left: 5px;
+	margin-right: 5px;
+	margin-top: 20px;
+	padding: 10px;
+	border-radius: 2px;
+	width: 150px;
+	display: inline-block;
+	position: relative;
+	transition: none;
+	transition: opacity 0.15s ease-in-out;
+}
+
+.browserContentItem.active {
+	opacity: 0.6;
+}
+
+.browserContentItem.active .browserContentItemFrameBg {
+	filter: none !important;
+}
+
+.browserContentItem .materialIcons {
+	font-size: 18px;
+	margin-right: 5px;
+	position: relative;
+	top: 3px;
+}
+
+/* Item Frame */
+.browserContentItemFrame {
+	border-radius: 2px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+	width: 100%;
+	background-color: var(--theme-color);
+	height: 120px;
+	margin-bottom: 10px;
+	position: relative;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	overflow: hidden;
+	animation: scale 0.33s ease-in-out;
+}
+
+.browserContentItem.pick .browserContentItemFrame {
+	border: solid 3px var(--theme-color);
+	border-color: var(--theme-color);
+}
+
+/* Frame Background */
+.browserContentItemFrameBg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	background-image: url("../resources/photo.jpg");
+	background-size: cover;
+	background-position: center center;
+}
+
+.browserContentItem.pick .browserContentItem {
+	border: solid 2px var(--theme-color);
+}
+
+.browserContentItem:hover .browserContentItemFrameBg {
+	opacity: 0.5;
+}
+
+.browserContentItem.nsfw .browserContentItemFrameBg {
+	-webkit-filter: blur(8px);
+	filter: blur(8px);
+}
+
+.browserContentItem.nsfw:hover .browserContentItemFrameBg {
+	-webkit-filter: blur(0px);
+	filter: blur(0px);
+}
+
+/* NSFW Label */
+.browserContentItem .browserContentItemNsfw {
+	display: none;
+}
+
+.browserContentItem.nsfw .browserContentItemNsfw {
+	display: block;
+	position: absolute;
+	bottom: 5px;
+	left: 10px;
+	font-size: 14px;
+	font-weight: 500;
+	color: #fafafa;
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Picked Label */
+.browserContentItem .browserContentItemPicked {
+	display: none;
+}
+
+/* Views */
+.browserContentItemViews {
+	position: absolute;
+	top: 5px;
+	left: 10px;
+	font-size: 14px;
+	font-weight: 500;
+	color: #fafafa;
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.8);
+	opacity: 0;
+}
+
+.browserContentItemViews .materialIcons {
+	margin-right: 8px;
+}
+
+/* Rating */
+.browserContentItemRating {
+	position: absolute;
+	top: 5px;
+	right: 10px;
+	font-size: 14px;
+	font-weight: 500;
+	color: #fafafa;
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.8);
+	opacity: 0;
+}
+
+.browserContentItemRating .materialIcons {
+	margin-left: 8px;
+	margin-right: 0;
+}
+
+/* Play Button */
+.browserContentItemPlay {
+	width: 100%;
+	height: 100%;
+	line-height: 145px;
+	font-size: 30px;
+	color: #fafafa;
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.8);
+	opacity: 0;
+}
+
+.browserContentItem:hover .browserContentItemPlay {
+	opacity: 0.9;
+}
+
+.browserContentItem.active .browserContentItemPlay {
+	opacity: 0;
+	transform: scale(4) translateY(-2px);
+	transition: all 0.2s ease-in-out;
+}
+
+.browserContentItemPlay .materialIcons {
+	font-size: 50px;
+}
+
+.browserContentItem:hover .browserContentItemViews,
+.browserContentItem:hover .browserContentItemRating {
+	opacity: 0.9;
+}
+
+/* Item Title */
+.browserContentItemTitle {
+	white-space: nowrap;
+	width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 500;
+	font-size: 14px;
+	cursor: pointer;
+	text-align: left;
+}
+
+/* Item Info */
+.browserContentItemInfo {
+	font-size: 13px;
+	position: relative;
+	margin-top: 2px;
+}
+
+/* Item User */
+.browserContentItemUser {
+	width: auto;
+	display: block;
+	position: absolute;
+	left: 0;
+	max-width: 60%;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.browserContentItemUser .materialIcons {
+	font-size: 13px;
+	top: 2px;
+	margin-right: 5px;
+	margin-left: 0;
+	display: none;
+}
+
+/* Item Desc/Pick */
+.browserContentItemDesc,
+.browserContentItemPick {
+	display: none;
+}
+
+/* Report Button */
+.browserContentItemInfoReport {
+	width: auto;
+	display: block;
+	position: absolute;
+	right: 0;
+	max-width: 40%;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+	opacity: 0;
+}
+
+.browserContentItem:hover .browserContentItemInfoReport {
+	opacity: 1;
+}
+
+.browserContentItemInfoReport .materialIcons {
+	font-size: 14px;
+	top: 2px;
+	margin-right: 5px;
+	margin-left: 0;
+}
+
+.browserContentItemInfoReport:hover {
+	color: #f44336;
+}
+
+.browserContentItemInfoReportText {
+	display: inline-block;
+	font-weight: 500;
+	opacity: 0;
+}
+
+.browserContentItemInfoReport:hover .browserContentItemInfoReportText {
+	opacity: 1;
+}
+
+/* Responsive Styles */
+@media only screen and (max-width: 800px) {
+	.browserNavItem {
+		display: block;
+		width: 100%;
+	}
+	.browserContentPage {
+		margin-top: 230px;
+	}
+}
+
+@media only screen and (min-width: 800px) and (max-width: 1300px) {
+	.browserNavItem {
+		padding-left: 0px;
+		width: 15%;
+	}
+}
+
+@media only screen and (min-width: 1300px) {
+	.browserNavItem {
+		padding-left: auto;
+		width: 15%;
+	}
+}
+
+@media only screen and (max-width: 430px) {
+	.browserNavItem {
+		padding-left: auto;
+	}
+}

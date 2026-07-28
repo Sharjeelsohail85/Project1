@@ -1,0 +1,18 @@
+{
+  "name": "Octopussol",
+  "short_name": "Octopussol",
+  "description": "Creator-first video platform for upload, migration, and cloud streaming workflows.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#673ab7",
+  "icons": [
+    {
+      "src": "/og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
