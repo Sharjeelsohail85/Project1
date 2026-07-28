@@ -14,7 +14,7 @@
 /* Ensure app fills the viewport; the fixed titlebar will sit on top */
 #root {
   min-height: 100vh;
-  background: #fafafa;
+  background-color: #0f172a;
 }
 
 #content {
@@ -25,11 +25,14 @@
   margin-top: 0;
 }
 
-/* Main content layout under the yellow browser nav */
+/* Main content layout with City Background overlay */
 .content {
-  background: #fafafa;
-  /* Remove extra top padding so the yellow nav
-	   sits snugly under the fixed red titlebar */
+  background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.62) 0%, rgba(15, 23, 42, 0.82) 100%),
+    url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   padding: 0 0 40px;
 }
 
@@ -2191,3 +2194,198 @@ body.theme-effect-mixing .titlebar {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   POST PAGE 4-CARDS LAYOUT
+   ============================================ */
+.post-4cards-shell {
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 20px;
+}
+
+.post-4cards-header {
+  margin-bottom: 24px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 20px 24px;
+  border-radius: 16px;
+}
+
+.post-4cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .post-4cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.post-card-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+}
+
+.post-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.post-card-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--theme-color, #673ab7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.post-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* ============================================
+   CHANNEL PAGE: FLOWER EMBLEM & GLITCH AVATAR
+   ============================================ */
+.channel-flower-emblem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff4081 0%, #7c4dff 100%);
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(255, 64, 129, 0.6);
+  animation: flowerPulse 3s ease-in-out infinite alternate;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.channel-flower-emblem i {
+  font-size: 24px;
+  animation: flowerSpin 12s linear infinite;
+}
+
+@keyframes flowerSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes flowerPulse {
+  0% { transform: scale(1); box-shadow: 0 0 12px rgba(255, 64, 129, 0.5); }
+  100% { transform: scale(1.1); box-shadow: 0 0 24px rgba(124, 77, 255, 0.8); }
+}
+
+/* GLITCH AVATAR */
+.glitch-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.glitch-avatar-box {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #ff4081;
+  box-shadow: 0 0 20px rgba(255, 64, 129, 0.5);
+  background: #111;
+}
+
+.glitch-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.glitch-active .glitch-avatar-img {
+  animation: glitchFx 2s infinite linear alternate-reverse;
+}
+
+@keyframes glitchFx {
+  0% { transform: translate(0) scale(1); filter: drop-shadow(-2px 0 #ff0055) drop-shadow(2px 0 #00ffff); }
+  20% { transform: translate(-2px, 2px) scale(1.02); filter: drop-shadow(2px 0 #ff0055) drop-shadow(-2px 0 #00ffff); }
+  40% { transform: translate(-1px, -2px); filter: contrast(150%) hue-rotate(90deg); }
+  60% { transform: translate(2px, 1px); filter: drop-shadow(-3px 0 #00ff66); }
+  80% { transform: translate(0, -1px); filter: saturate(200%); }
+  100% { transform: translate(0) scale(1); filter: drop-shadow(-2px 0 #ff0055) drop-shadow(2px 0 #00ffff); }
+}
+
+.glitch-edit-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
+}
+
+.glitch-avatar-wrapper:hover .glitch-edit-overlay {
+  opacity: 1;
+}
+
+/* COVER EDITOR MODAL / PANEL */
+.cover-editor-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cover-editor-content {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+

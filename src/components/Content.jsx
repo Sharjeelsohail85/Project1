@@ -48,7 +48,7 @@ const Content = memo(function Content({
   const isPostRoute = currentPath === '/post'
   const isStudioMigrateRoute = currentPath === '/studio/migrate'
   const isCenterPageRoute = isPostRoute || isStudioMigrateRoute
-  const canAccessCenterPage = isCenterPageRoute && isAuthenticated
+  const canAccessCenterPage = isCenterPageRoute
   const contentClass = `content ${!dailyActive ? 'alternate' : ''} ${isModalOpen ? 'modal-open' : ''}`
 
   useSmoothWheelScroll(contentRef, {

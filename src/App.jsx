@@ -1162,10 +1162,7 @@ function App() {
       />
 
       <Routes>
-        <Route
-          path="/post"
-          element={<Navigate to={isAuthenticated ? '/studio/migrate' : '/login'} replace />}
-        />
+        <Route path="/post" element={null} />
         <Route
           path="/studio/migrate"
           element={isAuthenticated ? null : <Navigate to="/login" replace />}
