@@ -2,7 +2,7 @@ import { memo, useCallback, useState } from 'react'
 import Upload from './Upload'
 
 const MIN_POST_STEP = 1
-const MAX_POST_STEP = 3
+const MAX_POST_STEP = 4
 
 const PostPage = memo(function PostPage({ onClose, onVideoReady }) {
   const [postStep, setPostStep] = useState(MIN_POST_STEP)

@@ -7,6 +7,7 @@ import Container from '@mui/material/Container'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import MigrationForm from '../../components/migration/MigrationForm'
+import Upload from '../../components/Upload'
 import { storageProviders } from '../../config/storageProviders'
 import { beginProviderOAuth, waitForProviderOAuthResult } from '../../services/multiCloudMigrationService'
 import { videoAPI } from '../../services/api.service'
@@ -341,33 +342,19 @@ const MigratePostPage = memo(function MigratePostPage() {
 
   return (
     <section className="post-page-shell" aria-label="Studio migration post page">
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Stack spacing={2}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Studio / Migrate
-            </Typography>
-
-            <Button
-              variant="text"
-              onClick={() => navigate('/')}
-              sx={{ textTransform: 'none' }}
-            >
-              Back to Home
-            </Button>
-          </Box>
-
-          {isConnecting ? <Alert severity="info">Connecting provider...</Alert> : null}
-          {connectionInfo ? <Alert severity="success">{connectionInfo}</Alert> : null}
-          {connectionError ? <Alert severity="error">{connectionError}</Alert> : null}
-
-          <MigrationForm
-            connectedProviders={connectedProviders}
-            onConnectProvider={onConnectProvider}
-            onMigrationComplete={onMigrationComplete}
-          />
-        </Stack>
-      </Container>
+      <Upload
+        active={true}
+        onHideUpload={() => navigate('/')}
+        onVideoReady={(data) => {
+          onMigrationComplete({
+            videoId: data.videoId || `vid-${Date.now()}`,
+            sourceType: data.sourceType || 'Migration',
+            sourceUrl: data.sourceUrl || '',
+            title: data.title || 'Migrated Video',
+            description: data.description || '',
+          })
+        }}
+      />
     </section>
   )
 })

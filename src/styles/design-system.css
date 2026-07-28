@@ -1,1 +1,360 @@
-/* Design system styles stub */
+/* Design System and 4-Step Post Wizard Styles */
+
+/* Step Header & Navigation */
+.post-wizard-container {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  position: relative;
+  color: #fafafa;
+}
+
+.post-step-indicator-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.post-step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.post-step-item.active {
+  color: #ffffff;
+}
+
+.post-step-item.completed {
+  color: #03dac6;
+}
+
+.post-step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.post-step-item.active .post-step-number {
+  background: var(--theme-color, #673ab7);
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 12px rgba(103, 58, 183, 0.6);
+}
+
+.post-step-item.completed .post-step-number {
+  background: #03dac6;
+  color: #121212;
+  border-color: #03dac6;
+}
+
+/* Codepen pLJqgE Storage System Cards */
+.storage-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+  width: 100%;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.storage-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+
+.storage-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: var(--theme-color, #7c4dff);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 18px rgba(124, 77, 255, 0.35);
+}
+
+.storage-card.selected {
+  border-color: #03dac6;
+  background: linear-gradient(135deg, rgba(3, 218, 198, 0.16) 0%, rgba(103, 58, 183, 0.28) 100%);
+  box-shadow: 0 0 24px rgba(3, 218, 198, 0.45);
+}
+
+.storage-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.storage-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.storage-card-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storage-card-badge.connected {
+  background: rgba(3, 218, 198, 0.25);
+  color: #03dac6;
+  border: 1px solid rgba(3, 218, 198, 0.5);
+}
+
+.storage-card-badge.ready {
+  background: rgba(124, 77, 255, 0.25);
+  color: #d1c4e9;
+  border: 1px solid rgba(124, 77, 255, 0.4);
+}
+
+.storage-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.storage-card-details-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.storage-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.storage-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Hover Storage Info Popover / Overlay */
+.storage-hover-info {
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  width: 250px;
+  background: #181824;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
+  border-radius: 14px;
+  padding: 14px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.storage-card:hover .storage-hover-info {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-6px);
+}
+
+.storage-hover-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #03dac6;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.storage-hover-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+}
+
+.storage-hover-row strong {
+  color: #ffffff;
+}
+
+/* Step 2: Import Source */
+.source-option-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.source-tab-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fafafa;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.source-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.source-tab-btn.active {
+  background: var(--theme-color, #673ab7);
+  border-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(103, 58, 183, 0.4);
+}
+
+/* Step 3: Metadata Editor */
+.metadata-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metadata-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metadata-field-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.metadata-input, .metadata-textarea, .metadata-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.metadata-input:focus, .metadata-textarea:focus, .metadata-select:focus {
+  border-color: var(--theme-color, #03dac6);
+  box-shadow: 0 0 8px rgba(3, 218, 198, 0.3);
+}
+
+/* Tags Chip Manager */
+.tags-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tag-chip {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fafafa;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-chip-remove {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.tag-chip-remove:hover {
+  opacity: 1;
+}
+
+/* Step 4: Migration Progress Dashboard */
+.migration-dashboard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.migration-status-console {
+  background: #0d0d15;
+  border-radius: 10px;
+  padding: 16px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: #03dac6;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+
+.console-line {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-line.success {
+  color: #69f0ae;
+}
+
+.console-line.info {
+  color: #80d8ff;
+}

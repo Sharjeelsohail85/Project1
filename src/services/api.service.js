@@ -41,5 +41,8 @@ export const videoAPI = {
   },
   upload: async (formData) => {
     return { success: true, message: 'Uploaded successfully' }
+  },
+  streamUrl: async (videoId) => {
+    return { data: { streamUrl: `/api/v1/video/migration/stream/${encodeURIComponent(videoId)}` } }
   }
 }
