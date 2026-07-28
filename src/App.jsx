@@ -155,40 +155,10 @@ const inlineStyles = `
   }
 `
 
-function getUserChannelUuid() {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return 'c3a4f128-89ab-4c2d-9012-3456789abcde'
-    }
-    const raw = localStorage.getItem('user_info')
-    let user = null
-    if (raw) {
-      try {
-        user = JSON.parse(raw)
-      } catch {
-        // ignore
-      }
-    }
-    if (user?.uuid) return user.uuid
-    if (user?.channel_uuid) return user.channel_uuid
-    if (user?.channel_id) return user.channel_id
-    if (user?.id) return `channel-${user.id}`
-
-    let cached = localStorage.getItem('user_channel_uuid')
-    if (!cached) {
-      cached = `c3a4f128-89ab-4c2d-9012-${Math.random().toString(36).substring(2, 14)}`
-      localStorage.setItem('user_channel_uuid', cached)
-    }
-    return cached
-  } catch {
-    return 'c3a4f128-89ab-4c2d-9012-3456789abcde'
-  }
-}
-
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname.startsWith('/channel') || location.pathname === '/faq'
+  const isSettingsRoute = location.pathname === '/settings' || location.pathname === '/theme-designer' || location.pathname === '/channel' || location.pathname === '/faq'
   
   // Check authentication status on mount
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -791,8 +761,7 @@ function App() {
 
   const openChannel = useCallback(() => {
     setSlideoutVisible(false)
-    const uuid = getUserChannelUuid()
-    navigate(`/channel/${uuid}`)
+    navigate('/channel')
   }, [navigate])
 
   const openFaq = useCallback(() => {
@@ -1078,10 +1047,6 @@ function App() {
           />
           <Route
             path="/channel"
-            element={<Navigate to={`/channel/${getUserChannelUuid()}`} replace />}
-          />
-          <Route
-            path="/channel/:channelId"
             element={(
               isAuthenticated
                 ? (

@@ -706,15 +706,6 @@ html, body {
 	min-height: 100%;
 }
 
-.content-channel-full .content-main,
-.content-main.channel-full-width {
-	left: 0 !important;
-	width: 100% !important;
-	max-width: 100% !important;
-	padding: 16px 20px !important;
-	box-sizing: border-box !important;
-}
-
 /* Scrollbar style unified in css/style.css for .content-main */
 
 .section-wrap {

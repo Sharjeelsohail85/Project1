@@ -56,7 +56,7 @@ export default function SettingsPage({
   const isSettingsPage = location.pathname === '/settings'
   const isThemeDesignerPage = location.pathname === '/theme-designer'
   const isFaqPage = location.pathname === '/faq'
-  const isChannelRoute = location.pathname.startsWith('/channel') || Boolean(isChannelPage)
+  const isChannelRoute = location.pathname === '/channel' || Boolean(isChannelPage)
   const columnLeftRef = useRef(null)
   const contentMainRef = useRef(null)
   const settingsSearchRef = useRef(null)
@@ -901,60 +901,58 @@ export default function SettingsPage({
         }}
       />
 
-      <div id="content" className={`content ${isChannelRoute ? 'content-channel-full' : ''}`}>
-        {!isChannelRoute && (
-          <div className="column-left" id="columnLeft" ref={columnLeftRef} onScroll={onColumnLeftScroll}>
+      <div id="content" className="content">
+        <div className="column-left" id="columnLeft" ref={columnLeftRef} onScroll={onColumnLeftScroll}>
+          <div
+            className={`column-left-item column-left-search ${settingsSearchParentActive ? 'active' : ''}`}
+            id="settingsSearchParent"
+            onClick={focusSearch}
+            role="searchbox"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') focusSearch()
+            }}
+            onMouseEnter={(e) => e.stopPropagation()}
+            onMouseLeave={(e) => e.stopPropagation()}
+          >
+            <i className="column-left-item-icon material-icons" aria-hidden="true">
+              search
+            </i>
+            <input
+              className="column-left-search-input input"
+              id="settingsSearch"
+              placeholder="Search settings"
+              ref={settingsSearchRef}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              onKeyUp={onSearchKeyUp}
+            />
+          </div>
+
+          {navItems.map((item, i) => (
             <div
-              className={`column-left-item column-left-search ${settingsSearchParentActive ? 'active' : ''}`}
-              id="settingsSearchParent"
-              onClick={focusSearch}
-              role="searchbox"
+              key={item.label}
+              className={`column-left-item ${activeNavIndex === i ? 'active' : ''}`}
+              onClick={() => onNavItemClick(i)}
+              role="button"
               tabIndex={0}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') focusSearch()
+                if (e.key === 'Enter' || e.key === ' ') onNavItemClick(i)
               }}
-              onMouseEnter={(e) => e.stopPropagation()}
-              onMouseLeave={(e) => e.stopPropagation()}
             >
               <i className="column-left-item-icon material-icons" aria-hidden="true">
-                search
+                {item.icon}
               </i>
-              <input
-                className="column-left-search-input input"
-                id="settingsSearch"
-                placeholder="Search settings"
-                ref={settingsSearchRef}
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                onKeyUp={onSearchKeyUp}
-              />
-            </div>
-
-            {navItems.map((item, i) => (
-              <div
-                key={item.label}
-                className={`column-left-item ${activeNavIndex === i ? 'active' : ''}`}
-                onClick={() => onNavItemClick(i)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') onNavItemClick(i)
-                }}
-              >
-                <i className="column-left-item-icon material-icons" aria-hidden="true">
-                  {item.icon}
-                </i>
-                <div className="column-left-item-label" data-scrollto={item.sectionId}>
-                  {item.label}
-                </div>
+              <div className="column-left-item-label" data-scrollto={item.sectionId}>
+                {item.label}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
-        <div className={`content-main ${isChannelRoute ? 'channel-full-width' : ''}`} id="contentMain" ref={contentMainRef} onScroll={onContentMainScroll}>
+        <div className="content-main" id="contentMain" ref={contentMainRef} onScroll={onContentMainScroll}>
           {sections.map((section, sectionIndex) => {
             const sectionItemLabels = section.items.map((item) => {
               if (typeof item === 'string') {
