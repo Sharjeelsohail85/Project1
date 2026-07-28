@@ -1,5 +1,5 @@
 {
-  "name": "project1-video-app",
+  "name": "octopus",
   "main": "worker.js",
   "compatibility_date": "2026-02-13",
   "workers_dev": true,
