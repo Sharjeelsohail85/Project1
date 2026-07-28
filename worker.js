@@ -760,7 +760,7 @@ export default {
       return jsonResponse({
         status: 200,
         data: {
-          worker: 'project1',
+          worker: 'octopussol',
           route_host: url.host,
           request_path: requestPath,
           has_api_upstream_origin: Boolean(upstreamApiOrigin),
