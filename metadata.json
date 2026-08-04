@@ -1,0 +1,6 @@
+{
+  "name": "Octopussol",
+  "description": "A creator-first video platform for uploading, migrating, organizing, and streaming videos with cloud integrations including Google Drive and Dropbox.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

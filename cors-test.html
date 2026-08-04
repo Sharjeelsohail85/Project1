@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 CORS Configuration Test</h1>
+    <p>This test verifies that the CORS fix is working correctly.</p>
+    
+    <div class="test-section info">
+        <h3>Test Configuration</h3>
+        <p><strong>Backend URL:</strong> <span id="backend-url">http://localhost:8000/api/v1</span></p>
+        <p><strong>Frontend Origin:</strong> <span id="frontend-origin">http://localhost:3000</span></p>
+    </div>
+
+    <div class="test-section" id="options-test">
+        <h3>1. OPTIONS Preflight Request Test</h3>
+        <button onclick="testOptions()">Run OPTIONS Test</button>
+        <div id="options-result"></div>
+    </div>
+
+    <div class="test-section" id="post-test">
+        <h3>2. POST Request with Credentials Test</h3>
+        <button onclick="testPost()">Run POST Test</button>
+        <div id="post-result"></div>
+    </div>
+
+    <div class="test-section" id="summary">
+        <h3>📊 Test Summary</h3>
+        <div id="summary-result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000/api/v1';
+        const FRONTEND_ORIGIN = window.location.origin;
+
+        async function testOptions() {
+            const resultDiv = document.getElementById('options-result');
+            resultDiv.innerHTML = '<p>Testing OPTIONS preflight request...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,token,client_id',
+                    }
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    methods: response.headers.get('access-control-allow-methods'),
+                    headers: response.headers.get('access-control-allow-headers'),
+                    credentials: response.headers.get('access-control-allow-credentials')
+                };
+
+                const isPass = response.status === 200;
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Access-Control-Allow-Origin:</strong> ${headers.origin}</p>
+                        <p><strong>Access-Control-Allow-Methods:</strong> ${headers.methods}</p>
+                        <p><strong>Access-Control-Allow-Headers:</strong> ${headers.headers}</p>
+                        <p><strong>Access-Control-Allow-Credentials:</strong> ${headers.credentials}</p>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS' : '❌ FAIL'}</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function testPost() {
+            const resultDiv = document.getElementById('post-result');
+            resultDiv.innerHTML = '<p>Testing POST request with credentials...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Origin': FRONTEND_ORIGIN,
+                        'Content-Type': 'application/json',
+                        'token': 'test-token',
+                        'client_id': 'test-client-id',
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            email: 'test@example.com',
+                            password: 'test123'
+                        }
+                    })
+                });
+
+                const headers = {
+                    origin: response.headers.get('access-control-allow-origin'),
+                    credentials: response.headers.get('access-control-allow-credentials')
+                };
+
+                const isOriginMatch = headers.origin === FRONTEND_ORIGIN;
+                const hasCredentials = headers.credentials === 'true';
+                const isPass = isOriginMatch && hasCredentials;
+                const className = isPass ? 'pass' : 'fail';
+                
+                resultDiv.innerHTML = `
+                    <div class="${className}">
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Access-Control-Allow-Origin:</strong> ${headers.origin}</p>
+                        <p><strong>Expected Origin:</strong> ${FRONTEND_ORIGIN}</p>
+                        <p><strong>Origin Match:</strong> ${isOriginMatch ? '✅ YES' : '❌ NO'}</p>
+                        <p><strong>Access-Control-Allow-Credentials:</strong> ${headers.credentials}</p>
+                        <p><strong>Credentials Allowed:</strong> ${hasCredentials ? '✅ YES' : '❌ NO'}</p>
+                        <p><strong>Result:</strong> ${isPass ? '✅ PASS' : '❌ FAIL'}</p>
+                    </div>
+                `;
+                
+                return isPass;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="fail">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Result:</strong> ❌ FAIL</p>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            const optionsPass = await testOptions();
+            // Small delay between tests
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const postPass = await testPost();
+            
+            const summaryDiv = document.getElementById('summary-result');
+            const allPass = optionsPass && postPass;
+            const className = allPass ? 'pass' : 'fail';
+            
+            summaryDiv.innerHTML = `
+                <div class="${className}">
+                    <h4>Overall Test Results:</h4>
+                    <p>OPTIONS Preflight: ${optionsPass ? '✅ PASS' : '❌ FAIL'}</p>
+                    <p>POST with Credentials: ${postPass ? '✅ PASS' : '❌ FAIL'}</p>
+                    <p><strong>Final Status: ${allPass ? '✅ ALL TESTS PASS' : '❌ SOME TESTS FAILED'}</strong></p>
+                </div>
+            `;
+            
+            if (allPass) {
+                summaryDiv.innerHTML += `
+                    <div class="pass">
+                        <h4>🎉 CORS Fix Summary:</h4>
+                        <p>The backend should now properly handle:</p>
+                        <ul>
+                            <li>OPTIONS preflight requests</li>
+                            <li>Actual requests with credentials</li>
+                            <li>Multiple allowed origins</li>
+                            <li>Proper origin matching (not wildcard)</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests when page loads
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>

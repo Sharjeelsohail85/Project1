@@ -1,0 +1,198 @@
+/* ============================================
+   PROMOVERLAY COMPONENT STYLES
+   ============================================ */
+
+.promoverlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 400px;
+	z-index: 4;
+	color: #fafafa;
+	background: var(--theme-color);
+	overflow: hidden;
+	-webkit-transform: translateY(-100%);
+	pointer-events: none;
+	transform: translateY(-100%);
+}
+
+.promoverlay.active {
+	-webkit-transform: translateY(0);
+	transform: translateY(0);
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.promoverlay video {
+	position: absolute;
+	top: -60px;
+	left: 0;
+	right: 0;
+	width: 100%;
+}
+
+.promoverlay svg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 400px;
+}
+
+.promoverlay svg .title {
+	font-weight: 100;
+	font-size: 13px;
+}
+
+.promoverlay svg rect {
+	fill: #eaeaea;
+	opacity: 0.85;
+}
+
+.promoverlay svg>rect {
+	-webkit-mask: url(#mask);
+	mask: url(#mask);
+}
+
+.promoverlay .buttonFloat {
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.promoverlay a {
+	cursor: default;
+	border-bottom: dotted 1px #eaeaea;
+}
+
+.promoverlay a:hover {
+	border-bottom: solid 1px #eaeaea;
+}
+
+/* Slide Container */
+.promoverlaySlideContainer {
+	position: absolute;
+	top: 50%;
+	right: 0;
+	width: 60%;
+	height: auto;
+	-webkit-transform: translateY(-49%);
+	transform: translateY(-49%);
+	text-align: right;
+	padding: 70px;
+}
+
+/* Slides */
+.promoverlaySlide {
+	position: absolute;
+	right: 70px;
+	-webkit-transition: all 0.33s ease-in-out;
+	transition: all 0.33s ease-in-out;
+	opacity: 0;
+	-webkit-transform: translateX(-10%);
+	transform: translateX(-10%);
+}
+
+.promoverlaySlide.alternate {
+	opacity: 1;
+	-webkit-transform: translateX(0);
+	transform: translateX(0);
+}
+
+.promoverlaySlide.active {
+	opacity: 1;
+	-webkit-transform: translateX(0);
+	transform: translateX(0);
+	-webkit-animation: slide 0.33s ease-in-out;
+	animation: slide 0.33s ease-in-out;
+}
+
+/* Description */
+.promoverlayDesc,
+.promoverlayDescTagline {
+	font-size: 22px;
+	font-weight: 500;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.promoverlayDescTagline {
+	margin-top: 60px;
+}
+
+.promoverlayDescTaglineBold {
+	display: block;
+	font-weight: 600;
+}
+
+/* Button Container */
+.promoverlayButtonContainer {
+	position: absolute;
+	bottom: 75px;
+	right: 69px;
+	height: auto;
+	display: block;
+	text-align: right;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: default;
+}
+
+.promoverlayButton {}
+
+/* User Info */
+.promoverlayUser {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	padding: 10px;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	text-align: left;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	color: #eaeaea;
+}
+
+.promoverlayUser .promoverlayUserName {
+	font-size: 16px;
+	border-bottom: solid 1px transparent;
+}
+
+.promoverlayUser:hover .promoverlayUserName {
+	border-bottom: solid 1px #eaeaea;
+	color: #fafafa;
+}
+
+.promoverlayUserCaption {
+	font-size: 14px;
+	display: block;
+}
+
+/* Navigation Buttons */
+.promoverlayPrev {
+	position: absolute;
+	top: 20px;
+	right: 160px;
+}
+
+.promoverlayNext {
+	position: absolute;
+	top: 20px;
+	right: 90px;
+}
+
+.promoverlayClose {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 10;
+}

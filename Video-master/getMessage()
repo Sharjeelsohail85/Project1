@@ -1,0 +1,4 @@
+
+Warning: Module "mysqli" is already loaded in Unknown on line 0
+
+Parse error: syntax error, unexpected token ";" in Command line code on line 1

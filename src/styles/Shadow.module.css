@@ -1,0 +1,21 @@
+/* ============================================
+   SHADOW/OVERLAY COMPONENT STYLES
+   ============================================ */
+
+.shadow {
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
+	height: 100%;
+	z-index: 6;
+	background: rgba(20, 20, 30, 0.3);
+	cursor: default;
+}
+
+.shadow.hidden {
+	background: transparent;
+}

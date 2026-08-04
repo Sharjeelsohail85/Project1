@@ -1,0 +1,185 @@
+<div class="mixology-container">
+  <header class="mixology-header">
+    <div class="mixology-badge">
+      <i class="material-icons">local_bar</i>
+      <span>CODEPEN CHALLENGE &bull; COLOR MIXOLOGY</span>
+    </div>
+    <h1>Color Mixology Studio</h1>
+    <p class="subtitle">
+      Blend colors dynamically using modern CSS <code>color-mix()</code> &amp; multi-space color interpolation
+    </p>
+  </header>
+
+  <div class="mixology-grid">
+    <!-- Vessel Display Card -->
+    <div class="vessel-card">
+      <div class="glass-stage">
+        <svg class="cocktail-glass-svg" viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="glassReflection" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(255, 255, 255, 0.45)"/>
+              <stop offset="30%" stop-color="rgba(255, 255, 255, 0.15)"/>
+              <stop offset="100%" stop-color="rgba(255, 255, 255, 0.03)"/>
+            </linearGradient>
+
+            <linearGradient id="liquidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop id="liquidStop1" offset="0%" stop-color="#e91e63"/>
+              <stop id="liquidStopMid" offset="50%" stop-color="#9c27b0"/>
+              <stop id="liquidStop2" offset="100%" stop-color="#00bcd4"/>
+            </linearGradient>
+
+            <filter id="liquidGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="7" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+
+          <!-- Outer Glow / Background aura -->
+          <ellipse id="auraGlow" cx="110" cy="110" rx="75" ry="60" fill="#e91e63" opacity="0.15" filter="url(#liquidGlowFilter)"/>
+
+          <!-- Base and Stem -->
+          <path d="M 102,190 L 102,245 L 60,245 C 55,245 55,255 60,255 L 160,255 C 165,255 165,245 160,245 L 118,245 L 118,190 Z" 
+                fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.45)" stroke-width="2"/>
+
+          <!-- Liquid Body -->
+          <path id="liquidBody" d="M 35,55 L 110,185 L 185,55 Z" fill="url(#liquidGrad)" filter="url(#liquidGlowFilter)"/>
+
+          <!-- Ice Cubes -->
+          <g id="iceCubes" opacity="0.85">
+            <rect x="85" y="80" width="22" height="22" rx="4" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" transform="rotate(12 96 91)"/>
+            <rect x="112" y="95" width="18" height="18" rx="3" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" transform="rotate(-18 121 104)"/>
+          </g>
+
+          <!-- Liquid Surface Ellipse -->
+          <ellipse id="liquidSurface" cx="110" cy="55" rx="75" ry="11" fill="#e91e63" opacity="0.95"/>
+          <ellipse cx="110" cy="55" rx="71" ry="8" fill="rgba(255,255,255,0.2)"/>
+
+          <!-- Glass Bowl Outline & Highlights -->
+          <path d="M 25,35 L 110,195 L 195,35 Z" fill="url(#glassReflection)" stroke="rgba(255,255,255,0.65)" stroke-width="3" stroke-linejoin="round"/>
+          <ellipse cx="110" cy="35" rx="85" ry="14" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="3"/>
+          <path d="M 34,45 Q 110,180 34,45" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+
+          <!-- Animated Rising Bubbles -->
+          <circle class="bubble b1" cx="95" cy="150" r="3" fill="rgba(255,255,255,0.7)"/>
+          <circle class="bubble b2" cx="125" cy="130" r="4" fill="rgba(255,255,255,0.8)"/>
+          <circle class="bubble b3" cx="105" cy="95" r="2.5" fill="rgba(255,255,255,0.9)"/>
+          <circle class="bubble b4" cx="80" cy="115" r="3.5" fill="rgba(255,255,255,0.65)"/>
+        </svg>
+
+        <!-- Blended Color Badge -->
+        <div class="result-badge">
+          <div class="result-swatch" id="resultSwatch"></div>
+          <div class="result-details">
+            <span class="result-label">Blended Result</span>
+            <span class="result-hex" id="resultHex">#E91E63</span>
+          </div>
+          <button class="apply-theme-btn" id="applyThemeBtn" title="Apply this mixed color as website theme">
+            <i class="material-icons">palette</i> Apply
+          </button>
+        </div>
+      </div>
+
+      <!-- Mixed Spectrum Bar & Swatches -->
+      <div class="spectrum-section">
+        <div class="spectrum-header">
+          <span>Gradual Mix Spectrum</span>
+          <span class="spectrum-hint">Click swatch to test theme</span>
+        </div>
+        <div class="spectrum-bar" id="spectrumBar"></div>
+        <div class="swatch-row" id="swatchRow"></div>
+      </div>
+    </div>
+
+    <!-- Controls Card -->
+    <div class="controls-card">
+      <!-- Ingredient 1 (Base Spirit) -->
+      <div class="control-box">
+        <div class="control-top">
+          <div class="control-title">
+            <span class="dot dot-primary"></span>
+            <label for="color1Input">Base Ingredient (Color 1)</label>
+          </div>
+          <input type="text" id="color1Text" class="hex-input" value="#E91E63" maxlength="7">
+        </div>
+        <div class="control-row">
+          <input type="color" id="color1Input" value="#e91e63" class="color-picker">
+          <input type="range" id="ratio1Slider" min="0" max="100" value="50" class="ratio-slider">
+          <span class="ratio-value" id="ratio1Val">50%</span>
+        </div>
+      </div>
+
+      <!-- Ingredient 2 (Mixer / Liqueur) -->
+      <div class="control-box">
+        <div class="control-top">
+          <div class="control-title">
+            <span class="dot dot-secondary"></span>
+            <label for="color2Input">Mixer / Liqueur (Color 2)</label>
+          </div>
+          <input type="text" id="color2Text" class="hex-input" value="#00BCD4" maxlength="7">
+        </div>
+        <div class="control-row">
+          <input type="color" id="color2Input" value="#00bcd4" class="color-picker">
+          <input type="range" id="ratio2Slider" min="0" max="100" value="50" class="ratio-slider" disabled>
+          <span class="ratio-value" id="ratio2Val">50%</span>
+        </div>
+      </div>
+
+      <!-- Color Space Interpolation Tabs -->
+      <div class="control-box">
+        <div class="control-title-sm">
+          <i class="material-icons">architecture</i> Color Space Method
+        </div>
+        <div class="space-tabs">
+          <button class="space-btn active" data-space="oklch">OKLCH</button>
+          <button class="space-btn" data-space="srgb">sRGB</button>
+          <button class="space-btn" data-space="hsl">HSL</button>
+          <button class="space-btn" data-space="lab">LAB</button>
+          <button class="space-btn" data-space="oklab">Oklab</button>
+          <button class="space-btn" data-space="lch">LCH</button>
+        </div>
+      </div>
+
+      <!-- Signature Cocktails Presets -->
+      <div class="control-box">
+        <div class="control-title-sm">
+          <i class="material-icons">auto_awesome</i> Signature Cocktail Presets
+        </div>
+        <div class="presets-grid">
+          <button class="preset-card" data-c1="#ff3d00" data-c2="#ffc107" data-r="60">
+            <span class="preset-icon">🍹</span>
+            <span class="preset-name">Aperol Sunset</span>
+          </button>
+          <button class="preset-card" data-c1="#e91e63" data-c2="#00bcd4" data-r="50">
+            <span class="preset-icon">🍸</span>
+            <span class="preset-name">Cyber Tonic</span>
+          </button>
+          <button class="preset-card" data-c1="#8e24aa" data-c2="#1e88e5" data-r="70">
+            <span class="preset-icon">🍇</span>
+            <span class="preset-name">Berry Velvet</span>
+          </button>
+          <button class="preset-card" data-c1="#00e676" data-c2="#00b0ff" data-r="55">
+            <span class="preset-icon">🌿</span>
+            <span class="preset-name">Electric Mojito</span>
+          </button>
+          <button class="preset-card" data-c1="#d500f9" data-c2="#3df5fe" data-r="45">
+            <span class="preset-icon">🌌</span>
+            <span class="preset-name">Cosmic Slush</span>
+          </button>
+          <button class="preset-card" data-c1="#ff6d00" data-c2="#ffd600" data-r="65">
+            <span class="preset-icon">🥭</span>
+            <span class="preset-name">Mango Breeze</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Generated CSS Output & Copy Button -->
+      <div class="code-box">
+        <div class="code-header">
+          <span><i class="material-icons">code</i> CSS Formula</span>
+          <button class="copy-btn" id="copyCssBtn"><i class="material-icons">content_copy</i> Copy</button>
+        </div>
+        <pre class="code-content"><code id="cssFormulaCode">color-mix(in oklch, #E91E63 50%, #00BCD4 50%)</code></pre>
+      </div>
+    </div>
+  </div>
+</div>

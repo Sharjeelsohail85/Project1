@@ -1,0 +1,204 @@
+/* ============================================
+   TITLEBAR COMPONENT STYLES
+   ============================================ */
+
+.titlebar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	height: 60px;
+	display: block;
+	cursor: default;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.26);
+	background: var(--theme-color);
+	white-space: nowrap;
+	z-index: 8;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.titlebar.alternate {
+	/* background: #425563; */
+}
+
+.titlebarBox {
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: auto;
+	height: 48px;
+	padding: 5px;
+	text-align: center;
+	margin-left: 27px;
+	margin-right: 27px;
+}
+
+.titlebarLeft {
+	left: 0;
+}
+
+.titlebarCenter {
+	left: calc(50% - 27px);
+	-webkit-transform: translateX(-50%);
+	transform: translateX(-50%);
+}
+
+.titlebarRight {
+	right: 0;
+}
+
+.titlebarItem {
+	display: inline-block;
+	color: #fafafa;
+	font-weight: 500;
+	position: relative;
+	top: calc(50% + 3px);
+	-webkit-transform: translateY(-50%);
+	transform: translateY(-50%);
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.titlebarItem.button,
+.titlebarItem .button {
+	width: 118px;
+	top: 20px;
+}
+
+.titlebarItem .materialIcons {
+	position: relative;
+	top: 6px;
+	font-size: 24px;
+}
+
+.titlebarMenu .materialIcons {
+	margin-left: 27px;
+}
+
+.titlebarLogo .materialIcons {
+	margin-right: 5px;
+}
+
+.titlebarSubs .materialIcons {
+	margin-left: 5px;
+}
+
+.titlebarProfile .materialIcons {
+	margin-left: 5px;
+}
+
+/* Titlebar Search */
+.titlebarSearch {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 60px;
+	width: 100%;
+	color: #607D8B;
+	background: #fafafa;
+	z-index: 7;
+}
+
+.titlebarSearch .materialIcons {
+	position: relative;
+	display: block;
+	width: 24px;
+	z-index: 8;
+	font-size: 24px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.titlebarSearch.hidden,
+.titlebarSearch.hidden * {
+	background: transparent;
+	top: -100%;
+}
+
+.titlebarSearchBack {
+	top: 18px;
+	left: 27px;
+}
+
+.titlebarSearchGo {
+	top: -5px;
+	left: calc(100% - 51px);
+}
+
+.titlebarSearch .input {
+	font-size: 20px;
+	padding: 20px;
+	font-weight: 500;
+	height: 60px;
+	color: #607D8B;
+	z-index: 7;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 78px;
+	bottom: 0;
+	padding-left: 78px;
+	width: calc(100% - 78px);
+	text-overflow: ellipsis;
+}
+
+.titlebarDaily {
+	display: none !important;
+}
+
+/* Modern responsive mobile titlebar */
+@media only screen and (max-width: 768px) {
+	.titlebar {
+		height: 60px !important;
+	}
+	.titlebarBox {
+		margin-left: 8px !important;
+		margin-right: 8px !important;
+	}
+	/* Hide text labels for icon-only compact layout */
+	.titlebarItem span {
+		display: none !important;
+	}
+	.titlebarItem.button,
+	.titlebarItem .button {
+		width: 48px !important;
+		min-width: 48px !important;
+		padding: 0 !important;
+		height: 48px !important;
+		display: inline-flex !important;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50% !important;
+	}
+	.titlebarItem .materialIcons {
+		top: 0 !important;
+		margin: 0 !important;
+	}
+	/* Hide the auth buttons in titlebar; users access via hamburger slideout */
+	.titlebarBox div[role="group"] {
+		display: none !important;
+	}
+	/* Center adjustments */
+	.titlebarCenter {
+		left: 50% !important;
+		transform: translateX(-50%) !important;
+	}
+}
+
+@media only screen and (max-width: 430px) {
+	.titlebar {
+		height: 60px !important;
+	}
+}
